@@ -1,0 +1,2899 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROMON — Project Monitoring PT. Sandana</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231A4FD6'/><text y='.9em' font-size='70' x='50%' text-anchor='middle'>🏗️</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN TOKENS — DUAL THEME
+═══════════════════════════════════════ */
+:root {
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+[data-theme="light"] {
+  --bg: #F5F6FA;
+  --bg-2: #FFFFFF;
+  --bg-3: #EEF0F6;
+  --border: #E4E7EF;
+  --border-2: #D1D5E0;
+  --text: #111827;
+  --text-2: #4B5563;
+  --text-3: #9CA3AF;
+  --navy: #0F1E3D;
+  --blue: #1A4FD6;
+  --blue-2: #2563EB;
+  --blue-soft: #EEF3FF;
+  --green: #059669;
+  --green-soft: #ECFDF5;
+  --amber: #D97706;
+  --amber-soft: #FFFBEB;
+  --red: #DC2626;
+  --red-soft: #FEF2F2;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 2px 8px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
+  --navbar-bg: #0F1E3D;
+  --navbar-text: rgba(255,255,255,0.9);
+  --overlay: rgba(0,0,0,0.45);
+}
+
+[data-theme="dark"] {
+  --bg: #0D1117;
+  --bg-2: #161B22;
+  --bg-3: #21262D;
+  --border: #30363D;
+  --border-2: #444C56;
+  --text: #E6EDF3;
+  --text-2: #C9D1D9;
+  --text-3: #8B949E;
+  --navy: #010409;
+  --blue: #58A6FF;
+  --blue-2: #79B8FF;
+  --blue-soft: #1C2D42;
+  --green: #3FB950;
+  --green-soft: #1A2D20;
+  --amber: #E3B341;
+  --amber-soft: #2D2208;
+  --red: #F85149;
+  --red-soft: #2D1117;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.6);
+  --navbar-bg: #010409;
+  --navbar-text: rgba(255,255,255,0.85);
+  --overlay: rgba(0,0,0,0.7);
+}
+
+/* ═══════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  transition: background var(--transition), color var(--transition);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════
+   LOGIN PAGE
+═══════════════════════════════════════ */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--navy);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(26,79,214,0.25) 0%, transparent 70%),
+              radial-gradient(ellipse 60% 40% at 100% 100%, rgba(5,150,105,0.1) 0%, transparent 60%);
+}
+
+.login-page::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.login-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 44px 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.05);
+  position: relative;
+  z-index: 1;
+  animation: slideUp 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.login-logo {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, var(--blue) 0%, #0EA5E9 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 28px;
+  box-shadow: 0 8px 24px rgba(26,79,214,0.3);
+}
+
+.login-brand h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.login-brand p {
+  font-size: 13px;
+  color: var(--text-3);
+  margin-top: 5px;
+}
+
+/* ═══════════════════════════════════════
+   FORM ELEMENTS
+═══════════════════════════════════════ */
+.form-group { margin-bottom: 16px; }
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 6px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,79,214,0.12);
+}
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea {
+  background: var(--bg-3);
+}
+
+/* ═══════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════ */
+.btn {
+  padding: 9px 18px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  letter-spacing: 0.1px;
+}
+
+.btn-primary {
+  background: var(--blue);
+  color: white;
+  box-shadow: 0 2px 8px rgba(26,79,214,0.25);
+}
+.btn-primary:hover { background: var(--blue-2); box-shadow: 0 4px 12px rgba(26,79,214,0.35); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.btn-full { width: 100%; justify-content: center; padding: 13px; font-size: 14px; }
+
+.btn-success { background: var(--green); color: white; }
+.btn-success:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-warning { background: var(--amber); color: white; }
+.btn-warning:hover { filter: brightness(1.05); }
+.btn-danger { background: var(--red); color: white; }
+.btn-danger:hover { filter: brightness(1.1); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-2);
+  border: 1.5px solid var(--border);
+}
+.btn-ghost:hover { background: var(--bg-3); border-color: var(--border-2); color: var(--text); }
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--blue);
+  color: var(--blue);
+}
+.btn-outline:hover { background: var(--blue-soft); }
+
+.btn-sm { padding: 5px 12px; font-size: 12px; border-radius: var(--radius-sm); }
+.btn-icon { padding: 7px; border-radius: var(--radius-sm); }
+
+/* ═══════════════════════════════════════
+   ALERTS
+═══════════════════════════════════════ */
+.alert {
+  padding: 11px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border: 1px solid transparent;
+}
+.alert-error { background: var(--red-soft); color: var(--red); border-color: rgba(220,38,38,0.15); }
+.alert-success { background: var(--green-soft); color: var(--green); border-color: rgba(5,150,105,0.15); }
+.alert-info { background: var(--blue-soft); color: var(--blue); border-color: rgba(26,79,214,0.15); }
+.alert-warning { background: var(--amber-soft); color: var(--amber); border-color: rgba(217,119,6,0.15); }
+
+/* ═══════════════════════════════════════
+   THEME TOGGLE
+═══════════════════════════════════════ */
+.theme-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.theme-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.theme-track {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.15);
+  border-radius: 12px;
+  transition: background var(--transition);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.theme-toggle input:checked + .theme-track { background: rgba(88,166,255,0.3); border-color: rgba(88,166,255,0.4); }
+.theme-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  transition: transform var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.theme-toggle input:checked ~ .theme-thumb { transform: translateX(20px); }
+.theme-label { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 2px; text-align: center; }
+
+/* ═══════════════════════════════════════
+   NAVBAR
+═══════════════════════════════════════ */
+.app { display: none; }
+
+.navbar {
+  background: var(--navbar-bg);
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 300;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06);
+  gap: 16px;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.nav-logo {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--blue) 0%, #0EA5E9 100%);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(26,79,214,0.4);
+  flex-shrink: 0;
+}
+
+.nav-brand-text { display: flex; flex-direction: column; }
+.nav-brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.3px;
+  line-height: 1;
+}
+.nav-brand-sub {
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.nav-beta {
+  background: rgba(26,79,214,0.4);
+  color: rgba(255,255,255,0.8);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(26,79,214,0.5);
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.theme-wrap { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px;
+  padding: 5px 14px 5px 5px;
+  cursor: default;
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue) 0%, #0EA5E9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.user-info { display: flex; flex-direction: column; }
+.user-name { font-size: 13px; font-weight: 600; color: white; line-height: 1; }
+.user-role { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+.btn-logout {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.7);
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  font-weight: 500;
+  transition: all var(--transition);
+}
+.btn-logout:hover { background: rgba(255,255,255,0.12); color: white; }
+
+/* ═══════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════ */
+.layout {
+  display: flex;
+  min-height: calc(100vh - 60px);
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px;
+  background: var(--bg-2);
+  border-right: 1px solid var(--border);
+  padding: 16px 10px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 60px;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+  transition: transform var(--transition), background var(--transition);
+}
+
+.nav-section {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 0 10px;
+  margin: 18px 0 6px;
+}
+.nav-section:first-child { margin-top: 4px; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: all var(--transition);
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font);
+  position: relative;
+}
+.nav-item:hover { background: var(--bg-3); color: var(--text); }
+.nav-item.active {
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-weight: 600;
+}
+[data-theme="dark"] .nav-item.active { background: rgba(88,166,255,0.1); }
+.nav-icon { font-size: 16px; flex-shrink: 0; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+}
+
+/* MAIN */
+.main-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.page { display: none; }
+.page.active { display: block; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ═══════════════════════════════════════
+   PAGE HEADER
+═══════════════════════════════════════ */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-title { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.4px; }
+.page-subtitle { font-size: 13px; color: var(--text-3); margin-top: 3px; }
+
+/* ═══════════════════════════════════════
+   CARDS
+═══════════════════════════════════════ */
+.card {
+  background: var(--bg-2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: background var(--transition), border-color var(--transition);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.card-title { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.1px; }
+
+/* ═══════════════════════════════════════
+   STAT CARDS
+═══════════════════════════════════════ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  opacity: 0.06;
+  transform: translate(20px, -20px);
+}
+.stat-card.blue::after { background: var(--blue); }
+.stat-card.green::after { background: var(--green); }
+.stat-card.amber::after { background: var(--amber); }
+.stat-card.red::after { background: var(--red); }
+
+.stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.stat-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+}
+.stat-card.blue .stat-icon-wrap { background: var(--blue-soft); }
+.stat-card.green .stat-icon-wrap { background: var(--green-soft); }
+.stat-card.amber .stat-icon-wrap { background: var(--amber-soft); }
+.stat-card.red .stat-icon-wrap { background: var(--red-soft); }
+
+.stat-value { font-size: 30px; font-weight: 700; color: var(--text); line-height: 1; letter-spacing: -0.5px; }
+.stat-label { font-size: 12px; color: var(--text-3); margin-top: 5px; font-weight: 500; }
+
+/* ═══════════════════════════════════════
+   TABLE
+═══════════════════════════════════════ */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+thead th {
+  background: var(--bg-3);
+  color: var(--text-2);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+tbody tr:hover { background: var(--bg-3); }
+tbody tr:last-child { border-bottom: none; }
+tbody td { padding: 12px 14px; vertical-align: middle; }
+
+/* ═══════════════════════════════════════
+   BADGES
+═══════════════════════════════════════ */
+.badge {
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+.badge-blue { background: var(--blue-soft); color: var(--blue); }
+.badge-green { background: var(--green-soft); color: var(--green); }
+.badge-amber { background: var(--amber-soft); color: var(--amber); }
+.badge-red { background: var(--red-soft); color: var(--red); }
+.badge-gray { background: var(--bg-3); color: var(--text-2); border: 1px solid var(--border); }
+
+/* ═══════════════════════════════════════
+   PROGRESS
+═══════════════════════════════════════ */
+.progress-wrap { display: flex; align-items: center; gap: 8px; }
+.progress-bg {
+  flex: 1;
+  background: var(--bg-3);
+  border-radius: 4px;
+  height: 6px;
+  min-width: 60px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.progress-fill.high { background: linear-gradient(90deg, var(--green), #34D399); }
+.progress-fill.mid  { background: linear-gradient(90deg, var(--amber), #FCD34D); }
+.progress-fill.low  { background: linear-gradient(90deg, var(--red), #F87171); }
+.progress-val { font-size: 12px; font-weight: 700; color: var(--text); min-width: 32px; text-align: right; font-family: var(--mono); }
+
+/* ═══════════════════════════════════════
+   FILTER BAR
+═══════════════════════════════════════ */
+.filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.filter-bar input,
+.filter-bar select {
+  padding: 8px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color var(--transition);
+  background: var(--bg-2);
+  color: var(--text);
+}
+.filter-bar input:focus,
+.filter-bar select:focus { border-color: var(--blue); }
+.filter-bar input { flex: 1; min-width: 200px; }
+
+/* ═══════════════════════════════════════
+   MODAL
+═══════════════════════════════════════ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.show { display: flex; animation: fadeIn 0.15s ease; }
+
+.modal {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px;
+  position: relative;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+.modal-lg { max-width: 860px; }
+.modal-xl { max-width: 1060px; }
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  gap: 12px;
+}
+.modal-title { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+.modal-subtitle { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+
+.modal-close {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-2);
+  font-family: var(--font);
+  transition: all var(--transition);
+}
+.modal-close:hover { background: var(--border); color: var(--text); }
+
+/* ═══════════════════════════════════════
+   LOADING
+═══════════════════════════════════════ */
+.loading { text-align: center; padding: 48px 20px; color: var(--text-3); }
+.spinner {
+  width: 28px; height: 28px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 13px; }
+
+/* ═══════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════ */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-3); }
+.empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.4; }
+.empty-state p { font-size: 13px; }
+
+/* ═══════════════════════════════════════
+   UPLOAD ZONE
+═══════════════════════════════════════ */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 36px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--text-3);
+}
+.upload-zone:hover { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
+
+/* ═══════════════════════════════════════
+   CHART
+═══════════════════════════════════════ */
+.chart-wrap { position: relative; height: 280px; }
+.chart-wrap-lg { height: 340px; }
+
+/* ═══════════════════════════════════════
+   INFO GRID
+═══════════════════════════════════════ */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.info-item {
+  background: var(--bg-3);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+}
+.info-label { font-size: 10px; color: var(--text-3); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px; }
+.info-value { font-size: 14px; font-weight: 700; color: var(--text); }
+
+/* ═══════════════════════════════════════
+   DIVIDER
+═══════════════════════════════════════ */
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+/* ═══════════════════════════════════════
+   EXPORT / REPORT PAGE
+═══════════════════════════════════════ */
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.report-section {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.report-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.checkbox-group { display: flex; flex-direction: column; gap: 8px; }
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition);
+  font-size: 13px;
+  color: var(--text-2);
+}
+.checkbox-item:hover { background: var(--bg-3); }
+.checkbox-item input[type="checkbox"] {
+  width: 15px; height: 15px;
+  cursor: pointer;
+  accent-color: var(--blue);
+}
+.checkbox-item.checked { color: var(--text); font-weight: 500; }
+
+.export-preview {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  font-size: 12px;
+  color: var(--text-2);
+  font-family: var(--mono);
+  line-height: 1.8;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ═══════════════════════════════════════
+   BOTTOM NAV (MOBILE)
+═══════════════════════════════════════ */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--navbar-bg);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  z-index: 200;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+}
+.bottom-nav-inner {
+  display: flex;
+  justify-content: space-around;
+}
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 16px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: var(--font);
+  color: rgba(255,255,255,0.4);
+  font-size: 10px;
+  font-weight: 500;
+  transition: color var(--transition);
+  border-radius: var(--radius-sm);
+}
+.bottom-nav-item .nav-icon { font-size: 20px; }
+.bottom-nav-item.active { color: var(--blue); }
+[data-theme="dark"] .bottom-nav-item.active { color: #58A6FF; }
+
+/* ═══════════════════════════════════════
+   MOBILE RESPONSIVE
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  .sidebar { display: none; }
+  .bottom-nav { display: block; }
+  .main-content { padding: 12px 12px 80px; }
+  .navbar { padding: 0 12px; height: 52px; }
+  .nav-brand-sub { display: none; }
+  .user-info { display: none; }
+  .user-chip { padding: 5px 8px 5px 5px; }
+  .btn-logout span { display: none; }
+
+  /* ── Dashboard stats ── */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stat-card { padding: 14px 12px; }
+  .stat-value { font-size: 22px; }
+  .stat-label { font-size: 11px; }
+
+  /* ── Charts ── */
+  #dashChartRow { grid-template-columns: 1fr !important; gap: 10px; }
+  .report-grid { grid-template-columns: 1fr; gap: 10px; }
+  .card { padding: 14px 12px; }
+
+  /* ── Page title & filter ── */
+  .page-title { font-size: 16px; }
+  .filter-bar { flex-direction: column; gap: 8px; }
+  .filter-bar input,
+  .filter-bar select { min-width: 100%; width: 100%; font-size: 14px; }
+  .filter-bar .btn { width: 100%; justify-content: center; }
+
+  /* ── Tables → hidden on mobile, card view used instead ── */
+  .desktop-table { display: none !important; }
+  .mobile-cards { display: flex; flex-direction: column; gap: 10px; }
+  .mobile-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .mobile-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+  .mobile-card-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .mobile-card-meta { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+  .mobile-card-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; gap: 8px; }
+  .mobile-card-date { font-size: 11px; color: var(--text-2); }
+
+  /* ── Table-wrap: scroll horizontal untuk tabel yang terpaksa tampil ── */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 520px; font-size: 12px; }
+  .table-wrap th, .table-wrap td { padding: 8px 10px; }
+
+  /* ── Modals ── */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal {
+    padding: 20px 16px 24px;
+    border-radius: 20px 20px 0 0;
+    max-height: 92vh;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+  }
+  .modal-lg, .modal-xl { max-width: 100%; width: 100%; }
+  .modal-header { margin-bottom: 14px; }
+  .modal-title { font-size: 15px; }
+
+  /* ── Forms dalam modal ── */
+  .form-group label { font-size: 12px; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea { font-size: 15px; } /* 15px+ prevents iOS zoom */
+  input[type="number"],
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="date"],
+  select,
+  textarea { font-size: 15px !important; } /* prevent iOS zoom on focus */
+
+  /* ── Buttons ── */
+  .btn { font-size: 13px; padding: 8px 14px; }
+  .btn-sm { font-size: 11px; padding: 5px 10px; }
+
+  /* ── Progress page ── */
+  #progressPageContent .card { padding: 12px; }
+
+  /* ── Export page ── */
+  .export-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Detail proyek: S-curve canvas ── */
+  canvas { max-width: 100%; }
+  [id^="curvaSCanvas"] { height: 220px !important; }
+
+  /* ── Badges & chips ── */
+  .badge { font-size: 10px; padding: 2px 7px; white-space: nowrap; }
+
+  /* ── RAB upload grid ── */
+  #rab-panel-upload [style*="grid-template-columns:1fr 1fr"] { display: flex !important; flex-direction: column !important; }
+
+  /* ── Admin user table ── */
+  #userListWrap .table-wrap table { min-width: 400px; }
+
+  /* ── Sync log ── */
+  #syncLogWrap { max-height: 200px; }
+
+  /* ── Alert boxes ── */
+  .alert { font-size: 12px; padding: 10px 12px; }
+}
+
+@media (min-width: 769px) {
+  .mobile-cards { display: none; }
+}
+
+
+/* ── RAB Converter Integration ── */
+.rab-tab-bar{display:flex;border-bottom:1.5px solid var(--border);margin-bottom:16px;gap:0}
+.rab-tab{padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;color:var(--text-3);transition:all .15s;display:flex;align-items:center;gap:6px}
+.rab-tab:hover{color:var(--text);background:var(--bg-3);border-radius:var(--radius) var(--radius) 0 0}
+.rab-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.rab-tab .badge-new{background:var(--red);color:#fff;border-radius:20px;padding:1px 6px;font-size:10px;font-weight:700;animation:pulse-badge 2s infinite}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.5}}
+.converter-list{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto}
+.converter-item{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px}
+.converter-item:hover{border-color:var(--blue);background:var(--blue-soft)}
+.converter-item.selected{border-color:var(--blue);background:var(--blue-soft);box-shadow:0 0 0 2px rgba(26,79,214,.15)}
+.converter-item .ci-name{font-size:13px;font-weight:600;color:var(--text)}
+.converter-item .ci-meta{font-size:11px;color:var(--text-3);margin-top:2px}
+.converter-item .ci-total{font-size:13px;font-weight:700;color:var(--green);white-space:nowrap}
+.rab-status-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.rab-status-pill.submitted{background:var(--blue-soft);color:var(--blue)}
+.rab-status-pill.approved{background:var(--green-soft);color:var(--green)}
+.rab-status-pill.draft{background:var(--bg-3);color:var(--text-3)}
+.api-key-mini{display:flex;align-items:center;gap:8px;background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius);padding:9px 12px;margin-bottom:14px}
+.api-key-mini input{flex:1;font-size:12px;padding:5px 9px;border-radius:6px;border:1px solid var(--border);background:var(--bg-2);color:var(--text);font-family:var(--mono)}
+.api-key-mini input:focus{outline:none;border-color:var(--blue)}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="loginPage" class="login-page">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-logo">🏗️</div>
+      <h1>PROMON</h1>
+      <p>Project Monitoring System — PT. Sandana</p>
+    </div>
+    <div id="loginAlert"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="email@sandana.co.id" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary btn-full" id="loginBtn" onclick="doLogin()">Masuk ke PROMON</button>
+    <div id="demoNotice" style="margin-top:14px;font-size:12px;color:var(--text-3);text-align:center;display:none">
+      Mode demo — konfigurasi Supabase untuk data nyata
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app" class="app">
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="nav-logo">🏗️</div>
+      <div class="nav-brand-text">
+        <span class="nav-brand-name">PROMON</span>
+        <span class="nav-brand-sub">PT. SANDANA</span>
+      </div>
+      <span class="nav-beta">BETA</span>
+    </div>
+
+    <div class="navbar-right">
+      <div class="theme-wrap">
+        <label class="theme-toggle" title="Ganti tema">
+          <input type="checkbox" id="themeToggle" onchange="toggleTheme(this)">
+          <div class="theme-track"></div>
+          <div class="theme-thumb" id="themeThumb">☀️</div>
+        </label>
+        <div class="theme-label" id="themeLabel">Terang</div>
+      </div>
+
+      <div class="user-chip">
+        <div class="user-avatar" id="navAvatar">A</div>
+        <div class="user-info">
+          <span class="user-name" id="navName">Admin</span>
+          <span class="user-role" id="navRole">Administrator</span>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()"><span>Keluar</span></button>
+    </div>
+  </nav>
+
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="nav-section">Menu Utama</div>
+      <button class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="nav-icon">📊</span> Dashboard
+      </button>
+      <button class="nav-item" onclick="showPage('projects',this)">
+        <span class="nav-icon">📋</span> Daftar Proyek
+      </button>
+      <button class="nav-item" onclick="showPage('progress',this)">
+        <span class="nav-icon">✏️</span> Input Progress
+      </button>
+      <button class="nav-item" onclick="showPage('export',this)">
+        <span class="nav-icon">📥</span> Export Report
+      </button>
+      <div class="nav-section admin-only" style="display:none">Admin</div>
+      <button class="nav-item admin-only" style="display:none" onclick="showPage('admin',this)">
+        <span class="nav-icon">👥</span> Manajemen User
+      </button>
+      <button class="nav-item admin-only" style="display:none" onclick="showPage('sync',this)">
+        <span class="nav-icon">🔄</span> Sinkronisasi
+      </button>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content">
+
+      <!-- ── DASHBOARD ── -->
+      <div id="page-dashboard" class="page active">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Dashboard</div>
+            <div class="page-subtitle" id="dashSubtitle">Memuat data...</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="refreshData()">🔄 Refresh</button>
+        </div>
+        <div class="stats-grid" id="statsGrid">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" id="dashChartRow">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Progress per Area</span></div>
+            <div class="chart-wrap"><canvas id="chartArea"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Distribusi Status</span></div>
+            <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚠️ Proyek Terlambat</span></div>
+          <div id="delayedProjects"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- ── DAFTAR PROYEK ── -->
+      <div id="page-projects" class="page">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Daftar Proyek</div>
+            <div class="page-subtitle" id="projSubtitle">Semua proyek aktif</div>
+          </div>
+          <span id="projCount" class="badge badge-blue"></span>
+        </div>
+        <div class="card" style="padding-bottom:0">
+          <div class="filter-bar">
+            <input type="text" id="searchProj" placeholder="🔍 Cari nama proyek..." oninput="filterProjects()">
+            <select id="filterArea" onchange="filterProjects()"><option value="">Semua Area</option></select>
+            <select id="filterProg" onchange="filterProjects()">
+              <option value="">Semua Progress</option>
+              <option value="zero">0% — Belum mulai</option>
+              <option value="low">Di bawah 30%</option>
+              <option value="mid">30% – 70%</option>
+              <option value="high">Di atas 70%</option>
+            </select>
+          </div>
+          <!-- Desktop table -->
+          <div class="table-wrap desktop-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th><th>Nama Proyek</th><th>Area</th><th>Jenis</th>
+                  <th>Progress</th><th>Start</th><th>End</th><th>Status</th><th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="projTableBody">
+                <tr><td colspan="9"><div class="loading"><div class="spinner" style="margin:16px auto"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Mobile cards -->
+          <div id="projMobileCards" class="mobile-cards" style="padding-bottom:12px"></div>
+        </div>
+      </div>
+
+      <!-- ── INPUT PROGRESS ── -->
+      <div id="page-progress" class="page">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Input Progress Mingguan</div>
+            <div class="page-subtitle">Pilih proyek untuk input progress minggu ini</div>
+          </div>
+        </div>
+        <div id="progressPageContent"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+
+      <!-- ── EXPORT REPORT ── -->
+      <div id="page-export" class="page">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Export Report</div>
+            <div class="page-subtitle">Buat laporan dalam format Excel atau CSV</div>
+          </div>
+        </div>
+
+        <div id="exportAlert"></div>
+
+        <div class="report-grid">
+          <!-- Kiri: Filter -->
+          <div>
+            <div class="report-section">
+              <div class="report-section-title">🎯 Filter Data</div>
+              <div class="form-group">
+                <label>Periode</label>
+                <select id="expPeriode">
+                  <option value="all">Semua data</option>
+                  <option value="this_year">Tahun ini</option>
+                  <option value="last_year">Tahun lalu</option>
+                  <option value="custom">Custom range</option>
+                </select>
+              </div>
+              <div id="customDateRange" style="display:none">
+                <div class="form-group">
+                  <label>Dari tanggal</label>
+                  <input type="date" id="expDateFrom">
+                </div>
+                <div class="form-group">
+                  <label>Sampai tanggal</label>
+                  <input type="date" id="expDateTo">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Wilayah</label>
+                <select id="expWilayah" onchange="updateExpArea()">
+                  <option value="">Semua Wilayah</option>
+                  <option>BARAT</option>
+                  <option>TIMUR</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Area</label>
+                <select id="expArea"><option value="">Semua Area</option></select>
+              </div>
+              <div class="form-group">
+                <label>Status Proyek</label>
+                <select id="expStatus">
+                  <option value="">Semua Status</option>
+                  <option value="PROGRESS">Sedang Berjalan</option>
+                  <option value="FINISH">Selesai</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kanan: Kolom & Aksi -->
+          <div>
+            <div class="report-section">
+              <div class="report-section-title">📋 Pilih Kolom</div>
+              <div class="checkbox-group" id="colSelector">
+                <label class="checkbox-item checked"><input type="checkbox" value="no_spi" checked> No. SPI</label>
+                <label class="checkbox-item checked"><input type="checkbox" value="nama_proyek" checked> Nama Proyek</label>
+                <label class="checkbox-item checked"><input type="checkbox" value="wilayah" checked> Wilayah</label>
+                <label class="checkbox-item checked"><input type="checkbox" value="area" checked> Area</label>
+                <label class="checkbox-item checked"><input type="checkbox" value="jenis" checked> Jenis</label>
+                <label class="checkbox-item checked"><input type="checkbox" value="pct_progress" checked> % Progress</label>
+                <label class="checkbox-item checked"><input type="checkbox" value="status" checked> Status</label>
+                <label class="checkbox-item"><input type="checkbox" value="start_date"> Tgl Mulai</label>
+                <label class="checkbox-item"><input type="checkbox" value="end_date"> Tgl Selesai</label>
+                <label class="checkbox-item"><input type="checkbox" value="delay"> Delay (hari)</label>
+                <label class="checkbox-item"><input type="checkbox" value="pic_teknik"> PIC Teknik</label>
+                <label class="checkbox-item"><input type="checkbox" value="rekan_kerja"> Rekan Kerja</label>
+                <label class="checkbox-item"><input type="checkbox" value="pic_sales"> PIC Sales</label>
+              </div>
+            </div>
+
+            <div class="report-section" style="margin-top:14px">
+              <div class="report-section-title">📤 Export</div>
+              <div id="exportPreview" class="export-preview" style="margin-bottom:14px">
+                Klik "Preview" untuk melihat data yang akan diexport...
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-ghost btn-sm" onclick="previewExport()">👁 Preview</button>
+                <button class="btn btn-success" onclick="doExport('xlsx')">📥 Export Excel</button>
+                <button class="btn btn-ghost" onclick="doExport('csv')">📄 Export CSV</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ADMIN ── -->
+      <div id="page-admin" class="page">
+        <div class="page-header">
+          <div><div class="page-title">Manajemen User</div></div>
+          <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">+ Tambah Koordinator</button>
+        </div>
+        <div class="card">
+          <div id="userTableWrap"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+      <!-- ── SYNC ── -->
+      <div id="page-sync" class="page">
+        <div class="page-header">
+          <div><div class="page-title">Sinkronisasi</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Log Sinkronisasi</span></div>
+          <div id="syncLogContent"><div class="loading"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- BOTTOM NAV (mobile) -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button class="bottom-nav-item active" onclick="showPage('dashboard',this,true)">
+        <span class="nav-icon">📊</span>Dashboard
+      </button>
+      <button class="bottom-nav-item" onclick="showPage('projects',this,true)">
+        <span class="nav-icon">📋</span>Proyek
+      </button>
+      <button class="bottom-nav-item" onclick="showPage('progress',this,true)">
+        <span class="nav-icon">✏️</span>Progress
+      </button>
+      <button class="bottom-nav-item" onclick="showPage('export',this,true)">
+        <span class="nav-icon">📥</span>Export
+      </button>
+    </div>
+  </nav>
+</div>
+
+<!-- MODALS -->
+<div id="projectModal" class="modal-overlay">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="projModalTitle">Detail Proyek</div>
+        <div class="modal-subtitle" id="projModalSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('projectModal')">✕</button>
+    </div>
+    <div id="projModalContent"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<div id="progressModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Input Progress Mingguan</div>
+        <div class="modal-subtitle" id="progressModalSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('progressModal')">✕</button>
+    </div>
+    <div id="progressModalContent"></div>
+  </div>
+</div>
+
+<div id="rabModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Upload RAB Excel</div>
+        <div class="modal-subtitle" id="rabModalSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('rabModal')">✕</button>
+    </div>
+    <div id="rabModalContent"></div>
+  </div>
+</div>
+
+<div id="addUserModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div><div class="modal-title">Tambah Koordinator</div></div>
+      <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
+    </div>
+    <div id="addUserAlert"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="newEmail" placeholder="email@sandana.co.id"></div>
+    <div class="form-group"><label>Nama Lengkap</label><input type="text" id="newName"></div>
+    <div class="form-group">
+      <label>Wilayah</label>
+      <select id="newWilayah" onchange="updateAreaSelect()">
+        <option value="">Pilih Wilayah</option>
+        <option>BARAT</option><option>TIMUR</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Area</label>
+      <select id="newArea"><option value="">Pilih Area</option></select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" onclick="saveNewUser()" style="flex:1">Simpan</button>
+      <button class="btn btn-ghost" onclick="closeModal('addUserModal')">Batal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG — GANTI DENGAN DATA KAMU
+// ══════════════════════════════════════════
+const SUPABASE_URL = 'https://rodobhneasdozxmoazdf.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvZG9iaG5lYXNkb3p4bW9hemRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTM2MDAsImV4cCI6MjA5NTc2OTYwMH0.IXbg1tYedM32yWvXGS9_-rNtoMdntjzJBr_wMLNtlh0';
+
+const AREA_MAP = {
+  BARAT: ['BARTATEN 1','BARTATEN 2','BARTATEN 3','BARTATEN 4','SUMATRA 1','SUMATRA 2','SUMATRA 3'],
+  TIMUR: ['JATENG 1','JATENG 2','JATIM 1','JATIM 2','KALIMANTAN','SULAWESI','BALI NUSRA']
+};
+
+// ══════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════
+function toggleTheme(cb) {
+  const dark = cb.checked;
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.getElementById('themeThumb').textContent = dark ? '🌙' : '☀️';
+  document.getElementById('themeLabel').textContent = dark ? 'Gelap' : 'Terang';
+  localStorage.setItem('promon-theme', dark ? 'dark' : 'light');
+  if (chartArea) renderAreaChart();
+  if (chartStatus) renderStatusChart();
+}
+
+// Load saved theme
+const savedTheme = localStorage.getItem('promon-theme') || 'light';
+if (savedTheme === 'dark') {
+  document.documentElement.setAttribute('data-theme', 'dark');
+  document.addEventListener('DOMContentLoaded', () => {
+    const cb = document.getElementById('themeToggle');
+    if (cb) { cb.checked = true; document.getElementById('themeThumb').textContent = '🌙'; document.getElementById('themeLabel').textContent = 'Gelap'; }
+  });
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+let sb = null, currentUser = null, currentProfile = null;
+let allProjects = [], filteredProjects = [];
+let chartArea = null, chartStatus = null;
+
+// Register Chart.js plugins
+Chart.register(ChartDataLabels);
+
+const isConfigured = SUPABASE_URL !== 'https://XXXXXXXX.supabase.co';
+
+if (isConfigured) {
+  const { createClient } = supabase;
+  sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} else {
+  document.getElementById('demoNotice').style.display = 'block';
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  if (!isConfigured) { showDemoMode(); return; }
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await bootApp(session.user);
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN') await bootApp(session.user);
+    else if (event === 'SIGNED_OUT') showLogin();
+  });
+  document.getElementById('expPeriode').addEventListener('change', function() {
+    document.getElementById('customDateRange').style.display = this.value === 'custom' ? 'block' : 'none';
+  });
+  document.querySelectorAll('#colSelector .checkbox-item input').forEach(cb => {
+    cb.addEventListener('change', function() {
+      this.closest('.checkbox-item').classList.toggle('checked', this.checked);
+    });
+  });
+});
+
+async function bootApp(user) {
+  currentUser = user;
+  const { data: profile } = await sb.from('users').select('*').eq('email', user.email).single();
+  if (!profile) { alert('Akun belum terdaftar di sistem. Hubungi admin.'); await sb.auth.signOut(); return; }
+  currentProfile = profile;
+  const initials = profile.nama.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('navAvatar').textContent = initials;
+  document.getElementById('navName').textContent = profile.nama;
+  document.getElementById('navRole').textContent = profile.role === 'admin' ? '👑 Administrator' : `📍 ${profile.area||profile.wilayah}`;
+  if (profile.role === 'admin') document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+  showApp();
+  await loadAllData();
+}
+
+function showLogin() { document.getElementById('loginPage').style.display='flex'; document.getElementById('app').style.display='none'; }
+function showApp()   { document.getElementById('loginPage').style.display='none'; document.getElementById('app').style.display='block'; }
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+async function doLogin() {
+  if (!isConfigured) { showDemoMode(); return; }
+  const email = document.getElementById('loginEmail').value;
+  const pw    = document.getElementById('loginPassword').value;
+  const btn   = document.getElementById('loginBtn');
+  if (!email || !pw) { setAlert('loginAlert','Isi email dan password','error'); return; }
+  btn.textContent = 'Masuk...'; btn.disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) { setAlert('loginAlert','Email atau password salah','error'); btn.textContent='Masuk ke PROMON'; btn.disabled=false; }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('loginPassword')?.addEventListener('keypress', e => { if(e.key==='Enter') doLogin(); });
+});
+async function doLogout() { if(sb) await sb.auth.signOut(); else showLogin(); }
+
+// ══════════════════════════════════════════
+// DEMO
+// ══════════════════════════════════════════
+function showDemoMode() {
+  currentProfile = { nama:'Demo Admin', role:'admin', wilayah:null, area:null, id:'demo' };
+  allProjects = genDemo(); filteredProjects = [...allProjects];
+  document.getElementById('navAvatar').textContent='DA';
+  document.getElementById('navName').textContent='Demo Admin';
+  document.getElementById('navRole').textContent='👑 Mode Demo';
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display='');
+  showApp(); renderDashboard(); renderProjectTable(); renderProgressPage();
+}
+
+function genDemo() {
+  const areas = [...AREA_MAP.BARAT,...AREA_MAP.TIMUR];
+  const names = ['RS Stella Maris','RS Permata Sumarecon','RS Eka Hospital','RSIA Budi Lestari','RS Sari Mulia','RS Ciputra','Klinik Bocah Indonesia','PT Bethesda Hospital'];
+  const projects = []; let id=1;
+  for (const area of areas) {
+    const wilayah = AREA_MAP.BARAT.includes(area)?'BARAT':'TIMUR';
+    for (let j=0; j<Math.floor(Math.random()*5)+2; j++) {
+      const pct = Math.floor(Math.random()*95);
+      const start = new Date(2024,Math.floor(Math.random()*6),Math.floor(Math.random()*28)+1);
+      const end   = new Date(start.getTime()+(Math.floor(Math.random()*6)+3)*30*86400000);
+      const delayDays = end<new Date()&&pct<100 ? Math.floor((new Date()-end)/86400000) : 0;
+      const daysLeft = end>=new Date() ? Math.floor((end-new Date())/86400000) : 0;
+      projects.push({ id:id++, nama_proyek:names[Math.floor(Math.random()*names.length)]+' - '+area, no_spi:`SPI-${String(id).padStart(4,'0')}`, jenis:'IGM', area, wilayah, pct_progress:pct, status:'PROGRESS', start_date:start.toISOString().split('T')[0], end_date:end.toISOString().split('T')[0], delay:delayDays, days_left:daysLeft, pic_teknik:'Koordinator '+area });
+    }
+  }
+  return projects;
+}
+
+// ══════════════════════════════════════════
+// LOAD DATA
+// ══════════════════════════════════════════
+async function loadAllData() {
+  let q = sb.from('projects').select('*').eq('status','PROGRESS').lt('pct_progress',100).order('nama_proyek');
+  if (currentProfile.role==='koordinator') q = q.eq('area',currentProfile.area);
+  const { data } = await q;
+  const today = new Date(); today.setHours(0,0,0,0);
+  allProjects = (data||[]).map(p=>{
+    const end = p.end_date ? new Date(p.end_date) : null;
+    const pct = p.pct_progress||0;
+    // Terlambat = end_date sudah lewat DAN progress belum 100%
+    const delayDays = (end && end < today && pct < 100) ? Math.floor((today - end)/86400000) : 0;
+    // Sisa hari = end_date belum lewat
+    const daysLeft = (end && end >= today) ? Math.floor((end - today)/86400000) : 0;
+    return {...p, delay: delayDays, days_left: daysLeft};
+  });
+  filteredProjects=[...allProjects];
+  renderDashboard(); renderProjectTable(); renderProgressPage(); populateAreaFilter();
+  document.getElementById('dashSubtitle').textContent = currentProfile.role==='admin' ? `${allProjects.length} proyek aktif — semua wilayah` : `${allProjects.length} proyek aktif — ${currentProfile.area}`;
+}
+
+async function refreshData() {
+  if (isConfigured) await loadAllData();
+  else { allProjects=genDemo(); filteredProjects=[...allProjects]; renderDashboard(); renderProjectTable(); renderProgressPage(); }
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard() {
+  const total   = allProjects.length;
+  const delayed = allProjects.filter(p=>(p.delay||0)>0).length;
+  const ontrack = total - delayed;
+  const avg     = total>0 ? Math.round(allProjects.reduce((s,p)=>s+(p.pct_progress||0),0)/total) : 0;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card blue">
+      <div class="stat-top"><div class="stat-icon-wrap">📋</div></div>
+      <div class="stat-value">${total}</div><div class="stat-label">Proyek Aktif</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-top"><div class="stat-icon-wrap">✅</div></div>
+      <div class="stat-value">${ontrack}</div><div class="stat-label">On Track</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-top"><div class="stat-icon-wrap">⏰</div></div>
+      <div class="stat-value">${delayed}</div><div class="stat-label">Terlambat</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-top"><div class="stat-icon-wrap">📈</div></div>
+      <div class="stat-value">${avg}%</div><div class="stat-label">Rata-rata Progress</div>
+    </div>`;
+
+  renderAreaChart(); renderStatusChart(); renderDelayedTable();
+}
+
+function chartColors() {
+  return document.documentElement.getAttribute('data-theme')==='dark'
+    ? { grid:'#21262D', text:'#8B949E', bg:'#161B22' }
+    : { grid:'#EEF0F6', text:'#6B7280', bg:'#FFFFFF' };
+}
+
+function renderAreaChart() {
+  const aD={};
+  allProjects.forEach(p=>{ const k=p.area||'?'; if(!aD[k]) aD[k]={s:0,c:0}; aD[k].s+=(p.pct_progress||0); aD[k].c++; });
+  const labels=Object.keys(aD).sort();
+  const data=labels.map(k=>Math.round(aD[k].s/aD[k].c));
+  const ctx=document.getElementById('chartArea').getContext('2d');
+  if(chartArea) chartArea.destroy();
+  const c=chartColors();
+  chartArea=new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets:[{
+      label:'Avg %',data,
+      backgroundColor:data.map(v=>v>70?'rgba(5,150,105,0.85)':v>30?'rgba(217,119,6,0.85)':'rgba(220,38,38,0.85)'),
+      borderRadius:6,borderSkipped:false
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{ padding:{ top:24 } },
+      plugins:{
+        legend:{display:false},
+        datalabels:{
+          anchor:'end', align:'top',
+          formatter: v => v+'%',
+          font:{ size:11, weight:'700', family:'DM Sans, sans-serif' },
+          color: (ctx) => {
+            const v = ctx.dataset.data[ctx.dataIndex];
+            return v>70 ? '#059669' : v>30 ? '#D97706' : '#DC2626';
+          },
+          padding: { bottom: 2 }
+        }
+      },
+      scales:{
+        y:{min:0,max:110,ticks:{callback:v=>v>100?'':v+'%',font:{size:11},color:c.text},grid:{color:c.grid}},
+        x:{ticks:{font:{size:10},color:c.text,maxRotation:35},grid:{display:false}}
+      }
+    }
+  });
+}
+
+function renderStatusChart() {
+  const b={'0–25%':0,'26–50%':0,'51–75%':0,'76–99%':0};
+  allProjects.forEach(p=>{ const v=p.pct_progress||0; if(v<=25) b['0–25%']++; else if(v<=50) b['26–50%']++; else if(v<=75) b['51–75%']++; else b['76–99%']++; });
+  const ctx=document.getElementById('chartStatus').getContext('2d');
+  if(chartStatus) chartStatus.destroy();
+  const c=chartColors();
+  chartStatus=new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:Object.keys(b),
+      datasets:[{
+        data:Object.values(b),
+        backgroundColor:['#DC2626','#D97706','#1A4FD6','#059669'],
+        borderWidth:3,borderColor:c.bg,
+        hoverOffset:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{font:{size:12},padding:14,color:c.text,boxWidth:12,usePointStyle:true,pointStyleWidth:10}
+        },
+        datalabels:{
+          formatter:(value,ctx)=>{
+            const total=ctx.dataset.data.reduce((a,b)=>a+b,0);
+            if(total===0) return '';
+            const pct=Math.round(value/total*100);
+            return pct>8 ? pct+'%' : '';
+          },
+          color:'white',
+          font:{size:12,weight:'700',family:'DM Sans, sans-serif'},
+          textShadowColor:'rgba(0,0,0,0.3)',
+          textShadowBlur:4
+        }
+      },
+      cutout:'58%'
+    }
+  });
+}
+
+function renderDelayedTable() {
+  const delayed=allProjects.filter(p=>(p.delay||0)>0).sort((a,b)=>(b.delay||0)-(a.delay||0)).slice(0,8);
+  if(!delayed.length) { document.getElementById('delayedProjects').innerHTML='<div class="empty-state"><div class="empty-icon">🎉</div><p>Semua proyek berjalan tepat waktu!</p></div>'; return; }
+  document.getElementById('delayedProjects').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Nama Proyek</th><th>Area</th><th>Progress</th><th>Keterlambatan</th><th>PIC</th></tr></thead><tbody>${delayed.map(p=>`<tr><td style="font-weight:600">${p.nama_proyek}</td><td><span class="badge badge-gray">${p.area||'-'}</span></td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill low" style="width:${p.pct_progress||0}%"></div></div><span class="progress-val">${p.pct_progress||0}%</span></div></td><td><span class="badge badge-red">${p.delay}h</span></td><td style="font-size:12px;color:var(--text-3)">${p.pic_teknik||'-'}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+// ══════════════════════════════════════════
+// PROJECT TABLE
+// ══════════════════════════════════════════
+function renderProjectTable() {
+  document.getElementById('projCount').textContent = filteredProjects.length+' proyek';
+  document.getElementById('projSubtitle').textContent = currentProfile?.role==='admin' ? `${filteredProjects.length} proyek dari semua wilayah` : `Proyek wilayah ${currentProfile?.area||''}`;
+
+  if(!filteredProjects.length) {
+    document.getElementById('projTableBody').innerHTML='<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📂</div><p>Tidak ada proyek ditemukan</p></div></td></tr>';
+    document.getElementById('projMobileCards').innerHTML='<div class="empty-state"><div class="empty-icon">📂</div><p>Tidak ada proyek ditemukan</p></div>';
+    return;
+  }
+
+  // Desktop
+  document.getElementById('projTableBody').innerHTML = filteredProjects.map((p,i)=>{
+    const pct=p.pct_progress||0, cls=pct>=70?'high':pct>=30?'mid':'low';
+    const delayCls=(p.delay||0)>0?'badge-red':'badge-green';
+    const delayTxt=(p.delay||0)>0?`Terlambat ${p.delay}h`:(p.days_left>0?`On Track ${p.days_left}h`:'On Track');
+    return `<tr>
+      <td><div style="font-weight:600;font-size:13px">${p.nama_proyek}</div><div style="font-size:11px;color:var(--text-3);margin-top:2px">${p.no_spi||'—'}</div></td>
+      <td><div style="font-size:12px;font-weight:600">${p.area||'—'}</div><div style="font-size:11px;color:var(--text-3)">${p.wilayah||''}</div></td>
+      <td><span style="font-size:12px">${p.jenis||'—'}</span></td>
+      <td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div><span class="progress-val">${pct}%</span></div></td>
+      <td style="font-size:12px">${fmtDate(p.start_date)}</td>
+      <td style="font-size:12px">${fmtDate(p.end_date)}</td>
+      <td><span class="badge ${delayCls}">${delayTxt}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick="openProjectDetail(${p.id})">Detail</button></td>
+    </tr>`;
+  }).join('');
+
+  // Mobile cards
+  document.getElementById('projMobileCards').innerHTML = filteredProjects.map((p,i)=>{
+    const pct=p.pct_progress||0, cls=pct>=70?'high':pct>=30?'mid':'low';
+    const delayCls=(p.delay||0)>0?'badge-red':'badge-green';
+    const delayTxt=(p.delay||0)>0?`⏰ ${p.delay}h terlambat`:(p.days_left>0?`✅ Sisa ${p.days_left}h`:'✅ On Track');
+    return `<div class="mobile-card">
+      <div class="mobile-card-header">
+        <div><div class="mobile-card-name">${p.nama_proyek}</div><div class="mobile-card-meta">${p.no_spi||''} · ${p.area||''}</div></div>
+        <span class="badge ${delayCls}" style="flex-shrink:0">${delayTxt}</span>
+      </div>
+      <div class="progress-wrap"><div class="progress-bg"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div><span class="progress-val">${pct}%</span></div>
+      <div class="mobile-card-row">
+        <span class="mobile-card-date">${fmtDate(p.start_date)} – ${fmtDate(p.end_date)}</span>
+        <button class="btn btn-outline btn-sm" onclick="openProjectDetail(${p.id})">Detail</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterProjects() {
+  const s=document.getElementById('searchProj').value.toLowerCase();
+  const a=document.getElementById('filterArea').value;
+  const pr=document.getElementById('filterProg').value;
+  filteredProjects=allProjects.filter(p=>{
+    if(s&&!p.nama_proyek.toLowerCase().includes(s)) return false;
+    if(a&&p.area!==a) return false;
+    const pct=p.pct_progress||0;
+    if(pr==='zero'&&pct!==0) return false;
+    if(pr==='low'&&pct>=30) return false;
+    if(pr==='mid'&&(pct<30||pct>70)) return false;
+    if(pr==='high'&&pct<=70) return false;
+    return true;
+  });
+  renderProjectTable();
+}
+
+function populateAreaFilter() {
+  const areas=[...new Set(allProjects.map(p=>p.area).filter(Boolean))].sort();
+  document.getElementById('filterArea').innerHTML='<option value="">Semua Area</option>'+areas.map(a=>`<option>${a}</option>`).join('');
+}
+
+// ══════════════════════════════════════════
+// PROJECT DETAIL + KURVA S
+// ══════════════════════════════════════════
+async function openProjectDetail(projectId) {
+  const project=allProjects.find(p=>p.id===projectId);
+  if(!project) return;
+  document.getElementById('projModalTitle').textContent=project.nama_proyek;
+  document.getElementById('projModalSub').textContent=`${project.no_spi||''} · ${project.area||''} · ${project.jenis||''}`;
+  document.getElementById('projModalContent').innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('projectModal').classList.add('show');
+
+  let schedule=null, weeklyData=[], rabItems=[];
+  if(isConfigured) {
+    const [s,w,r]=await Promise.all([
+      sb.from('project_schedules').select('*').eq('project_id',projectId).single(),
+      sb.from('weekly_progress').select('*').eq('project_id',projectId).order('minggu_ke'),
+      sb.from('rab_items').select('*').eq('project_id',projectId).order('id')
+    ]);
+    schedule=s.data; weeklyData=w.data||[]; rabItems=r.data||[];
+  }
+
+  const startD=schedule?.start_date||project.start_date;
+  const endD=schedule?.end_date||project.end_date;
+  const pct=project.pct_progress||0;
+
+  document.getElementById('projModalContent').innerHTML=`
+    <div class="info-grid">
+      <div class="info-item"><div class="info-label">No. SPI</div><div class="info-value">${project.no_spi||'—'}</div></div>
+      <div class="info-item"><div class="info-label">Area</div><div class="info-value">${project.area||'—'}</div></div>
+      <div class="info-item"><div class="info-label">Jenis</div><div class="info-value">${project.jenis||'—'}</div></div>
+      <div class="info-item"><div class="info-label">Progress</div><div class="info-value" style="color:var(--blue)">${pct}%</div></div>
+      <div class="info-item"><div class="info-label">Mulai</div><div class="info-value">${fmtDate(startD)}</div></div>
+      <div class="info-item"><div class="info-label">Selesai</div><div class="info-value">${fmtDate(endD)}</div></div>
+    </div>
+    <div class="alert alert-warning" style="margin-bottom:16px">
+      <div style="flex:1"><strong>Edit Periode Proyek</strong>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <div class="form-group" style="margin:0;flex:1;min-width:130px"><label>Start</label><input type="date" id="editStart_${projectId}" value="${startD||''}" style="padding:6px"></div>
+          <div class="form-group" style="margin:0;flex:1;min-width:130px"><label>End</label><input type="date" id="editEnd_${projectId}" value="${endD||''}" style="padding:6px"></div>
+          <button class="btn btn-warning btn-sm" onclick="saveSchedule(${projectId})" style="align-self:flex-end">💾 Simpan</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-header" style="padding:0;margin-bottom:12px">
+      <span class="card-title">📈 Kurva S — Target vs Realisasi</span>
+      <div style="display:flex;gap:8px">
+        ${rabItems.length===0 ? `<button class="btn btn-ghost btn-sm" onclick="openRABModal(${projectId})">📎 Upload RAB</button>` : '<span class="badge badge-blue">RAB ✓</span>'}
+        <button class="btn btn-success btn-sm" onclick="openProgressModal(${projectId})">✏️ Input Progress</button>
+      </div>
+    </div>
+    <div class="chart-wrap chart-wrap-lg" style="margin-bottom:20px"><canvas id="curvaSCanvas_${projectId}"></canvas></div>
+    <div class="card-title" style="margin-bottom:12px">📅 Riwayat Progress Mingguan</div>
+    ${weeklyData.length>0 ? `<div class="table-wrap"><table><thead><tr><th>Minggu</th><th>Tanggal</th><th>Target</th><th>Realisasi</th><th>Deviasi</th><th>Catatan</th><th></th></tr></thead><tbody>${weeklyData.map(w=>{const dev=((w.pct_realisasi||0)-(w.pct_target||0)).toFixed(1);const dc=parseFloat(dev)>=0?'var(--green)':'var(--red)';const safeNote=(w.catatan||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");return`<tr><td style="text-align:center;font-weight:700;font-family:var(--mono)">M-${w.minggu_ke}</td><td style="font-size:12px">${fmtDate(w.tanggal_minggu)}</td><td style="text-align:center">${w.pct_target!=null?w.pct_target+'%':'—'}</td><td style="text-align:center;font-weight:700;color:var(--blue)">${w.pct_realisasi}%</td><td style="text-align:center;font-weight:700;color:${dc}">${parseFloat(dev)>=0?'+':''}${dev}%</td><td style="font-size:11px;color:var(--text-3)">${w.catatan||'—'}</td><td><button class="btn btn-outline btn-sm" onclick="openEditProgress(${projectId},${w.minggu_ke},'${w.tanggal_minggu||''}',${w.pct_realisasi},'${safeNote}')">✏️</button></td></tr>`;}).join('')}</tbody></table></div>` : '<div class="empty-state" style="padding:20px"><p>Belum ada data progress mingguan.</p></div>'}
+  `;
+  requestAnimationFrame(()=>renderCurvaS(projectId,project,schedule,weeklyData));
+}
+
+function renderCurvaS(projectId,project,schedule,weeklyData) {
+  const canvas=document.getElementById(`curvaSCanvas_${projectId}`);
+  if(!canvas) return;
+  const startD=new Date(schedule?.start_date||project.start_date);
+  const endD=new Date(schedule?.end_date||project.end_date);
+  if(isNaN(startD)||isNaN(endD)) return;
+  const totalMinggu=Math.max(1,Math.ceil((endD-startD)/(7*24*60*60*1000)));
+  const labels=[],targetData=[];
+  for(let i=0;i<=totalMinggu;i++){labels.push(`M-${i}`);targetData.push(parseFloat((i/totalMinggu*100).toFixed(1)));}
+  const rMap={};
+  (weeklyData||[]).forEach(w=>{
+    if(!w.tanggal_minggu) { rMap[w.minggu_ke]=w.pct_realisasi; return; }
+    // Hitung posisi minggu relatif terhadap start_date proyek
+    const tgl=new Date(w.tanggal_minggu);
+    const mingguIdx=Math.round((tgl-startD)/(7*24*60*60*1000));
+    if(mingguIdx>=0) rMap[mingguIdx]=w.pct_realisasi;
+  });
+  // Isi null untuk minggu yang belum ada data (spanGaps:true akan interpolasi)
+  const realisasi=labels.map((_,i)=>rMap[i]!==undefined?rMap[i]:null);
+  const c=chartColors();
+  const ctx=canvas.getContext('2d');
+  new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Target (%)',data:targetData,borderColor:'#1A4FD6',backgroundColor:'rgba(26,79,214,0.07)',fill:true,tension:0.4,borderWidth:2,pointRadius:2,pointHoverRadius:5},{label:'Realisasi (%)',data:realisasi,borderColor:'#059669',backgroundColor:'rgba(5,150,105,0.07)',fill:false,tension:0.3,borderWidth:2.5,pointRadius:4,pointHoverRadius:6,spanGaps:true}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{font:{size:12},boxWidth:12,color:c.text,padding:14}}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',font:{size:11},color:c.text},grid:{color:c.grid}},x:{ticks:{maxTicksLimit:16,font:{size:10},color:c.text},grid:{color:c.grid}}}}});
+}
+
+async function saveSchedule(projectId) {
+  const start=document.getElementById(`editStart_${projectId}`).value;
+  const end=document.getElementById(`editEnd_${projectId}`).value;
+  if(!start||!end){alert('Isi start dan end date');return;}
+  const totalMinggu=Math.ceil((new Date(end)-new Date(start))/(7*24*60*60*1000));
+  if(isConfigured){const{error}=await sb.from('project_schedules').upsert({project_id:projectId,start_date:start,end_date:end,total_minggu:totalMinggu,is_custom:true},{onConflict:'project_id'});if(error){alert('Gagal: '+error.message);return;}}
+  alert('✅ Periode berhasil disimpan!'); openProjectDetail(projectId);
+}
+
+// ══════════════════════════════════════════
+// INPUT PROGRESS
+// ══════════════════════════════════════════
+function renderProgressPage() {
+  const c=document.getElementById('progressPageContent');
+  if(!allProjects.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>Tidak ada proyek aktif.</p></div>';return;}
+  c.innerHTML=`<div class="card" style="padding-bottom:0"><div class="table-wrap desktop-table"><table><thead><tr><th>#</th><th>Nama Proyek</th><th>Area</th><th>Progress Terakhir</th><th>Aksi</th></tr></thead><tbody>${allProjects.map((p,i)=>`<tr><td style="color:var(--text-3);font-size:12px">${i+1}</td><td style="font-weight:600">${p.nama_proyek}</td><td><span class="badge badge-gray">${p.area||'—'}</span></td><td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill ${p.pct_progress>=70?'high':p.pct_progress>=30?'mid':'low'}" style="width:${p.pct_progress||0}%"></div></div><span class="progress-val">${p.pct_progress||0}%</span></div></td><td><button class="btn btn-success btn-sm" onclick="openProgressModal(${p.id})">✏️ Input</button></td></tr>`).join('')}</tbody></table></div><div class="mobile-cards" style="padding-bottom:12px">${allProjects.map(p=>`<div class="mobile-card"><div class="mobile-card-header"><div><div class="mobile-card-name">${p.nama_proyek}</div><div class="mobile-card-meta">${p.area||''}</div></div><button class="btn btn-success btn-sm" onclick="openProgressModal(${p.id})">✏️ Input</button></div><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill ${p.pct_progress>=70?'high':p.pct_progress>=30?'mid':'low'}" style="width:${p.pct_progress||0}%"></div></div><span class="progress-val">${p.pct_progress||0}%</span></div></div>`).join('')}</div></div>`;
+}
+
+async function openProgressModal(projectId) {
+  const project=allProjects.find(p=>p.id===projectId);
+  if(!project) return;
+  document.getElementById('progressModalSub').textContent=project.nama_proyek;
+  document.getElementById('progressModal').classList.add('show');
+  const today=new Date(), dow=today.getDay();
+  const monday=new Date(today); monday.setDate(today.getDate()-(dow===0?6:dow-1));
+  const mondayStr=monday.toISOString().split('T')[0];
+  let schedule=null;
+  if(isConfigured){const{data}=await sb.from('project_schedules').select('*').eq('project_id',projectId).single();schedule=data;}
+  let mingguKe=1;
+  if(schedule?.start_date) mingguKe=Math.max(1,Math.ceil((monday-new Date(schedule.start_date))/(7*24*60*60*1000))+1);
+  let existing=null, prevWeek=null;
+  if(isConfigured){
+    const{data}=await sb.from('weekly_progress').select('*').eq('project_id',projectId).eq('minggu_ke',mingguKe).single();existing=data;
+    const{data:prev}=await sb.from('weekly_progress').select('*').eq('project_id',projectId).lt('minggu_ke',mingguKe).order('minggu_ke',{ascending:false}).limit(1);
+    prevWeek=prev?.[0]||null;
+  }
+  _renderProgressForm(projectId, mingguKe, mondayStr, existing, prevWeek);
+}
+
+function _renderProgressForm(projectId, mingguKe, tanggalStr, existing, prevWeek) {
+  const prevInfo = prevWeek
+    ? `<div class="alert alert-info" style="font-size:12px;margin-bottom:0">📊 Progress minggu ke-<strong>${prevWeek.minggu_ke}</strong> (${fmtDate(prevWeek.tanggal_minggu)}): <strong style="color:var(--blue)">${prevWeek.pct_realisasi}%</strong>${prevWeek.catatan?` — <em>${prevWeek.catatan}</em>`:''}</div>`
+    : `<div class="alert alert-info" style="font-size:12px;margin-bottom:0">📊 Belum ada data progress sebelumnya.</div>`;
+  document.getElementById('progressModalContent').innerHTML=`
+    <div class="alert alert-info"><strong>Minggu ke-${mingguKe}</strong> — ${fmtDate(tanggalStr)}</div>
+    ${prevInfo}
+    <div style="margin-top:10px"></div>
+    ${existing?'<div class="alert alert-warning">Data minggu ini sudah ada. Edit lalu simpan ulang.</div>':''}
+    <div id="progFormAlert"></div>
+    <div class="form-group"><label>% Realisasi Progress (0–100)</label><input type="number" id="inpPct" min="0" max="100" step="0.5" value="${existing?.pct_realisasi??''}" placeholder="Contoh: 47.5"></div>
+    <div class="form-group"><label>Catatan (opsional)</label><textarea id="inpNote" rows="3" placeholder="Kendala, keterangan lapangan...">${existing?.catatan||''}</textarea></div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-success" onclick="doSaveProgress(${projectId},${mingguKe},'${tanggalStr}')" style="flex:1">💾 Simpan Progress</button>
+      <button class="btn btn-ghost" onclick="closeModal('progressModal')">Batal</button>
+    </div>`;
+}
+
+async function doSaveProgress(projectId, mingguKe, tanggalMinggu) {
+  const pct=parseFloat(document.getElementById('inpPct').value);
+  const note=document.getElementById('inpNote').value;
+  if(isNaN(pct)||pct<0||pct>100){setAlert('progFormAlert','Progress harus antara 0 dan 100','error');return;}
+  if(isConfigured){
+    const{error}=await sb.from('weekly_progress').upsert({project_id:projectId,user_id:currentProfile.id,minggu_ke:mingguKe,tanggal_minggu:tanggalMinggu,pct_realisasi:pct,catatan:note||null,updated_at:new Date().toISOString()},{onConflict:'project_id,minggu_ke'});
+    if(error){setAlert('progFormAlert','Gagal: '+error.message,'error');return;}
+    // Update pct_progress di tabel projects
+    await sb.from('projects').update({pct_progress:pct,updated_at:new Date().toISOString()}).eq('id',projectId);
+  }
+  const proj=allProjects.find(p=>p.id===projectId);
+  if(proj) proj.pct_progress=pct;
+  setAlert('progFormAlert','✅ Progress minggu ke-'+mingguKe+' berhasil disimpan!','success');
+  renderProjectTable(); renderProgressPage(); renderDashboard();
+  // Reload detail proyek agar riwayat progress ikut update
+  setTimeout(()=>openProjectDetail(projectId), 800);
+}
+
+// Edit progress dari riwayat (minggu yang sudah lalu)
+async function openEditProgress(projectId, mingguKe, tanggalStr, pctVal, catatanVal) {
+  const project=allProjects.find(p=>p.id===projectId);
+  if(!project) return;
+  document.getElementById('progressModalSub').textContent=project.nama_proyek+' — Edit Minggu ke-'+mingguKe;
+  document.getElementById('progressModal').classList.add('show');
+  // Ambil data minggu sebelumnya untuk referensi
+  let prevWeek=null;
+  if(isConfigured){
+    const{data:prev}=await sb.from('weekly_progress').select('*').eq('project_id',projectId).lt('minggu_ke',mingguKe).order('minggu_ke',{ascending:false}).limit(1);
+    prevWeek=prev?.[0]||null;
+  }
+  const prevInfo = prevWeek
+    ? `<div class="alert alert-info" style="font-size:12px;margin-bottom:0">📊 Minggu ke-<strong>${prevWeek.minggu_ke}</strong>: <strong style="color:var(--blue)">${prevWeek.pct_realisasi}%</strong>${prevWeek.catatan?` — <em>${prevWeek.catatan}</em>`:''}</div>`
+    : '';
+  document.getElementById('progressModalContent').innerHTML=`
+    <div class="alert alert-warning"><strong>✏️ Edit Minggu ke-${mingguKe}</strong> — ${fmtDate(tanggalStr)}</div>
+    ${prevInfo}
+    <div style="margin-top:${prevWeek?'10px':'0'}"></div>
+    <div id="progFormAlert"></div>
+    <div class="form-group"><label>% Realisasi Progress (0–100)</label><input type="number" id="inpPct" min="0" max="100" step="0.5" value="${pctVal}" placeholder="Contoh: 47.5"></div>
+    <div class="form-group"><label>Catatan (opsional)</label><textarea id="inpNote" rows="3" placeholder="Kendala, keterangan lapangan...">${catatanVal}</textarea></div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-success" onclick="doSaveProgress(${projectId},${mingguKe},'${tanggalStr}')" style="flex:1">💾 Simpan Perubahan</button>
+      <button class="btn btn-ghost" onclick="closeModal('progressModal')">Batal</button>
+    </div>`;
+}
+
+
+// ══════════════════════════════════════════
+function openRABModal(projectId) {
+  const p=allProjects.find(p=>p.id===projectId);
+  document.getElementById('rabModalSub').textContent=p?.nama_proyek||'';
+  // Hitung RAB pending dari converter
+  const pendingCount = window._rabConverterData ? window._rabConverterData.filter(r=>r.status==='submitted').length : 0;
+
+  document.getElementById('rabModalContent').innerHTML =
+    '<div id="rabAlert"></div>'
+    + '<div class="rab-tab-bar">'
+    +   '<div class="rab-tab active" id="rab-tab-upload" onclick="switchRabTab(\'upload\')">📂 Upload File</div>'
+    +   '<div class="rab-tab" id="rab-tab-converter" onclick="switchRabTab(\'converter\')">'
+    +     '⚡ Dari RAB Converter'
+    +     (pendingCount > 0 ? '<span class="badge-new">' + pendingCount + ' baru</span>' : '')
+    +   '</div>'
+    + '</div>'
+    + '<div id="rab-panel-upload">'
+    +   '<div class="alert alert-info" style="margin-bottom:14px"><strong>Format: Excel (.xlsx, .xls) atau PDF</strong><br>Kolom wajib: <strong>Uraian Pekerjaan</strong> + <strong>Jumlah Harga</strong> + baris <strong>GRAND TOTAL</strong></div>'
+    +   ''
+    +   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'
+    +     '<div class="upload-zone" onclick="document.getElementById(\'rabFileExcel_' + projectId + '\').click()" style="padding:24px">'
+    +       '<div style="font-size:28px;margin-bottom:8px">📊</div>'
+    +       '<div style="font-weight:600;font-size:13px">Upload Excel</div>'
+    +       '<div style="font-size:11px;margin-top:3px;opacity:0.7">.xlsx atau .xls</div>'
+    +     '</div>'
+    +     '<div class="upload-zone" onclick="document.getElementById(\'rabFilePDF_' + projectId + '\').click()" style="padding:24px">'
+    +       '<div style="font-size:28px;margin-bottom:8px">📄</div>'
+    +       '<div style="font-weight:600;font-size:13px">Upload PDF</div>'
+    +       '<div style="font-size:11px;margin-top:3px;opacity:0.7">Parsed dengan AI</div>'
+    +     '</div>'
+    +   '</div>'
+    +   '<input type="file" id="rabFileExcel_' + projectId + '" accept=".xlsx,.xls" style="display:none" onchange="processRAB(' + projectId + ',this,\'excel\')">'
+    +   '<input type="file" id="rabFilePDF_' + projectId + '" accept=".pdf" style="display:none" onchange="processRAB(' + projectId + ',this,\'pdf\')">'
+    +   '<div style="text-align:center"><a href="#" onclick="downloadRABTemplate(event)" style="font-size:12px;color:var(--blue);text-decoration:none;display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border:1.5px solid var(--blue);border-radius:var(--radius)">📥 Download Template Excel RAB</a></div>'
+    +   '<div id="rabPreview_' + projectId + '" style="margin-top:16px"></div>'
+    + '</div>'
+    + '<div id="rab-panel-converter" style="display:none">'
+    +   '<div id="rab-converter-body"><div class="loading"><div class="spinner"></div><div class="loading-text">Memuat data dari RAB Converter...</div></div></div>'
+    + '</div>';
+
+  document.getElementById('rabModal').classList.add('show');
+  loadConverterRAB(projectId);
+}
+
+function saveRabApiKey(){
+  const k=document.getElementById('rab-api-key-input')?.value?.trim();
+  const p=document.getElementById('rab-api-provider')?.value||'anthropic';
+  if(k){localStorage.setItem('rab_api_key',k);localStorage.setItem('rab_api_provider',p);}
+  setAlert('rabAlert','✅ API Key tersimpan','success');
+}
+
+function switchRabTab(tab){
+  ['upload','converter'].forEach(t=>{
+    document.getElementById('rab-tab-'+t)?.classList.toggle('active',t===tab);
+    document.getElementById('rab-panel-'+t) && (document.getElementById('rab-panel-'+t).style.display=t===tab?'':'none');
+  });
+}
+
+async function loadConverterRAB(projectId){
+  const body=document.getElementById('rab-converter-body');
+  if(!body) return;
+  if(!isConfigured){
+    body.innerHTML='<div class="alert alert-info">Hubungkan ke Supabase untuk melihat RAB dari Converter.</div>';
+    return;
+  }
+  try{
+    const {data,error}=await sb.from('rab_projects').select('*').order('submitted_at',{ascending:false}).limit(50);
+    if(error) throw error;
+    window._rabConverterData = data||[];
+    if(!data||!data.length){
+      body.innerHTML='<div class="alert alert-info">Belum ada RAB yang dikirim dari RAB Converter.<br><small>Gunakan <strong>RAB Converter</strong> → tombol "Kirim ke PROMON" untuk mengirim RAB.</small></div>';
+      return;
+    }
+    body.innerHTML=`
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">${data.length} RAB tersedia — klik untuk preview sebelum import ke proyek ini</div>
+      <div class="converter-list" id="converter-list">
+        ${data.map(r=>`
+          <div class="converter-item" data-id="${r.id}" onclick="selectConverterRAB('${r.id}',${projectId})">
+            <div style="flex:1;min-width:0">
+              <div class="ci-name">${escHtml(r.nama_proyek)}</div>
+              <div class="ci-meta">
+                ${r.no_spi||'—'} &nbsp;·&nbsp; ${r.area||'—'} &nbsp;·&nbsp; ${r.tanggal_rab||'—'} &nbsp;·&nbsp; ${r.jumlah_item||0} item
+                &nbsp;<span class="rab-status-pill ${r.status}">${r.status}</span>
+              </div>
+            </div>
+            <div class="ci-total">${fmtRupiah(r.grand_total)}</div>
+          </div>`).join('')}
+      </div>
+      <div id="converter-preview" style="margin-top:14px"></div>
+    `;
+  }catch(err){
+    body.innerHTML='<div class="alert alert-error">Gagal memuat: '+err.message+'</div>';
+  }
+}
+
+async function selectConverterRAB(rabId, projectId){
+  // Highlight selected
+  document.querySelectorAll('.converter-item').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.id===rabId);
+  });
+  const preview=document.getElementById('converter-preview');
+  preview.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Memuat detail item...</div></div>';
+
+  try{
+    const {data:items,error}=await sb.from('rab_items').select('*').eq('rab_project_id',rabId).order('sort_order');
+    if(error) throw error;
+    const proj=window._rabConverterData?.find(r=>r.id===rabId);
+    const gt=proj?.grand_total||1;
+    const rabItems=items.filter(i=>i.row_type==='item').map(i=>({
+      project_id:projectId, no_urut:i.no||'', uraian:i.uraian,
+      jumlah_harga:i.jumlah_harga||0,
+      bobot_pct:gt>0?parseFloat(((i.jumlah_harga||0)/gt*100).toFixed(2)):0,
+      is_subtotal:false, is_total:false,
+      uploaded_by:currentProfile?.id
+    }));
+    // tambah subtotal rows
+    items.filter(i=>i.row_type==='subtotal').forEach(i=>{
+      rabItems.push({project_id:projectId,no_urut:'',uraian:i.uraian,jumlah_harga:i.jumlah_harga||0,bobot_pct:0,is_subtotal:true,is_total:false,uploaded_by:currentProfile?.id});
+    });
+
+    const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(rabItems))));
+    preview.innerHTML=`
+      <div class="alert alert-success">✅ ${rabItems.filter(r=>!r.is_subtotal).length} item dari <strong>${escHtml(proj?.nama_proyek||rabId)}</strong> — Grand Total: ${fmtRupiah(proj?.grand_total||0)}</div>
+      <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px">
+        <table>
+          <thead><tr><th>No</th><th>Uraian</th><th style="text-align:right">Jumlah (Rp)</th><th style="text-align:center">Bobot</th></tr></thead>
+          <tbody>
+            ${items.slice(0,30).map(r=>`<tr style="${r.row_type==='section'?'background:var(--bg-3);font-weight:700;font-size:11px':r.row_type==='subtotal'?'background:var(--bg-3);font-weight:600':''}">
+              <td style="font-size:11px;color:var(--text-3)">${escHtml(r.no||'')}</td>
+              <td style="font-size:12px">${escHtml(r.uraian)}</td>
+              <td style="font-size:12px;text-align:right">${r.row_type==='item'||r.row_type==='subtotal'||r.row_type==='total'?fmtRupiah(r.jumlah_harga):''}</td>
+              <td style="font-size:11px;text-align:center">${r.row_type==='item'&&gt>0?((r.jumlah_harga||0)/gt*100).toFixed(1)+'%':''}</td>
+            </tr>`).join('')}
+            ${items.length>30?`<tr><td colspan="4" style="text-align:center;color:var(--text-3);padding:8px;font-size:12px">...${items.length-30} baris lainnya</td></tr>`:''}
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="saveRABFromConverter(${projectId},'${rabId}','${encoded}')" style="flex:1">
+          💾 Import RAB ini ke Proyek
+        </button>
+        <button class="btn btn-ghost" onclick="closeModal('rabModal')">Batal</button>
+      </div>
+    `;
+  }catch(err){
+    preview.innerHTML='<div class="alert alert-error">Gagal memuat detail: '+err.message+'</div>';
+  }
+}
+
+async function saveRABFromConverter(projectId, rabId, encoded){
+  const items=JSON.parse(decodeURIComponent(escape(atob(encoded))));
+  if(isConfigured){
+    await sb.from('rab_items').delete().eq('project_id',projectId);
+    const {error}=await sb.from('rab_items').insert(items);
+    if(error){setAlert('rabAlert','Gagal: '+error.message,'error');return;}
+    // Update status RAB di rab_projects menjadi approved
+    await sb.from('rab_projects').update({status:'approved',updated_at:new Date().toISOString()}).eq('id',rabId);
+  }
+  alert('✅ RAB dari Converter berhasil diimport ke proyek!');
+  closeModal('rabModal');
+  openProjectDetail(projectId);
+  // monitoring-sandana.pages.dev — link referensi untuk RAB Converter
+}
+
+async function processRAB(projectId, input, fileType='excel') {
+  const file=input.files[0]; if(!file) return;
+  const preview=document.getElementById(`rabPreview_${projectId}`);
+  preview.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Memproses '+fileType.toUpperCase()+'...</div></div>';
+
+  if(fileType==='pdf') {
+    const reader=new FileReader();
+    reader.onload=async(e)=>{
+      try {
+        setAlert('rabAlert','📄 Membaca tabel dari PDF...','info');
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        if(!pdfjsLib) throw new Error('PDF.js belum dimuat. Coba reload halaman.');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdf = await pdfjsLib.getDocument({data: new Uint8Array(e.target.result)}).promise;
+
+        // Kumpulkan semua item teks dengan posisi x,y dari semua halaman
+        let allItems = [];
+        for(let p=1;p<=pdf.numPages;p++){
+          const page = await pdf.getPage(p);
+          const vp = page.getViewport({scale:1});
+          const tc = await page.getTextContent();
+          tc.items.forEach(item=>{
+            if(!item.str.trim()) return;
+            allItems.push({
+              str: item.str.trim(),
+              x: Math.round(item.transform[4]),
+              y: Math.round(vp.height - item.transform[5]), // flip y
+              page: p
+            });
+          });
+        }
+
+        // Kelompokkan teks per baris (y yang sama ± 4px = satu baris)
+        const lineMap = {};
+        allItems.forEach(item=>{
+          const key = `${item.page}_${Math.round(item.y/5)*5}`;
+          if(!lineMap[key]) lineMap[key] = {y:item.y, page:item.page, cols:[]};
+          lineMap[key].cols.push({x:item.x, str:item.str});
+        });
+        const lines = Object.values(lineMap)
+          .sort((a,b)=> a.page!==b.page ? a.page-b.page : a.y-b.y)
+          .map(l=>({ cols: l.cols.sort((a,b)=>a.x-b.x) }));
+
+        // Untuk setiap baris, pisahkan menjadi: teks (uraian) vs angka (harga)
+        const items=[]; let grandTotal=0;
+        for(const line of lines){
+          const texts = line.cols.map(c=>c.str);
+          const fullLine = texts.join(' ');
+
+          // Angka dengan titik ribuan (min 4 digit)
+          const numTokens = texts.filter(t=>/^[\d.,]+$/.test(t.replace(/\s/g,'')));
+          const nums = numTokens
+            .map(t=>parseFloat(t.replace(/\./g,'').replace(',','.')))
+            .filter(n=>!isNaN(n)&&n>=1000);
+
+          // Uraian = gabungan token yang bukan murni angka, abaikan token kecil (satuan, volume)
+          const uraianTokens = texts.filter(t=>!/^[\d.,]+$/.test(t.replace(/\s/g,''))&&t.length>1);
+          const uraian = uraianTokens.join(' ').replace(/\s+/g,' ').trim();
+
+          if(!uraian||uraian.length<4) continue;
+          // Skip baris spesifikasi
+          if(/^\s*[-–•]/.test(uraian) && !/jumlah|total/i.test(uraian)) continue;
+          if(!nums.length) continue;
+
+          const jumlah = Math.max(...nums);
+          const isTotal = /GRAND\s*TOTAL|^TOTAL\s*(SEMUA)?$/i.test(uraian);
+          const isSubtotal = /^(SUB\s*TOTAL|SUBTOTAL|JUMLAH\s+(I|II|III|IV|V|SEMUA|OK|\d))/i.test(uraian);
+          if(isTotal && jumlah>grandTotal) grandTotal=jumlah;
+          items.push({uraian, jumlah_harga:jumlah, is_total:isTotal, is_subtotal:isSubtotal, no_urut:''});
+        }
+
+        if(!grandTotal && items.length) grandTotal=Math.max(...items.filter(i=>!i.is_subtotal).map(i=>i.jumlah_harga));
+        if(!items.length) throw new Error('Tidak dapat membaca tabel dari PDF. Pastikan PDF bisa di-select teksnya (bukan scan). Coba upload Excel.');
+        renderRABPreview(projectId, items, grandTotal, preview);
+        setAlert('rabAlert','','');
+      } catch(err) {
+        setAlert('rabAlert','Error PDF: '+err.message,'error');
+        preview.innerHTML='';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    return;
+  }
+
+  // EXCEL processing
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    try {
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const sheetName = wb.SheetNames.find(n=>/^RAB/i.test(n)) || wb.SheetNames[0];
+      const ws=wb.Sheets[sheetName];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+      // ── Deteksi baris header & kolom ──────────────────────────────
+      let colNo=-1, colUraian=-1, colVolume=-1, colSatuan=-1, colHarga=-1, colJumlah=-1;
+      let headerRow=-1;
+      for(let i=0;i<Math.min(rows.length,25);i++){
+        const cells=rows[i].map(c=>String(c||'').toLowerCase().trim());
+        // Header valid: punya kolom "uraian pekerjaan" atau "uraian" PLUS kolom angka (volume/harga/jumlah)
+        const hasUraian=cells.some(c=>c==='uraian pekerjaan'||c==='uraian');
+        const hasNumHdr=cells.some(c=>['volume','harga satuan (rp)','harga satuan','jumlah harga (rp)','jumlah harga','sub jumlah'].includes(c));
+        if(hasUraian&&hasNumHdr){
+          headerRow=i;
+          cells.forEach((c,j)=>{
+            if(/^no\.?$/.test(c)&&colNo<0) colNo=j;
+            if((c==='uraian pekerjaan'||c==='uraian')&&colUraian<0) colUraian=j;
+            if(c==='volume'&&colVolume<0) colVolume=j;
+            if(c==='satuan'&&colSatuan<0) colSatuan=j;
+            if((c==='harga satuan (rp)'||c==='harga satuan')&&colHarga<0) colHarga=j;
+            if((c==='jumlah harga (rp)'||c==='jumlah harga')&&colJumlah<0) colJumlah=j;
+          });
+          // Jika Jumlah Harga tidak ditemukan, ambil kolom kanan dari Harga Satuan
+          if(colJumlah<0&&colHarga>=0) colJumlah=colHarga+1;
+          break;
+        }
+      }
+
+      const items=[]; let grandTotal=0;
+      const startRow=headerRow>=0?headerRow+1:0;
+
+      for(let i=startRow;i<rows.length;i++){
+        const row=rows[i];
+        if(!row||row.every(c=>c===''||c===null||c===undefined)) continue;
+        const cells=row.map(c=>String(c===null||c===undefined?'':c).trim());
+        const rawVals=row.map(c=>typeof c==='number'?c:parseFloat(String(c||'').replace(/[^0-9.]/g,'')));
+
+        // Uraian
+        let uraian='';
+        if(colUraian>=0&&cells[colUraian]&&cells[colUraian].length>2){
+          uraian=cells[colUraian];
+        } else {
+          // Cari teks terpanjang yang bukan angka
+          uraian=cells.reduce((best,c)=>(c.length>best.length&&isNaN(c.replace(/[.,\s%-]/g,''))&&c.length>3)?c:best,'');
+        }
+        if(!uraian||uraian.length<3) continue;
+        if(/^[-–•]/.test(uraian)&&!/jumlah|total/i.test(uraian)) continue;
+        if(/^(no\.?|uraian|pekerjaan|satuan|volume|harga|bobot|keterangan|hj\b)/i.test(uraian)) continue;
+
+        // Jumlah Harga — dari kolom terdeteksi, atau fallback angka besar
+        let jumlah=0;
+        if(colJumlah>=0){
+          const raw=row[colJumlah];
+          // SheetJS returns formula result as number, atau null jika belum dikalkulasi
+          if(typeof raw==='number'&&raw>=1000) jumlah=raw;
+          else if(typeof raw==='string'&&raw.startsWith('=')&&colVolume>=0&&colHarga>=0){
+            // Formula =C*E → hitung manual dari Volume × Harga Satuan
+            const vol=typeof row[colVolume]==='number'?row[colVolume]:0;
+            const hargaVal=typeof row[colHarga]==='number'?row[colHarga]:0;
+            if(vol>0&&hargaVal>0) jumlah=vol*hargaVal;
+          }
+        }
+        if(!jumlah&&colVolume>=0&&colHarga>=0){
+          const vol=typeof row[colVolume]==='number'?row[colVolume]:parseFloat(String(row[colVolume]||'').replace(/[^0-9.]/g,''));
+          const hargaV=typeof row[colHarga]==='number'?row[colHarga]:parseFloat(String(row[colHarga]||'').replace(/[^0-9.]/g,''));
+          if(!isNaN(vol)&&!isNaN(hargaV)&&vol>0&&hargaV>0) jumlah=vol*hargaV;
+        }
+        if(!jumlah){
+          // Last resort: angka terbesar di baris ≥ 100000
+          const bigNums=rawVals.filter(n=>!isNaN(n)&&n>=100000);
+          if(bigNums.length) jumlah=Math.max(...bigNums);
+        }
+        if(!jumlah||jumlah<=0) continue;
+
+        const isTotal=/^GRAND\s*TOTAL|^SUB\s*TOTAL\s*SEMUA/i.test(uraian.trim());
+        const isSubtotal=/^(SUB\s*TOTAL|SUBTOTAL|JUMLAH\s+(I|II|III|IV|V|SEMUA|OK|\d)|TOTAL\s+(OK|I|II|III|IV|V|\d))/i.test(uraian.trim());
+        if(isTotal&&jumlah>grandTotal) grandTotal=jumlah;
+        // Jangan masukkan subtotal/total ke items jika sudah ada grandTotal dari kolom
+        const no=colNo>=0?cells[colNo]:'';
+        const volume=colVolume>=0&&typeof row[colVolume]==='number'?row[colVolume]:(colVolume>=0?cells[colVolume]:'');
+        const satuan=colSatuan>=0?cells[colSatuan]:'';
+        const hargaSat=colHarga>=0&&typeof row[colHarga]==='number'&&row[colHarga]>0?row[colHarga]:(!isNaN(rawVals[colHarga])&&rawVals[colHarga]>0?rawVals[colHarga]:0);
+        items.push({uraian,jumlah_harga:jumlah,is_total:isTotal,is_subtotal:isSubtotal,no_urut:String(no),volume,satuan,harga_satuan:hargaSat});
+      }
+      if(!grandTotal&&items.length){
+        // Cari "SUB TOTAL SEMUA" atau ambil nilai subtotal terbesar
+        const subTotals=items.filter(i=>i.is_subtotal);
+        const semua=subTotals.find(i=>/semua|all/i.test(i.uraian));
+        grandTotal=semua?semua.jumlah_harga:subTotals.length?Math.max(...subTotals.map(i=>i.jumlah_harga)):Math.max(...items.filter(i=>!i.is_subtotal).map(i=>i.jumlah_harga));
+      }
+      // Hapus baris total/subtotal dari preview (hanya tampilkan item)
+      const cleanItems=items.filter(i=>!i.is_total);
+      renderRABPreview(projectId,cleanItems,grandTotal,preview);
+    } catch(err){setAlert('rabAlert','Error baca Excel: '+err.message,'error');preview.innerHTML='';}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function parsePDFwithAI(projectId, base64Data, preview) {
+  const GEMINI_KEY = 'AIzaSyBYzSMueFw1Yq4x5DnPyxdRGYHBi0TpO14';
+  const apiKey = GEMINI_KEY;
+  const provider = 'gemini';
+
+  const PROMPT = 'Baca tabel RAB (Rencana Anggaran Biaya) dari PDF ini. ' +
+    'Ekstrak semua item dengan format JSON array:\n' +
+    '[{"no":"1","uraian":"nama pekerjaan","jumlah_harga":123456789,"is_subtotal":false,"is_total":false},...]\n' +
+    '- Sertakan baris GRAND TOTAL/TOTAL dengan is_total:true\n' +
+    '- Sertakan baris JUMLAH/SUBTOTAL dengan is_subtotal:true\n' +
+    '- jumlah_harga harus angka murni tanpa Rp/titik/koma\n' +
+    '- Jika tidak ada tabel RAB, return: {"error":"tidak ada tabel RAB"}\n' +
+    'Respond ONLY with the JSON array, no other text.';
+
+  try {
+    let text = '';
+
+    if (provider === 'gemini') {
+      // ── Gemini 2.0 Flash (GRATIS) ──────────────────────────────
+      const resp = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [
+              { inline_data: { mime_type: 'application/pdf', data: base64Data } },
+              { text: PROMPT }
+            ]}],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
+          })
+        }
+      );
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error((e.error && e.error.message) || resp.statusText);
+      }
+      const d = await resp.json();
+      text = (d.candidates && d.candidates[0] && d.candidates[0].content &&
+               d.candidates[0].content.parts && d.candidates[0].content.parts[0] &&
+               d.candidates[0].content.parts[0].text) || '[]';
+
+    } else {
+      // ── Anthropic Claude ────────────────────────────────────────
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4096,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } },
+              { type: 'text', text: PROMPT }
+            ]
+          }]
+        })
+      });
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({ error: { message: resp.statusText } }));
+        throw new Error((e.error && e.error.message) || resp.statusText);
+      }
+      const d = await resp.json();
+      const found = d.content && d.content.find(c => c.type === 'text');
+      text = found ? found.text : '[]';
+    }
+
+    // ── Parse hasil ────────────────────────────────────────────────
+    const clean = text.replace(/```json|```/g, '').trim();
+    const jsonStr = clean.startsWith('[')
+      ? clean
+      : clean.slice(clean.indexOf('['), clean.lastIndexOf(']') + 1);
+    const parsed = JSON.parse(jsonStr);
+
+    if (parsed.error) {
+      setAlert('rabAlert', '❌ ' + parsed.error + '. Pastikan PDF berisi tabel RAB.', 'error');
+      preview.innerHTML = '';
+      return;
+    }
+
+    let grandTotal = 0;
+    const items = parsed.map(item => {
+      if (item.is_total && item.jumlah_harga > grandTotal) grandTotal = item.jumlah_harga;
+      return { ...item, no_urut: item.no || '' };
+    });
+    if (!grandTotal && items.length) {
+      grandTotal = Math.max(...items.filter(i => !i.is_subtotal).map(i => i.jumlah_harga || 0));
+    }
+    renderRABPreview(projectId, items, grandTotal, preview);
+
+  } catch (err) {
+    let hint = '';
+    const m = err.message || '';
+    if (m.includes('credit') || m.includes('balance')) {
+      hint = ' — Saldo Anthropic habis. Coba ganti ke provider Gemini (gratis).';
+    } else if (m.includes('API_KEY_INVALID') || m.includes('API key')) {
+      hint = ' — API Key tidak valid. Periksa kembali.';
+    } else if (m.includes('QUOTA') || m.includes('quota')) {
+      hint = ' — Kuota harian Gemini habis. Coba lagi besok.';
+    }
+    setAlert('rabAlert',
+      'Gagal parse PDF: ' + err.message + hint +
+      '. Coba upload Excel atau gunakan tab "Dari RAB Converter".',
+      'error');
+    preview.innerHTML = '';
+  }
+}
+
+
+// Global state untuk RAB editor
+let _rabEditorItems=[], _rabEditorProjectId=null, _rabEditorGrandTotal=0;
+
+function renderRABPreview(projectId, items, grandTotal, preview) {
+  if(!items.length){setAlert('rabAlert','Tidak dapat membaca data. Gunakan template Excel yang disediakan.','error');preview.innerHTML='';return;}
+  _rabEditorItems=items.map((it,i)=>({...it, _idx:i}));
+  _rabEditorProjectId=projectId;
+  _rabEditorGrandTotal=grandTotal;
+  _renderRABEditor(preview, grandTotal);
+}
+
+function _recalcBobot(){
+  const gt=_rabEditorItems.filter(i=>!i.is_subtotal&&!i.is_total).reduce((s,i)=>s+(i.jumlah_harga||0),0);
+  _rabEditorGrandTotal=gt||_rabEditorGrandTotal;
+  _rabEditorItems.forEach(it=>{
+    it.bobot_pct=gt>0?parseFloat((it.jumlah_harga/gt*100).toFixed(2)):0;
+  });
+  return gt;
+}
+
+function _renderRABEditor(preview, grandTotal){
+  const gt=_recalcBobot();
+  const hasVol=_rabEditorItems.some(r=>r.volume&&r.volume!=='');
+  const minW=hasVol?'900px':'640px';
+  preview.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div class="alert alert-success" style="margin:0;flex:1">✅ ${_rabEditorItems.length} item — Grand Total: <strong>${fmtRupiah(gt||grandTotal)}</strong></div>
+      <button class="btn btn-outline btn-sm" onclick="_rabAddRow()">＋ Tambah Baris</button>
+    </div>
+    <div style="max-height:320px;overflow-y:auto;overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px">
+      <table id="rabEditTable" style="min-width:${minW};font-size:12px">
+        <thead><tr style="position:sticky;top:0;z-index:2;background:var(--bg-3)">
+          <th style="width:36px;text-align:center">No</th>
+          <th style="min-width:180px">Uraian Pekerjaan</th>
+          ${hasVol?'<th style="width:65px;text-align:center">Vol</th><th style="width:55px;text-align:center">Sat</th>':''}
+          <th style="width:140px;text-align:right">Harga Satuan (Rp)</th>
+          <th style="width:150px;text-align:right">Jumlah Harga (Rp)</th>
+          <th style="width:60px;text-align:center">Bobot</th>
+          <th style="width:32px"></th>
+        </tr></thead>
+        <tbody id="rabEditBody">
+          ${_rabEditorItems.map((r,i)=>`
+          <tr id="rabrow_${i}" style="${r.is_subtotal?'background:var(--bg-3);font-weight:700':''}">
+            <td style="text-align:center;color:var(--text-3);white-space:nowrap">${r.no_urut||i+1}</td>
+            <td><input style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-weight:${r.is_subtotal?'700':'400'};font-size:12px;padding:2px 4px"
+              value="${escHtml(r.uraian)}"
+              oninput="_rabEditField(${i},'uraian',this.value)"
+              onfocus="this.style.borderBottomColor='var(--blue)'"
+              onblur="this.style.borderBottomColor='transparent'"></td>
+            ${hasVol?`
+            <td><input type="number" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:12px;text-align:center;padding:2px"
+              value="${r.volume||''}"
+              oninput="_rabEditField(${i},'volume',this.value);_rabRecalcJumlah(${i})"
+              onfocus="this.style.borderBottomColor='var(--blue)'"
+              onblur="this.style.borderBottomColor='transparent'"></td>
+            <td><input style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:12px;text-align:center;padding:2px"
+              value="${r.satuan||''}"
+              oninput="_rabEditField(${i},'satuan',this.value)"
+              onfocus="this.style.borderBottomColor='var(--blue)'"
+              onblur="this.style.borderBottomColor='transparent'"></td>`:''}
+            <td><input type="number" id="hs_${i}" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:12px;text-align:right;padding:2px 4px"
+              value="${r.harga_satuan||0}"
+              oninput="_rabEditHS(${i},this.value)"
+              onfocus="this.style.borderBottomColor='var(--blue)'"
+              onblur="this.style.borderBottomColor='transparent'"></td>
+            <td id="jh_${i}" style="text-align:right;padding:4px 8px;white-space:nowrap;font-size:12px">${fmtRupiah(r.jumlah_harga||0)}</td>
+            <td id="bob_${i}" style="text-align:center;font-weight:600;color:var(--blue-light,#60a5fa)">${r.bobot_pct||0}%</td>
+            <td style="text-align:center"><button onclick="_rabDeleteRow(${i})" style="background:none;border:none;cursor:pointer;color:var(--text-3);font-size:14px;padding:2px 5px" title="Hapus">✕</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="_doSaveRABEditor()" style="flex:1">💾 Simpan RAB ke Database</button>
+      <button class="btn btn-ghost" onclick="closeModal('rabModal')">Batal</button>
+    </div>`;
+}
+
+function _rabEditField(idx, field, val){
+  _rabEditorItems[idx][field]=val;
+}
+
+// Edit Harga Satuan → recalc Jumlah Harga = Vol × HS
+function _rabEditHS(idx, val){
+  const hs=parseFloat(val)||0;
+  _rabEditorItems[idx].harga_satuan=hs;
+  const vol=parseFloat(_rabEditorItems[idx].volume)||1;
+  _rabEditorItems[idx].jumlah_harga=hs*vol;
+  _rabRefreshTotals();
+}
+
+// Edit Volume → recalc Jumlah Harga
+function _rabRecalcJumlah(idx){
+  const vol=parseFloat(_rabEditorItems[idx].volume)||1;
+  const hs=parseFloat(_rabEditorItems[idx].harga_satuan)||0;
+  if(hs>0) _rabEditorItems[idx].jumlah_harga=vol*hs;
+  _rabRefreshTotals();
+}
+
+function _rabEditJumlah(idx, val){
+  _rabEditorItems[idx].jumlah_harga=parseFloat(val)||0;
+  _rabRefreshTotals();
+}
+
+function _rabRefreshTotals(){
+  const gt=_recalcBobot();
+  _rabEditorItems.forEach((r,i)=>{
+    const jhEl=document.getElementById(`jh_${i}`);
+    if(jhEl) jhEl.textContent=fmtRupiah(r.jumlah_harga||0);
+    const bobEl=document.getElementById(`bob_${i}`);
+    if(bobEl) bobEl.textContent=(r.bobot_pct||0)+'%';
+  });
+  const alertEl=document.querySelector('#rabEditTable')?.closest('[style*="max-height"]')?.previousElementSibling?.querySelector('.alert');
+  if(alertEl) alertEl.innerHTML=`✅ ${_rabEditorItems.length} item — Grand Total: <strong>${fmtRupiah(gt)}</strong>`;
+}
+function _rabDeleteRow(idx){
+  _rabEditorItems.splice(idx,1);
+  const preview=document.getElementById('rabPreview_'+_rabEditorProjectId);
+  _renderRABEditor(preview,_rabEditorGrandTotal);
+}
+function _rabAddRow(){
+  _rabEditorItems.push({uraian:'',jumlah_harga:0,is_subtotal:false,is_total:false,no_urut:'',volume:'',satuan:'',harga_satuan:0,bobot_pct:0});
+  const preview=document.getElementById('rabPreview_'+_rabEditorProjectId);
+  _renderRABEditor(preview,_rabEditorGrandTotal);
+  // Scroll to bottom of table
+  setTimeout(()=>{const t=document.querySelector('#rabEditTable')?.closest('[style*="max-height"]');if(t)t.scrollTop=t.scrollHeight;},50);
+}
+async function _doSaveRABEditor(){
+  const gt=_recalcBobot();
+  const rabItems=_rabEditorItems.filter(i=>i.uraian&&i.uraian.trim()).map(it=>({
+    project_id:_rabEditorProjectId,
+    no_urut:it.no_urut||'',
+    uraian:it.uraian.trim(),
+    volume:it.volume||null,
+    satuan:it.satuan||null,
+    harga_satuan:it.harga_satuan||null,
+    jumlah_harga:it.jumlah_harga||0,
+    bobot_pct:it.bobot_pct||0,
+    is_subtotal:it.is_subtotal||false,
+    is_total:false,
+    uploaded_by:currentProfile?.id
+  }));
+  if(!rabItems.length){setAlert('rabAlert','Tidak ada item untuk disimpan.','error');return;}
+  await saveRABItems(_rabEditorProjectId, rabItems, gt);
+}
+
+function downloadRABTemplate(e) {
+  e.preventDefault();
+  try {
+    // Embed template file as base64
+    const b64 = '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';
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    const blob = new Blob([bytes], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'Template_RAB_PROMON.xlsx';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    setAlert('rabAlert','✅ Template berhasil didownload!','success');
+    return;
+    // (legacy SheetJS fallback below, not reached)
+    const wb = XLSX.utils.book_new();
+    // Sheet 1: RAB
+    const rows = [
+      ['🏗️  RENCANA ANGGARAN BIAYA (RAB)','','','','','','',''],
+      ['PT. SANDANA — Project Monitoring System','','','','','','',''],
+      ['','','','','','','',''],
+      ['Nama Proyek    :','','','','Area / Wilayah :','','',''],
+      ['No. SPI        :','','','','Tanggal RAB    :','','',''],
+      ['','','','','','','',''],
+      ['No','Uraian Pekerjaan','Volume','Satuan','Harga Satuan (Rp)','Jumlah Harga (Rp)','Bobot (%)','Keterangan'],
+      ['I','PEKERJAAN SIPIL','','','','','',''],
+      [1,'Pekerjaan Persiapan & Mobilisasi',1,'Ls',25000000,'=C9*E9','',''],
+      [2,'Pekerjaan Pondasi',1,'Ls',120000000,'=C10*E10','',''],
+      [3,'Pekerjaan Struktur Beton',1,'Ls',350000000,'=C11*E11','',''],
+      [4,'Pekerjaan Dinding & Plesteran',500,'m²',450000,'=C12*E12','',''],
+      [5,'Pekerjaan Lantai & Keramik',300,'m²',375000,'=C13*E13','',''],
+      [6,'Pekerjaan Atap & Plafon',250,'m²',520000,'=C14*E14','',''],
+      [7,'Pekerjaan Pintu & Jendela',20,'Unit',3500000,'=C15*E15','',''],
+      ['','JUMLAH I — PEKERJAAN SIPIL','','','','=SUM(F9:F15)','=F16/F30*100',''],
+      ['II','PEKERJAAN MEKANIKAL & ELEKTRIKAL','','','','','',''],
+      [8,'Instalasi Listrik & Panel',1,'Ls',180000000,'=C18*E18','',''],
+      [9,'Instalasi Plumbing & Sanitasi',1,'Ls',95000000,'=C19*E19','',''],
+      [10,'Sistem HVAC / Tata Udara',1,'Ls',250000000,'=C20*E20','',''],
+      [11,'Instalasi Fire Alarm & Hydrant',1,'Ls',75000000,'=C21*E21','',''],
+      ['','JUMLAH II — PEKERJAAN MEP','','','','=SUM(F18:F21)','=F22/F30*100',''],
+      ['III','PEKERJAAN INTERIOR & FINISHING','','','','','',''],
+      [12,'Pekerjaan Plafon Gypsum',400,'m²',350000,'=C24*E24','',''],
+      [13,'Pengecatan & Finishing',800,'m²',125000,'=C25*E25','',''],
+      [14,'Furniture & Interior',1,'Ls',450000000,'=C26*E26','',''],
+      [15,'Pekerjaan Luar (Landscape)',1,'Ls',80000000,'=C27*E27','',''],
+      ['','JUMLAH III — INTERIOR','','','','=SUM(F24:F27)','=F28/F30*100',''],
+      ['','','','','','','',''],
+      ['','GRAND TOTAL','','','','=F16+F22+F28','=SUM(G16,G22,G28)',''],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:6},{wch:45},{wch:10},{wch:10},{wch:20},{wch:20},{wch:12},{wch:20}];
+    ws['!merges'] = [
+      {s:{r:0,c:0},e:{r:0,c:7}},
+      {s:{r:1,c:0},e:{r:1,c:7}},
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'RAB');
+    // Sheet 2: Petunjuk
+    const ws2 = XLSX.utils.aoa_to_sheet([
+      ['PETUNJUK PENGGUNAAN TEMPLATE RAB PROMON'],
+      [''],
+      ['Kolom WAJIB ada (parser akan membaca otomatis):'],
+      ['• Kolom "Uraian Pekerjaan" — nama item/pekerjaan'],
+      ['• Kolom "Jumlah Harga (Rp)" — nilai total per item'],
+      ['• Baris "GRAND TOTAL" — total keseluruhan RAB'],
+      [''],
+      ['Tips agar upload berhasil:'],
+      ['• Gunakan sheet bernama "RAB" atau sheet pertama'],
+      ['• Pastikan kolom Jumlah Harga diisi angka (bukan teks)'],
+      ['• Baris header seksi (contoh: I. PEKERJAAN SIPIL) boleh ada'],
+      ['• Baris detail spesifikasi (dimulai "-") akan diabaikan otomatis'],
+      ['• Format angka: tanpa Rp, tanpa titik ribuan juga OK'],
+      [''],
+      ['Format File yang Diterima:'],
+      ['• Excel: .xlsx atau .xls'],
+      ['• PDF: PDF yang bisa di-select teksnya (bukan scan/foto)'],
+    ]);
+    ws2['!cols'] = [{wch:60}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Petunjuk');
+    XLSX.writeFile(wb, 'Template_RAB_PROMON.xlsx');
+    setAlert('rabAlert','✅ Template berhasil didownload!','success');
+  } catch(err) {
+    setAlert('rabAlert','Gagal download template: '+err.message,'error');
+  }
+}
+
+async function saveRAB(projectId, encoded) {
+  // Legacy: decode dari base64 lalu delegate ke saveRABItems
+  const items=JSON.parse(decodeURIComponent(escape(atob(encoded))));
+  const gt=items.reduce((s,i)=>s+(i.jumlah_harga||0),0);
+  await saveRABItems(projectId, items, gt);
+}
+
+async function saveRABItems(projectId, items, grandTotal) {
+  if(isConfigured){
+    await sb.from('rab_items').delete().eq('project_id',projectId);
+    const{error}=await sb.from('rab_items').insert(items);
+    if(error){setAlert('rabAlert','Gagal menyimpan: '+error.message,'error');return;}
+    // Update grand total di tabel projects
+    await sb.from('projects').update({nilai_kontrak:grandTotal,updated_at:new Date().toISOString()}).eq('id',projectId);
+  }
+  setAlert('rabAlert','✅ RAB berhasil disimpan ke database!','success');
+  setTimeout(()=>{closeModal('rabModal');openProjectDetail(projectId);},800);
+}
+
+// ══════════════════════════════════════════
+// EXPORT REPORT
+// ══════════════════════════════════════════
+function updateExpArea() {
+  const w=document.getElementById('expWilayah').value;
+  document.getElementById('expArea').innerHTML='<option value="">Semua Area</option>'+(AREA_MAP[w]||[]).map(a=>`<option>${a}</option>`).join('');
+}
+
+function getExportData() {
+  let data=[...allProjects];
+  const wilayah=document.getElementById('expWilayah').value;
+  const area=document.getElementById('expArea').value;
+  const status=document.getElementById('expStatus').value;
+  const periode=document.getElementById('expPeriode').value;
+  if(wilayah) data=data.filter(p=>p.wilayah===wilayah);
+  if(area)    data=data.filter(p=>p.area===area);
+  if(status)  data=data.filter(p=>p.status===status);
+  if(periode==='this_year')  data=data.filter(p=>p.start_date&&new Date(p.start_date).getFullYear()===new Date().getFullYear());
+  if(periode==='last_year')  data=data.filter(p=>p.start_date&&new Date(p.start_date).getFullYear()===new Date().getFullYear()-1);
+  if(periode==='custom') {
+    const from=document.getElementById('expDateFrom').value;
+    const to=document.getElementById('expDateTo').value;
+    if(from) data=data.filter(p=>p.start_date&&p.start_date>=from);
+    if(to)   data=data.filter(p=>p.end_date&&p.end_date<=to);
+  }
+  return data;
+}
+
+function getSelectedCols() {
+  return [...document.querySelectorAll('#colSelector input:checked')].map(cb=>cb.value);
+}
+
+const COL_LABELS = {
+  no_spi:'No. SPI', nama_proyek:'Nama Proyek', wilayah:'Wilayah', area:'Area',
+  jenis:'Jenis', pct_progress:'% Progress', status:'Status',
+  start_date:'Tgl Mulai', end_date:'Tgl Selesai', delay:'Delay (hari)',
+  pic_teknik:'PIC Teknik', rekan_kerja:'Rekan Kerja', pic_sales:'PIC Sales'
+};
+
+function previewExport() {
+  const data=getExportData();
+  const cols=getSelectedCols();
+  if(!cols.length){setAlert('exportAlert','Pilih minimal 1 kolom','warning');return;}
+  const preview=document.getElementById('exportPreview');
+  const header=cols.map(c=>COL_LABELS[c]||c).join(' | ');
+  const rows=data.slice(0,5).map(p=>cols.map(c=>{
+    const v=p[c];
+    if(c==='pct_progress') return (v||0)+'%';
+    if(c==='start_date'||c==='end_date') return fmtDate(v);
+    return v||'—';
+  }).join(' | '));
+  preview.textContent=`${header}\n${'─'.repeat(60)}\n${rows.join('\n')}${data.length>5?`\n... dan ${data.length-5} baris lainnya`:''}`;
+  setAlert('exportAlert',`✅ ${data.length} proyek siap di-export dengan ${cols.length} kolom`,'success');
+}
+
+function doExport(format) {
+  const data=getExportData();
+  const cols=getSelectedCols();
+  if(!data.length){setAlert('exportAlert','Tidak ada data untuk di-export','warning');return;}
+  if(!cols.length){setAlert('exportAlert','Pilih minimal 1 kolom','warning');return;}
+
+  const header=cols.map(c=>COL_LABELS[c]||c);
+  const rows=data.map(p=>cols.map(c=>{
+    if(c==='pct_progress') return (p[c]||0);
+    if(c==='start_date'||c==='end_date') return p[c]||'';
+    return p[c]||'';
+  }));
+
+  if(format==='xlsx'){
+    const ws=XLSX.utils.aoa_to_sheet([header,...rows]);
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Laporan Proyek');
+    // Style header
+    const range=XLSX.utils.decode_range(ws['!ref']);
+    for(let c=range.s.c;c<=range.e.c;c++){
+      const cell=ws[XLSX.utils.encode_cell({r:0,c})];
+      if(cell) cell.s={font:{bold:true},fill:{fgColor:{rgb:'1A4FD6'}},font:{color:{rgb:'FFFFFF'},bold:true}};
+    }
+    XLSX.writeFile(wb,`PROMON_Laporan_${new Date().toISOString().split('T')[0]}.xlsx`);
+  } else {
+    const csv=[header.join(','),...rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))].join('\n');
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download=`PROMON_Laporan_${new Date().toISOString().split('T')[0]}.csv`; a.click();
+  }
+  setAlert('exportAlert','✅ File berhasil didownload!','success');
+}
+
+// ══════════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════════
+async function loadAdminPage() {
+  if(!isConfigured){document.getElementById('userTableWrap').innerHTML='<div class="alert alert-info">Hubungkan ke Supabase untuk manajemen user.</div>';return;}
+  const{data:users}=await sb.from('users').select('*').order('nama');
+  document.getElementById('userTableWrap').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Nama</th><th>Email</th><th>Wilayah</th><th>Area</th><th>Role</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${(users||[]).map(u=>`<tr><td style="font-weight:600">${u.nama}</td><td style="font-size:12px">${u.email}</td><td>${u.wilayah||'—'}</td><td>${u.area||'—'}</td><td><span class="badge ${u.role==='admin'?'badge-blue':'badge-gray'}">${u.role}</span></td><td><span class="badge ${u.is_active?'badge-green':'badge-red'}">${u.is_active?'Aktif':'Nonaktif'}</span></td><td><button class="btn ${u.is_active?'btn-danger':'btn-success'} btn-sm" onclick="toggleUser('${u.id}',${!u.is_active})">${u.is_active?'Nonaktifkan':'Aktifkan'}</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+async function toggleUser(userId, newStatus) {
+  if(!isConfigured) return;
+  await sb.from('users').update({is_active:newStatus}).eq('id',userId);
+  loadAdminPage();
+}
+
+function openAddUserModal() {
+  document.getElementById('addUserAlert').innerHTML='';
+  ['newEmail','newName'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('newWilayah').value=''; document.getElementById('newArea').innerHTML='<option value="">Pilih Area</option>';
+  document.getElementById('addUserModal').classList.add('show');
+}
+
+function updateAreaSelect() {
+  const w=document.getElementById('newWilayah').value;
+  document.getElementById('newArea').innerHTML='<option value="">Pilih Area</option>'+(AREA_MAP[w]||[]).map(a=>`<option>${a}</option>`).join('');
+}
+
+async function saveNewUser() {
+  const email=document.getElementById('newEmail').value;
+  const nama=document.getElementById('newName').value;
+  const wilayah=document.getElementById('newWilayah').value;
+  const area=document.getElementById('newArea').value;
+  if(!email||!nama||!wilayah||!area){setAlert('addUserAlert','Semua field wajib diisi','error');return;}
+  if(!isConfigured){setAlert('addUserAlert','Hubungkan ke Supabase','warning');return;}
+  const{error}=await sb.from('users').insert({email,nama,role:'koordinator',wilayah,area,is_active:true});
+  if(error){setAlert('addUserAlert','Gagal: '+error.message,'error');return;}
+  setAlert('addUserAlert','✅ User berhasil ditambahkan!','success');
+  loadAdminPage();
+}
+
+// ══════════════════════════════════════════
+// SYNC PAGE
+// ══════════════════════════════════════════
+async function loadSyncPage() {
+  if(!isConfigured){document.getElementById('syncLogContent').innerHTML='<div class="alert alert-info">Hubungkan ke Supabase.</div>';return;}
+  const{data:logs}=await sb.from('sync_logs').select('*').order('synced_at',{ascending:false}).limit(10);
+  document.getElementById('syncLogContent').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Waktu</th><th>Tipe</th><th>Records</th><th>Status</th></tr></thead><tbody>${(logs||[]).map(l=>`<tr><td style="font-size:12px">${new Date(l.synced_at).toLocaleString('id-ID')}</td><td>${l.sync_type}</td><td style="font-family:var(--mono)">${l.records_synced}</td><td><span class="badge ${l.status==='success'?'badge-green':'badge-red'}">${l.status}</span></td></tr>`).join('')}</tbody></table></div><p style="margin-top:12px;font-size:12px;color:var(--text-3)">Sync otomatis setiap 1 jam via Apps Script trigger.</p>`;
+}
+
+// ══════════════════════════════════════════
+// NAV & HELPERS
+// ══════════════════════════════════════════
+function showPage(name, btn, isMobile=false) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+
+  if(!isMobile) {
+    document.querySelectorAll('.sidebar .nav-item').forEach(b=>b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+  } else {
+    document.querySelectorAll('.bottom-nav-item').forEach(b=>b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    // Sync sidebar
+    document.querySelectorAll('.sidebar .nav-item').forEach(b=>{
+      if(b.getAttribute('onclick')?.includes(`'${name}'`)) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+  }
+
+  if(name==='admin') loadAdminPage();
+  if(name==='sync') loadSyncPage();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function setAlert(id, msg, type) {
+  const el=document.getElementById(id); if(!el) return;
+  el.innerHTML=`<div class="alert alert-${type}">${msg}</div>`;
+  if(type!=='error') setTimeout(()=>{if(el) el.innerHTML='';},5000);
+}
+
+function fmtDate(d) {
+  if(!d) return '—';
+  try { return new Date(d).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}); }
+  catch { return d; }
+}
+
+function fmtRupiah(n) {
+  if(!n) return 'Rp 0';
+  return 'Rp '+Math.round(n).toLocaleString('id-ID');
+}
+
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+document.querySelectorAll('.modal-overlay').forEach(overlay=>{
+  overlay.addEventListener('click',e=>{ if(e.target===overlay) overlay.classList.remove('show'); });
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay.show').forEach(m=>m.classList.remove('show')); });
+</script>
+</body>
+</html>
