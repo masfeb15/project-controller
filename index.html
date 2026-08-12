@@ -3006,42 +3006,119 @@ function buildCCKPI() {
 
 /* ══ BUILD CC CHARTS ══ */
 function buildCCCharts() {
-  // HPP vs Realisasi Biaya per area — pakai CC_F agar ikut filter
+  // HPP vs Realisasi Biaya per area — klik bar → filter tabel ke area tsb
   const areaMap = {};
   CC_F.forEach(r=>{
     if(!r.area) return;
     if(!areaMap[r.area]) areaMap[r.area]={hpp:0,real:0};
     areaMap[r.area].hpp += r.hpp;
-    areaMap[r.area].real += r.realisasi;  // BUTAM
+    areaMap[r.area].real += r.realisasi;
   });
   const areas = Object.entries(areaMap).sort((a,b)=>b[1].hpp-a[1].hpp).slice(0,10);
   const maxA = Math.max(...areas.map(x=>x[1].hpp),1);
-  $('cc-bar-area').innerHTML = areas.map(([k,v])=>
-    `<div class="bar-row">
-      <div class="bar-lbl">${k}</div>
+  const activeArea = $('ccf-area')?.value||'';
+
+  $('cc-bar-area').innerHTML = areas.map(([k,v])=>{
+    const isActive = activeArea===k;
+    return `<div class="bar-row cc-clickbar${isActive?' cc-clickbar-active':''}"
+      onclick="ccFilterByArea('${k.replace(/'/g,"\\'")}',this)"
+      title="Klik untuk filter tabel ke area: ${k}"
+      style="cursor:pointer;border-radius:6px;padding:3px 4px;transition:background .15s${isActive?';background:var(--blue-d)':''}"
+      onmouseenter="this.style.background='var(--surf2)'" onmouseleave="this.style.background='${isActive?'var(--blue-d)':'transparent'}'">
+      <div class="bar-lbl" style="${isActive?'color:var(--blue);font-weight:700':''}">${k}</div>
       <div style="flex:1;display:flex;flex-direction:column;gap:2px">
         <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:${(v.hpp/maxA*100).toFixed(1)}%;background:linear-gradient(90deg,var(--purple),#c084fc)"><span class="bar-txt" style="font-size:9px">${fmt(v.hpp,true)}</span></div></div>
         <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:${(v.real/maxA*100).toFixed(1)}%;background:linear-gradient(90deg,var(--cyan),#67e8f9)"><span class="bar-txt" style="font-size:9px">${fmt(v.real,true)}</span></div></div>
       </div>
-    </div>`).join('') + `<div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:var(--text3)">
-      <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:4px;background:var(--purple);display:inline-block;border-radius:2px"></span>HPP</span>
-      <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:4px;background:var(--cyan);display:inline-block;border-radius:2px"></span>Realisasi Biaya</span>
+      ${isActive?'<span style="font-size:10px;color:var(--blue);margin-left:4px">✓</span>':''}
     </div>`;
+  }).join('') + `<div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:var(--text3)">
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:4px;background:var(--purple);display:inline-block;border-radius:2px"></span>HPP</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:4px;background:var(--cyan);display:inline-block;border-radius:2px"></span>Realisasi Biaya</span>
+    <span style="margin-left:auto;color:var(--text4);font-style:italic">💡 Klik bar untuk filter tabel</span>
+  </div>`;
 
-  // % Pemakaian Anggaran per proyek (top 15, sorted desc) — pakai CC_F
+  // % Pemakaian Anggaran per proyek top 15 — klik bar → scroll & highlight tabel
   const topAngg = [...CC_F].filter(r=>r.pct_angg>0).sort((a,b)=>b.pct_angg-a.pct_angg).slice(0,15);
   const maxAngg = Math.max(...topAngg.map(r=>r.pct_angg), 100);
+
   $('cc-bar-angg').innerHTML = topAngg.map(r=>{
     const cls = r.pct_angg>100?'budget-over':r.pct_angg>80?'budget-warn':'budget-ok';
     const name = r.proyek.split(' ').slice(0,4).join(' ');
-    return `<div class="bar-row">
+    const kodeEnc = r.kode.replace(/'/g,"\\'");
+    return `<div class="bar-row cc-clickbar"
+      onclick="ccFilterByProyek('${kodeEnc}',this)"
+      title="${r.proyek}\nKlik untuk highlight di tabel"
+      style="cursor:pointer;border-radius:6px;padding:3px 4px;transition:background .15s"
+      onmouseenter="this.style.background='var(--surf2)'" onmouseleave="this.style.background='transparent'">
       <div class="bar-lbl" style="font-size:10px">${name}</div>
       <div class="bar-track"><div class="bar-fill ${cls}" style="width:${Math.min(100,r.pct_angg/maxAngg*100).toFixed(1)}%">
         <span class="bar-txt">${r.pct_angg.toFixed(1)}%</span>
       </div></div>
       ${arrowHtml(r.arrow)}
     </div>`;
-  }).join('');
+  }).join('') + `<div style="font-size:10px;color:var(--text4);margin-top:6px;font-style:italic">💡 Klik bar untuk lihat detail di tabel</div>`;
+}
+
+/* ── Click handler: filter tabel CC ke area tertentu ── */
+function ccFilterByArea(area, el){
+  const sel = $('ccf-area');
+  if(!sel) return;
+  // Toggle: jika area sudah aktif → reset
+  if(sel.value===area){
+    sel.value='';
+  } else {
+    sel.value=area;
+  }
+  filterCC();
+  // Scroll ke tabel
+  setTimeout(()=>{
+    const tbl = document.querySelector('#page-costcontrol .tbl-wrap, #page-costcontrol .cc-table-wrap');
+    if(tbl) tbl.scrollIntoView({behavior:'smooth',block:'start'});
+    if(sel.value) toast('Filter area: '+area,'info');
+    else toast('Filter area direset','info');
+  }, 100);
+}
+
+/* ── Click handler: highlight + jump ke proyek di tabel ── */
+function ccFilterByProyek(kode, barEl){
+  // Highlight bar yang diklik
+  document.querySelectorAll('.cc-clickbar-selected').forEach(el=>el.classList.remove('cc-clickbar-selected'));
+  barEl?.classList.add('cc-clickbar-selected');
+
+  // Cari proyek di CC_F, set ke halaman yg tepat
+  const idx = CC_F.findIndex(r=>r.kode===kode);
+  if(idx<0){
+    // Proyek mungkin ke-filter — reset filter dulu
+    clearCC();
+    const idx2 = CC_F.findIndex(r=>r.kode===kode);
+    if(idx2<0){ toast('Proyek tidak ditemukan','err'); return; }
+    CC_PAGE = Math.ceil((idx2+1)/CC_PER);
+  } else {
+    CC_PAGE = Math.ceil((idx+1)/CC_PER);
+  }
+  renderCC();
+
+  // Scroll ke tabel lalu highlight baris
+  setTimeout(()=>{
+    const tbl = document.querySelector('#page-costcontrol .cc-table-wrap');
+    if(tbl) tbl.scrollIntoView({behavior:'smooth',block:'start'});
+    // Highlight baris di tabel
+    setTimeout(()=>{
+      const rows = document.querySelectorAll('#cc-tbody tr');
+      rows.forEach(row=>{
+        row.style.transition='background .3s';
+        row.style.background='';
+      });
+      const pageIdx = CC_F.findIndex(r=>r.kode===kode) - (CC_PAGE-1)*CC_PER;
+      const targetRow = rows[pageIdx];
+      if(targetRow){
+        targetRow.style.background='var(--purple-d,rgba(139,92,246,.25))';
+        targetRow.scrollIntoView({behavior:'smooth',block:'nearest'});
+        setTimeout(()=>{ targetRow.style.background=''; }, 2500);
+      }
+    }, 400);
+  }, 150);
 }
 
 /* ══ FILTER CC ══ */
