@@ -406,13 +406,52 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .mkor-sel{background:var(--surf);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font);font-size:12px;padding:5px 8px;outline:none}
 /* PDF print */
 @media print{
-  body *{visibility:hidden}
-  #mkor-print-area,#mkor-print-area *{visibility:visible}
-  #mkor-print-area{position:fixed;top:0;left:0;width:100%;background:#fff;color:#000;padding:20px}
-  .mkor-table{font-size:10px}
-  .mkor-table th,.mkor-table td{border:1px solid #ccc;padding:5px 7px}
-  .no-print{display:none!important}
-  .mkor-bar-fill,.mkor-bar-p,.mkor-bar-t{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* Sembunyikan semua, tampilkan hanya overlay print */
+  body > *{display:none!important}
+  #mkor-pdf-overlay{display:block!important}
+  #mkor-pdf-overlay *{visibility:visible!important}
+  /* Reset box model untuk print */
+  #mkor-pdf-overlay{
+    position:static;width:100%;margin:0;padding:0;
+    background:#fff;color:#000;font-family:Arial,sans-serif;
+  }
+  .mpdf-header{padding:16px 20px 10px;border-bottom:2px solid #5b21b6}
+  .mpdf-title{font-size:16px;font-weight:900;color:#5b21b6;text-transform:uppercase}
+  .mpdf-period{font-size:11px;color:#666;margin-top:2px}
+  .mpdf-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 20px;background:#f8f5ff;border-bottom:1px solid #ddd}
+  .mpdf-kpi-card{border:1px solid #ddd;border-radius:6px;padding:8px 10px;background:#fff}
+  .mpdf-kpi-l{font-size:8px;color:#666;font-weight:700;text-transform:uppercase;margin-bottom:3px}
+  .mpdf-kpi-v{font-size:13px;font-weight:800;color:#5b21b6}
+  .mpdf-kpi-s{font-size:9px;color:#999;margin-top:1px}
+  .mpdf-table-wrap{padding:12px 20px}
+  .mpdf-table{width:100%;border-collapse:collapse;font-size:10px}
+  .mpdf-table th{background:#5b21b6;color:#fff;padding:6px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase}
+  .mpdf-table th.r{text-align:right}
+  .mpdf-table td{padding:6px 8px;border-bottom:1px solid #eee;vertical-align:middle}
+  .mpdf-table td.r{text-align:right;font-family:monospace;font-size:10px}
+  .mpdf-table tr:nth-child(even) td{background:#f9f7ff}
+  .mpdf-table tr.total-row td{background:#f3f0ff;font-weight:800;border-top:2px solid #5b21b6}
+  .mpdf-rank{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;font-weight:800;font-size:10px}
+  .mpdf-gold{background:#fef3c7;color:#92400e}
+  .mpdf-silver{background:#f1f5f9;color:#475569}
+  .mpdf-bronze{background:#fef9ec;color:#92400e}
+  .mpdf-podium{font-size:10px;padding:2px 6px;border-radius:8px;font-weight:700}
+  .mpdf-pct-ok{color:#059669;font-weight:800}
+  .mpdf-pct-warn{color:#d97706;font-weight:800}
+  .mpdf-pct-low{color:#dc2626;font-weight:800}
+  .mpdf-chart{padding:12px 20px;border-top:1px solid #ddd}
+  .mpdf-chart-title{font-size:10px;font-weight:700;text-transform:uppercase;color:#333;margin-bottom:10px}
+  .mpdf-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:10px}
+  .mpdf-bar-label{min-width:65px;font-weight:700;text-align:right;color:#333}
+  .mpdf-bar-group{flex:1;display:flex;flex-direction:column;gap:2px}
+  .mpdf-bar-t{height:7px;border-radius:3px;background:#e9d5ff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .mpdf-bar-p{height:7px;border-radius:3px;background:#7c3aed;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .mpdf-bar-val{font-family:monospace;font-size:9px;white-space:nowrap;min-width:130px;text-align:right;color:#5b21b6;font-weight:700}
+  .mpdf-legend{display:flex;gap:14px;margin-top:8px;font-size:9px;color:#666}
+  .mpdf-legend span{display:flex;align-items:center;gap:4px}
+  .mpdf-legend-dot{width:10px;height:4px;border-radius:2px;display:inline-block}
+  page-break-inside:avoid;
+  @page{margin:10mm;size:A4 landscape}
 }
 
 /* ── COST CONTROL ── */
@@ -2880,6 +2919,9 @@ function buildMkorChart(){
     <td></td>
   </tr>`;
 
+  /* Simpan data untuk PDF export */
+  window._MKOR_DATA = korwils.map(x=>({...x}));
+
   /* ── Bar Chart ── */
   $('mkor-chart').innerHTML=`
     <div class="mkor-chart-title">Ranking Pencapaian Korwil Teknik ${periodLabel}</div>
@@ -2913,11 +2955,97 @@ function clearMkorFilter(){
 }
 
 function downloadMkorPDF(){
-  const period = $('mkor-period-label')?.textContent||'Monitoring Korwil';
-  const title  = document.title;
-  document.title = 'Monitoring Realisasi Korwil Teknik - '+period;
+  if(!window._MKOR_DATA || window._MKOR_DATA.length===0){
+    toast('Data belum tersedia, tunggu setelah Sync','err'); return;
+  }
+  const period  = $('mkor-period-label')?.textContent||'Periode: Semua';
+  const korwils = window._MKOR_DATA;
+  const totalP  = korwils.reduce((a,x)=>a+x.pencapaian,0);
+  const totalT  = korwils.reduce((a,x)=>a+x.target,0);
+  const totalO  = Math.max(0,totalT-totalP);
+  const avgP    = korwils.length ? totalP/korwils.length : 0;
+  const top     = korwils[0];
+  const maxP    = Math.max(...korwils.map(x=>x.pencapaian),1);
+  const podIcons=['🥇','🥈','🥉'];
+  const podClass=['mpdf-gold','mpdf-silver','mpdf-bronze'];
+  const podLabel=['Juara 1','Juara 2','Juara 3'];
+
+  const overlay = $('mkor-pdf-overlay');
+  overlay.innerHTML = `
+    <div class="mpdf-header">
+      <div class="mpdf-title">📊 Monitoring Realisasi Korwil Teknik</div>
+      <div class="mpdf-period">${period} &nbsp;|&nbsp; Dicetak: ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}</div>
+    </div>
+    <div class="mpdf-kpi">
+      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">Total Realisasi (Pencapaian)</div><div class="mpdf-kpi-v">${fmt(totalP,true)}</div><div class="mpdf-kpi-s">${period}</div></div>
+      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">Rata-rata Realisasi</div><div class="mpdf-kpi-v">${fmt(avgP,true)}</div><div class="mpdf-kpi-s">Per korwil teknik</div></div>
+      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">🏆 Top Performer</div><div class="mpdf-kpi-v">${top?.kw||'—'}</div><div class="mpdf-kpi-s">${top?(top.pct.toFixed(1)+'% dari target'):'—'}</div></div>
+      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">Total Target (Nilai Kontrak)</div><div class="mpdf-kpi-v">${fmt(totalT,true)}</div><div class="mpdf-kpi-s">Semua proyek korwil</div></div>
+      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">Total Outstanding</div><div class="mpdf-kpi-v" style="color:#dc2626">${fmt(totalO,true)}</div><div class="mpdf-kpi-s">Target − Pencapaian</div></div>
+      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">👥 Jumlah Korwil Teknik</div><div class="mpdf-kpi-v">${korwils.length} orang</div><div class="mpdf-kpi-s">Memiliki data</div></div>
+    </div>
+    <div class="mpdf-table-wrap">
+      <table class="mpdf-table">
+        <thead><tr>
+          <th>Rank</th><th>Korwil Teknik</th>
+          <th class="r">Outstanding (Rp)</th><th class="r">Target (Rp)</th>
+          <th class="r">Pencapaian (Rp)</th><th class="r">%</th>
+          <th class="r">Sisa Target (Rp)</th><th>Status</th>
+        </tr></thead>
+        <tbody>
+          ${korwils.map((x,i)=>{
+            const pctCls=x.pct>=80?'mpdf-pct-ok':x.pct>=50?'mpdf-pct-warn':'mpdf-pct-low';
+            const rankH=i<3?`<span class="mpdf-rank ${podClass[i]}">${i+1}</span>`:`<span class="mpdf-rank" style="background:#f5f5f5;color:#666">${i+1}</span>`;
+            const pod=i<3?`<span class="mpdf-podium ${podClass[i]}">${podIcons[i]} ${podLabel[i]}</span>`:'—';
+            return`<tr>
+              <td>${rankH}</td>
+              <td style="font-weight:700">${x.kw}</td>
+              <td class="r" style="color:#dc2626">${fmt(x.outstanding,true)}</td>
+              <td class="r">${fmt(x.target,true)}</td>
+              <td class="r" style="color:#7c3aed;font-weight:700">${fmt(x.pencapaian,true)}</td>
+              <td class="r ${pctCls}">${x.pct.toFixed(1)}%</td>
+              <td class="r" style="color:#d97706">${fmt(Math.max(0,x.sisa),true)}</td>
+              <td>${pod}</td>
+            </tr>`;
+          }).join('')}
+          <tr class="total-row">
+            <td colspan="2" style="font-weight:800">TOTAL</td>
+            <td class="r" style="color:#dc2626">${fmt(totalO,true)}</td>
+            <td class="r">${fmt(totalT,true)}</td>
+            <td class="r" style="color:#7c3aed;font-weight:800">${fmt(totalP,true)}</td>
+            <td class="r">${totalT>0?(totalP/totalT*100).toFixed(1)+'%':'—'}</td>
+            <td class="r" style="color:#d97706">${fmt(totalO,true)}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="mpdf-chart">
+      <div class="mpdf-chart-title">Ranking Pencapaian Korwil Teknik — ${period}</div>
+      ${korwils.map(x=>{
+        const pW=Math.min(100,x.pencapaian/maxP*100).toFixed(1);
+        const tW=Math.min(100,x.target/maxP*100).toFixed(1);
+        return`<div class="mpdf-bar-row">
+          <div class="mpdf-bar-label">${x.kw}</div>
+          <div class="mpdf-bar-group">
+            <div class="mpdf-bar-t" style="width:${tW}%"></div>
+            <div class="mpdf-bar-p" style="width:${pW}%"></div>
+          </div>
+          <div class="mpdf-bar-val">${fmt(x.pencapaian,true)} / ${fmt(x.target,true)}</div>
+        </div>`;
+      }).join('')}
+      <div class="mpdf-legend">
+        <span><span class="mpdf-legend-dot" style="background:#e9d5ff"></span> Target (NK)</span>
+        <span><span class="mpdf-legend-dot" style="background:#7c3aed"></span> Pencapaian</span>
+      </div>
+    </div>`;
+
+  const title = document.title;
+  document.title = 'Monitoring Realisasi Korwil Teknik - ' + period;
   window.print();
   document.title = title;
+  /* Kosongkan overlay setelah print agar tidak tampil di layar */
+  setTimeout(()=>{ overlay.innerHTML=''; }, 500);
 }
 
 /* ══ NAVIGATION ══ */
@@ -3332,5 +3460,6 @@ window.onload=()=>{
   }
 };
 </script>
+<div id="mkor-pdf-overlay" style="display:none"></div>
 </body>
 </html>
