@@ -2954,6 +2954,85 @@ function clearMkorFilter(){
   buildMkorChart();
 }
 
+
+/* ── Korwil Chart SVG Generator ── */
+function niceScale(maxVal){
+  const rough = maxVal / 5;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  const tick = norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10;
+  const interval = tick * mag;
+  return {max: Math.ceil(maxVal / interval) * interval, interval};
+}
+
+function generateMkorSVG(korwils, period){
+  const W=900, LPAD=90, RPAD=30, TPAD=100, BPAD=65;
+  const chartW=W-LPAD-RPAD;
+  const BAR_H=22, BAR_GAP=5, GROUP_GAP=18;
+  const groupH=BAR_H*2+BAR_GAP;
+  const H=TPAD + korwils.length*(groupH+GROUP_GAP) + BPAD;
+
+  const maxVal=Math.max(...korwils.map(x=>Math.max(x.pencapaian/1e6, x.target/1e6)),1);
+  const sc=niceScale(maxVal*1.08);
+  const xPos=v=>LPAD+(v/sc.max)*chartW;
+
+  let s=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  /* background */
+  s+=`<rect width="${W}" height="${H}" fill="#f2f2f2"/>`;
+  s+=`<rect x="${LPAD}" y="${TPAD}" width="${chartW}" height="${H-TPAD-BPAD}" fill="#e8e8e8"/>`;
+
+  /* title */
+  s+=`<text x="${W/2}" y="28" text-anchor="middle" font-family="Arial" font-size="18" font-weight="bold" fill="#1a1a2e">Ranking Pencapaian Korwil Teknik</text>`;
+  s+=`<text x="${W/2}" y="52" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold" fill="#1a1a2e">${period}</text>`;
+  s+=`<text x="${W/2}" y="72" text-anchor="middle" font-family="Arial" font-size="11" font-style="italic" fill="#555">(dalam Jutaan Rupiah)</text>`;
+
+  /* x-axis ticks + grid */
+  for(let v=0;v<=sc.max+0.01;v+=sc.interval){
+    const x=xPos(v);
+    s+=`<line x1="${x}" y1="${TPAD}" x2="${x}" y2="${H-BPAD}" stroke="#ccc" stroke-width="1"/>`;
+    s+=`<text x="${x}" y="${TPAD-8}" text-anchor="middle" font-family="Arial" font-size="10" fill="#555">${Math.round(v).toLocaleString('id')}</text>`;
+  }
+  /* axis frame */
+  s+=`<line x1="${LPAD}" y1="${TPAD}" x2="${LPAD}" y2="${H-BPAD}" stroke="#888" stroke-width="1.5"/>`;
+  s+=`<line x1="${LPAD}" y1="${H-BPAD}" x2="${W-RPAD}" y2="${H-BPAD}" stroke="#888" stroke-width="1.5"/>`;
+
+  /* bars */
+  korwils.forEach((x,i)=>{
+    const y0=TPAD+i*(groupH+GROUP_GAP);
+    const pJt=x.pencapaian/1e6, tJt=x.target/1e6;
+    const pW=Math.max(2,(pJt/sc.max)*chartW);
+    const tW=Math.max(2,(tJt/sc.max)*chartW);
+
+    /* alternating row bg */
+    if(i%2===0) s+=`<rect x="${LPAD}" y="${y0}" width="${chartW}" height="${groupH}" fill="rgba(0,0,0,0.04)"/>`;
+
+    /* korwil label */
+    s+=`<text x="${LPAD-8}" y="${y0+groupH/2+4}" text-anchor="end" font-family="Arial" font-size="12" font-weight="bold" fill="#1a1a2e">${x.kw}</text>`;
+
+    /* pencapaian bar (green) */
+    s+=`<rect x="${LPAD}" y="${y0}" width="${pW}" height="${BAR_H}" fill="#4caf50" rx="2"/>`;
+    const pLabel=Math.round(pJt).toLocaleString('id');
+    if(pW>60) s+=`<text x="${LPAD+pW-6}" y="${y0+BAR_H-6}" text-anchor="end" font-family="Arial" font-size="10" font-weight="bold" fill="#fff">${pLabel}</text>`;
+    else s+=`<text x="${LPAD+pW+5}" y="${y0+BAR_H-6}" text-anchor="start" font-family="Arial" font-size="10" font-weight="bold" fill="#333">${pLabel}</text>`;
+
+    /* target bar (dark blue) */
+    s+=`<rect x="${LPAD}" y="${y0+BAR_H+BAR_GAP}" width="${tW}" height="${BAR_H}" fill="#1a3a6b" rx="2"/>`;
+    const tLabel=Math.round(tJt).toLocaleString('id');
+    if(tW>60) s+=`<text x="${LPAD+tW-6}" y="${y0+BAR_H+BAR_GAP+BAR_H-6}" text-anchor="end" font-family="Arial" font-size="10" font-weight="bold" fill="#fff">${tLabel}</text>`;
+    else s+=`<text x="${LPAD+tW+5}" y="${y0+BAR_H+BAR_GAP+BAR_H-6}" text-anchor="start" font-family="Arial" font-size="10" font-weight="bold" fill="#333">${tLabel}</text>`;
+  });
+
+  /* legend */
+  const lY=H-22, lX=(W-320)/2;
+  s+=`<rect x="${lX}" y="${lY-13}" width="18" height="13" fill="#1a3a6b" rx="2"/>`;
+  s+=`<text x="${lX+22}" y="${lY-2}" font-family="Arial" font-size="11" fill="#333">Target (Juta Rp)</text>`;
+  s+=`<rect x="${lX+160}" y="${lY-13}" width="18" height="13" fill="#4caf50" rx="2"/>`;
+  s+=`<text x="${lX+182}" y="${lY-2}" font-family="Arial" font-size="11" fill="#333">Pencapaian (Juta Rp)</text>`;
+
+  s+='</svg>';
+  return s;
+}
+
 function downloadMkorPDF(){
   if(!window._MKOR_DATA || window._MKOR_DATA.length===0){
     toast('Data belum tersedia, tunggu setelah Sync','err'); return;
@@ -3020,24 +3099,8 @@ function downloadMkorPDF(){
         </tbody>
       </table>
     </div>
-    <div class="mpdf-chart">
-      <div class="mpdf-chart-title">Ranking Pencapaian Korwil Teknik — ${period}</div>
-      ${korwils.map(x=>{
-        const pW=Math.min(100,x.pencapaian/maxP*100).toFixed(1);
-        const tW=Math.min(100,x.target/maxP*100).toFixed(1);
-        return`<div class="mpdf-bar-row">
-          <div class="mpdf-bar-label">${x.kw}</div>
-          <div class="mpdf-bar-group">
-            <div class="mpdf-bar-t" style="width:${tW}%"></div>
-            <div class="mpdf-bar-p" style="width:${pW}%"></div>
-          </div>
-          <div class="mpdf-bar-val">${fmt(x.pencapaian,true)} / ${fmt(x.target,true)}</div>
-        </div>`;
-      }).join('')}
-      <div class="mpdf-legend">
-        <span><span class="mpdf-legend-dot" style="background:#e9d5ff"></span> Target (NK)</span>
-        <span><span class="mpdf-legend-dot" style="background:#7c3aed"></span> Pencapaian</span>
-      </div>
+    <div style="padding:16px 20px">
+      ${generateMkorSVG(korwils, period.replace('Periode: ','').replace('Periode Semua Invoice','Semua Invoice'))}
     </div>`;
 
   const title = document.title;
