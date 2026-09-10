@@ -2934,8 +2934,9 @@ function clearMkorFilter(){
 
 /* ── Korwil Chart SVG — Dark Theme (web display) ── */
 function generateMkorSVGDark(korwils, periodLabel){
-  const W=800, LPAD=85, RPAD=10, TPAD=36, BPAD=50;
-  const chartW=W-LPAD-RPAD;
+  const W=880, LPAD=82, RPAD=8, TPAD=36, BPAD=50;
+  const VAL_W=165; /* kolom kanan untuk nilai Rp & % */
+  const chartW=W-LPAD-RPAD-VAL_W; /* lebar area bar saja */
   const BAR_H=24, GROUP_GAP=10;
   const H=TPAD + korwils.length*(BAR_H+GROUP_GAP) + BPAD;
 
@@ -2943,31 +2944,34 @@ function generateMkorSVGDark(korwils, periodLabel){
   const sc=niceScale(maxVal*1.05);
   const xPos=v=>LPAD+(v/sc.max)*chartW;
 
-  /* warna dark theme */
   const C_BG     ='#0d1628';
   const C_SURF   ='#141f35';
   const C_GRID   ='rgba(255,255,255,0.06)';
   const C_TEXT   ='#e2e8f0';
   const C_TEXT3  ='#64748b';
-  const C_GREEN  ='#10b981';   /* pencapaian */
-  const C_PURPLE ='#5b21b6';   /* outstanding */
-  const C_PURPLE2='rgba(139,92,246,0.25)'; /* outstanding pale */
+  const C_GREEN  ='#10b981';
+  const C_PURPLE ='rgba(139,92,246,0.35)';
+  const C_VAL    ='#a78bfa';
 
   let s=`<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 ${W} ${H}" style="display:block">`;
   s+=`<rect width="${W}" height="${H}" fill="${C_BG}" rx="8"/>`;
   s+=`<rect x="${LPAD}" y="${TPAD}" width="${chartW}" height="${H-TPAD-BPAD}" fill="${C_SURF}"/>`;
 
   /* title */
-  s+=`<text x="${LPAD}" y="22" font-family="Arial" font-size="11" font-weight="700" fill="${C_TEXT}" text-transform="uppercase" letter-spacing="0.5">${periodLabel}</text>`;
+  s+=`<text x="${LPAD}" y="22" font-family="Arial" font-size="11" font-weight="700" fill="${C_TEXT}">${periodLabel}</text>`;
 
-  /* grid + x-axis labels */
+  /* grid + x-axis labels (hanya di area bar) */
   for(let v=0;v<=sc.max+0.01;v+=sc.interval){
     const x=xPos(v);
+    if(x>W-RPAD-VAL_W) break;
     s+=`<line x1="${x}" y1="${TPAD}" x2="${x}" y2="${H-BPAD}" stroke="${C_GRID}" stroke-width="1"/>`;
     s+=`<text x="${x}" y="${H-BPAD+14}" text-anchor="middle" font-family="Arial" font-size="9" fill="${C_TEXT3}">${Math.round(v).toLocaleString('id')}</text>`;
   }
   s+=`<line x1="${LPAD}" y1="${TPAD}" x2="${LPAD}" y2="${H-BPAD}" stroke="${C_TEXT3}" stroke-width="1"/>`;
-  s+=`<line x1="${LPAD}" y1="${H-BPAD}" x2="${W-RPAD}" y2="${H-BPAD}" stroke="${C_TEXT3}" stroke-width="1"/>`;
+  s+=`<line x1="${LPAD}" y1="${H-BPAD}" x2="${LPAD+chartW}" y2="${H-BPAD}" stroke="${C_TEXT3}" stroke-width="1"/>`;
+
+  /* separator kolom nilai */
+  s+=`<line x1="${LPAD+chartW+4}" y1="${TPAD}" x2="${LPAD+chartW+4}" y2="${H-BPAD}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
 
   /* stacked bars */
   korwils.forEach((x,i)=>{
@@ -2978,33 +2982,36 @@ function generateMkorSVGDark(korwils, periodLabel){
     const pW=Math.max(2,(pJt/sc.max)*chartW);
     const oW=Math.max(0,(outJt/sc.max)*chartW);
     const pct=tJt>0?(pJt/tJt*100).toFixed(1):'0';
+    const pctNum=parseFloat(pct);
+    const pctColor=pctNum>=80?'#10b981':pctNum>=50?'#f59e0b':'#ef4444';
 
-    /* row bg alternating */
     if(i%2===0) s+=`<rect x="${LPAD}" y="${y0}" width="${chartW}" height="${BAR_H}" fill="rgba(255,255,255,0.02)"/>`;
 
     /* label kiri */
     s+=`<text x="${LPAD-7}" y="${y0+BAR_H/2+4}" text-anchor="end" font-family="Arial" font-size="11" font-weight="700" fill="${C_TEXT}">${x.kw}</text>`;
 
-    /* bar pencapaian (hijau) */
+    /* bar pencapaian hijau */
     s+=`<rect x="${LPAD}" y="${y0+3}" width="${pW}" height="${BAR_H-6}" fill="${C_GREEN}" rx="3"/>`;
-    if(pW>70){
-      const pLabel=fmt(x.pencapaian,true);
-      s+=`<text x="${LPAD+pW-6}" y="${y0+BAR_H/2+4}" text-anchor="end" font-family="Arial" font-size="9" font-weight="700" fill="#fff">${pLabel}</text>`;
+    /* label dalam bar hijau jika cukup lebar */
+    if(pW>65){
+      s+=`<text x="${LPAD+pW-6}" y="${y0+BAR_H/2+4}" text-anchor="end" font-family="Arial" font-size="9" font-weight="700" fill="#fff">${fmt(x.pencapaian,true)}</text>`;
     }
 
-    /* bar outstanding (ungu) */
+    /* bar outstanding ungu */
     if(oW>2){
-      s+=`<rect x="${LPAD+pW}" y="${y0+3}" width="${oW}" height="${BAR_H-6}" fill="${C_PURPLE2}" rx="3"/>`;
+      s+=`<rect x="${LPAD+pW}" y="${y0+3}" width="${oW}" height="${BAR_H-6}" fill="${C_PURPLE}" rx="3"/>`;
     }
 
-    /* nilai + % di kanan */
-    const rightX=LPAD+pW+oW+8;
-    s+=`<text x="${rightX}" y="${y0+BAR_H/2+4}" text-anchor="start" font-family="Arial" font-size="10" font-weight="700" fill="#a78bfa">${fmt(x.pencapaian,true)} / ${fmt(x.target,true)}</text>`;
+    /* kolom kanan: nilai Rp + % */
+    const valX=LPAD+chartW+10;
+    const midY=y0+BAR_H/2;
+    s+=`<text x="${valX}" y="${midY}" font-family="Arial" font-size="10" font-weight="700" fill="${C_VAL}">${fmt(x.pencapaian,true)}<tspan fill="${C_TEXT3}"> / </tspan><tspan fill="${C_TEXT3}">${fmt(x.target,true)}</tspan></text>`;
+    s+=`<text x="${valX}" y="${midY+13}" font-family="Arial" font-size="10" font-weight="800" fill="${pctColor}">${pct}%</text>`;
   });
 
   /* legend */
   const lY=H-14, lX=LPAD;
-  s+=`<rect x="${lX}" y="${lY-10}" width="14" height="8" fill="${C_PURPLE2}" rx="2"/>`;
+  s+=`<rect x="${lX}" y="${lY-10}" width="14" height="8" fill="${C_PURPLE}" rx="2"/>`;
   s+=`<text x="${lX+18}" y="${lY}" font-family="Arial" font-size="9" fill="${C_TEXT3}">Target (NK)</text>`;
   s+=`<rect x="${lX+110}" y="${lY-10}" width="14" height="8" fill="${C_GREEN}" rx="2"/>`;
   s+=`<text x="${lX+128}" y="${lY}" font-family="Arial" font-size="9" fill="${C_TEXT3}">Pencapaian</text>`;
