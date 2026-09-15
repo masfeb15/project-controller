@@ -1176,14 +1176,18 @@ const SHEET_ID  = '1LMr9TjgFfRRJzNtpZPy4KSrpNXOULNsluHKj-T57S-U';
 const GID_DB    = '326840967';
 const GID_INV   = '1151299695';
 const GID_CC    = '1416954789';   // sheet "cc"
-const GID_BB    = '0';             // sheet "buku_besar" — Spreadsheet B (Buku Besar Proyek)
+const GID_BB    = '865302250';      // sheet "BB"
+const GID_LOG   = '716813235';      // sheet "log_progress"
+const GID_KDL   = '1937430619';     // sheet "kendala" 
 
 // Format export CSV — bekerja dengan publish to web Google Sheets
 const URL_DB  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_DB}&t=`;
 const URL_INV = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_INV}&t=`;
 const URL_CC  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_CC}&t=`;
 const SHEET_ID_B = '1UU0JzhzS-v1R3FyK0oBoaSmhZpB6wA1XMeFYU2cd74Q'; // Spreadsheet B: Buku Besar Proyek
-const URL_BB  = `https://docs.google.com/spreadsheets/d/${SHEET_ID_B}/export?format=csv&gid=${GID_BB}&t=`;
+const URL_BB  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_BB}&t=`;
+const URL_LOG = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_LOG}&t=`;
+const URL_KDL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_KDL}&t=`;
 const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${GID_DB}`;
 
 /* ══ COLUMN INDEX DB ══
@@ -1228,6 +1232,19 @@ const I={
   STATUS_BAST:15
 };
 
+/* ══ COLUMN INDEX LOG_PROGRESS ══
+   [0]KODE [1]NAMA_PROYEK [2]TGL_UPDATE [3]%PROGRESS_BARU [4]%PROGRESS_SEBELUMNYA
+   [5]DELTA_% [6]NILAI_KONTRAK [7]NILAI_DITAGIHKAN [8]KET_INVOICE [9]NO_INVOICE
+   [10]RETENSI [11]KORWIL_TEKNIK ══ */
+const LP={KODE:0,NAMA:1,TGL:2,PCT_BARU:3,PCT_SBLM:4,DELTA:5,NK:6,TAGIHAN:7,KET:8,NO_INV:9,RETENSI:10,KORWIL:11};
+
+/* ══ COLUMN INDEX KENDALA ══
+   [0]ID [1]TGL_LAPOR [2]KODE_PROYEK [3]KENDALA [4]KATEGORI
+   [5]DAMPAK [6]RISIKO [7]PIC [8]STATUS [9]TINDAK_LANJUT
+   [10]TARGET_SELESAI [11]TGL_SELESAI [12]NAMA_PROYEK [13]WILAYAH
+   [14]AREA [15]LAMA_TERBUKA [16]STATUS_TARGET [17]CEK_STATUS ══ */
+const KDL={ID:0,TGL_LAPOR:1,KODE:2,KENDALA:3,KATEGORI:4,DAMPAK:5,RISIKO:6,PIC:7,STATUS:8,TINDAK_LANJUT:9,TARGET_SELESAI:10,TGL_SELESAI:11,NAMA_PROYEK:12,WILAYAH:13,AREA:14,LAMA:15,STATUS_TARGET:16,CEK:17};
+
 /* ══ COLUMN INDEX CC (sheet "cc") ══
    A=KODE B=SPI C=BLN D=THN E=PROYEK F=JENIS G=AREA
    H=STATUS I=%PROGRESS J=TREND(▲▼) K=%PEMAKAIAN ANGGARAN
@@ -1258,6 +1275,28 @@ function normKode(v){
 }
 /* Build KODE→[invoices] index for O(1) lookup */
 let INV_IDX = {}; // built after INV loads
+let LOG_PROG=[]; // log_progress sheet
+let KENDALA_DATA=[]; // kendala sheet
+let LP_IDX={}; // kode→[log entries]
+let KDL_IDX={}; // kode→[kendala entries]
+function buildLPIdx(){
+  LP_IDX={};
+  LOG_PROG.forEach(r=>{
+    const k=normKode(r[LP.KODE]);
+    if(!k) return;
+    if(!LP_IDX[k]) LP_IDX[k]=[];
+    LP_IDX[k].push(r);
+  });
+}
+function buildKDLIdx(){
+  KDL_IDX={};
+  KENDALA_DATA.forEach(r=>{
+    const k=normKode(r[KDL.KODE]);
+    if(!k) return;
+    if(!KDL_IDX[k]) KDL_IDX[k]=[];
+    KDL_IDX[k].push(r);
+  });
+}
 function buildInvIdx(){
   INV_IDX = {};
   INV.forEach(r=>{
@@ -1465,6 +1504,28 @@ async function loadData(manual=false){
     ldP(70,'Mengambil buku besar…');
     try{
       const r4=await fetchSheet(URL_BB, 3, 2000);
+
+      // Fetch log_progress
+      ldP(75,'Mengambil log progress...');
+      try{
+        const r5=await fetchSheet(URL_LOG,2,1500);
+        if(r5&&r5.ok){
+          const t5=await r5.text();
+          LOG_PROG=parseCSV(t5).slice(1).filter(r=>r.length>2&&cl(r[LP.KODE]));
+          buildLPIdx();
+        }
+      }catch(e){console.warn('log_progress gagal:',e);}
+
+      // Fetch kendala
+      ldP(80,'Mengambil data kendala...');
+      try{
+        const r6=await fetchSheet(URL_KDL,2,1500);
+        if(r6&&r6.ok){
+          const t6=await r6.text();
+          KENDALA_DATA=parseCSV(t6).slice(1).filter(r=>r.length>2&&cl(r[KDL.KODE]));
+          buildKDLIdx();
+        }
+      }catch(e){console.warn('kendala gagal:',e);}
       if(r4.ok){
         const t4=await r4.text();
         const bbRows=parseCSV(t4);
@@ -1548,6 +1609,8 @@ async function loadData(manual=false){
 
     ldP(85,'Membangun dashboard…');
     buildInvIdx();
+    buildLPIdx();
+    buildKDLIdx();
     buildAll();
     const now=new Date().toLocaleTimeString('id',{hour:'2-digit',minute:'2-digit'});
     $('last-sync').textContent='Update '+now;
@@ -1662,7 +1725,8 @@ function buildDash(){
     {l:'Total Tertagih',v:fmt(totT,true),s:pct(totT/totC)+' dari kontrak',c:'c-green',i:'📈'},
     {l:'Sisa Tagihan',v:fmt(totS,true),s:'Belum tertagih',c:'c-amber',i:'📊'},
     {l:'Alert Delay',v:alerts.length,s:'Proyek terlambat >30h',c:'c-red',i:'🚨'},
-  ].map(s=>`<div class="sc ${s.c}" ${s.c==='c-red'?'style="cursor:pointer" onclick="goPage(\'alerts\')"':''}><div class="sc-icon">${s.i}</div><div class="sc-label">${s.l}</div><div class="sc-val">${s.v}</div><div class="sc-sub">${s.s}</div></div>`).join('');
+    {l:'Kendala Aktif',v:KENDALA_DATA.filter(r=>cl(r[KDL.STATUS]).toLowerCase()!=='selesai').length,s:'Kendala belum selesai',c:'c-amber',i:'⚠️'},
+  ].map(s=>`<div class="sc ${s.c}" style="cursor:${s.c==='c-red'||s.c==='c-amber'?'pointer':'default'}" onclick="${s.c==='c-red'?'goPage(\'alerts\')':''}"><div class="sc-icon">${s.i}</div><div class="sc-label">${s.l}</div><div class="sc-val">${s.v}</div><div class="sc-sub">${s.s}</div></div>`).join('');
 
   // Donut
   const COLS=['#3b82f6','#10b981','#f59e0b','#ef4444','#a855f7'];
@@ -1841,6 +1905,15 @@ function renderProgCards(){
         <div><div class="pc-sl">% DP</div><div class="pc-sv">${pct(r[C.PCT_DP])}</div></div>
       </div>
       ${cl(r[C.DOK])?`<div class="pc-dok">📋 <b>DOK SPK:</b> ${cl(r[C.DOK])}</div>`:''}
+      ${(k=>{
+        const kdlOpen=(KDL_IDX[k]||[]).filter(x=>cl(x[KDL.STATUS]).toLowerCase()!=='selesai').length;
+        const lpCount=(LP_IDX[k]||[]).length;
+        if(!kdlOpen&&!lpCount) return '';
+        return '<div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">'
+          +(kdlOpen?`<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--red-d);color:var(--red);font-weight:700">⚠ ${kdlOpen} kendala</span>`:'')
+          +(lpCount?`<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:var(--blue-d);color:var(--cyan);font-weight:700">📋 ${lpCount} log</span>`:'')
+          +'</div>';
+      })(normKode(r[C.KODE]))}
     </div>`;}).join('')||'<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text3)">Tidak ada proyek</div>';
   renderPag('prog-pag',PG_PAGE,Math.ceil(PG_F.length/PER.pg),p=>{PG_PAGE=p;renderProgCards();});
 }
@@ -2231,6 +2304,8 @@ function openModal(src,idx){
       <div class="m-tab active" onclick="swTab(0)">Detail</div>
       <div class="m-tab" onclick="swTab(1)">Invoice (${relInv.length})</div>
       <div class="m-tab" onclick="swTab(2)">DOK &amp; Term</div>
+      <div class="m-tab" onclick="swTab(3)" style="${(LP_IDX[kodeStr]||[]).length?'color:var(--cyan)':''}">Log Progress (${(LP_IDX[kodeStr]||[]).length})</div>
+      <div class="m-tab" onclick="swTab(4)" style="${(KDL_IDX[kodeStr]||[]).filter(x=>cl(x[KDL.STATUS])!=='Selesai').length?'color:var(--red)':''}">Kendala (${(KDL_IDX[kodeStr]||[]).length})</div>
     </div>
     <div class="tab-pane active" id="tp0">
       <div class="m-grid2">
@@ -2286,6 +2361,74 @@ function openModal(src,idx){
              </div>`).join('')
         : `<div style="text-align:center;padding:24px;color:var(--text3)">Tidak ada invoice (Kode: ${kodeStr})</div>`}
     </div>
+    <div class="tab-pane" id="tp3">
+      ${(()=>{
+        const lpRows=(LP_IDX[kodeStr]||[]).slice().sort((a,b)=>cl(b[LP.TGL]).localeCompare(cl(a[LP.TGL])));
+        if(!lpRows.length) return '<div style="text-align:center;padding:24px;color:var(--text3)">Belum ada log progress</div>';
+        return '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">'+lpRows.length+' entri · terbaru di atas</div>'
+          +lpRows.map(function(l){
+            const pB=Math.round(parseFloat(cl(l[LP.PCT_BARU]))*100)||0;
+            const pS=Math.round(parseFloat(cl(l[LP.PCT_SBLM]))*100)||0;
+            const dlt=(parseFloat(cl(l[LP.DELTA]))*100)||0;
+            const naik=dlt>=0;
+            const dColor=naik?'var(--green)':'var(--red)';
+            const dBg=naik?'var(--green-d)':'var(--red-d)';
+            return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--surf2)">'
+              +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+              +'<div style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+excelDate(cl(l[LP.TGL]))+'</div>'
+              +'<div style="display:flex;align-items:center;gap:8px">'
+              +'<span style="font-size:11px;color:var(--text3)">'+pS+'%</span>'
+              +'<span style="color:var(--text3)">→</span>'
+              +'<span style="font-size:13px;font-weight:800;color:var(--green)">'+pB+'%</span>'
+              +'<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:'+dBg+';color:'+dColor+';font-weight:700">'+(naik?'+':'')+dlt.toFixed(1)+'%</span>'
+              +'</div></div>'
+              +'<div style="background:var(--surf3);border-radius:4px;height:6px;margin-bottom:6px">'
+              +'<div style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#34d399);width:'+Math.min(100,pB)+'%"></div></div>'
+              +(cl(l[LP.KET])  ? '<div style="font-size:11px;color:var(--text2);margin-bottom:4px">📝 '+cl(l[LP.KET])+'</div>' : '')
+              +(cl(l[LP.NO_INV])? '<div style="font-family:var(--mono);font-size:10px;color:var(--pink)">🧾 '+cl(l[LP.NO_INV])+' | '+fmt(num(l[LP.TAGIHAN]),true)+'</div>' : '')
+              +'</div>';
+          }).join('');
+      })()}
+    </div>
+    <div class="tab-pane" id="tp4">
+      ${(()=>{
+        const kdlRows=(KDL_IDX[kodeStr]||[]).slice().sort((a,b)=>cl(b[KDL.TGL_LAPOR]).localeCompare(cl(a[KDL.TGL_LAPOR])));
+        if(!kdlRows.length) return '<div style="text-align:center;padding:24px;color:var(--text3)">Tidak ada kendala tercatat ✅</div>';
+        const openN=kdlRows.filter(function(x){return cl(x[KDL.STATUS]).toLowerCase()!=='selesai';}).length;
+        return '<div style="font-size:11px;margin-bottom:10px">'
+            +'<span style="color:var(--red);font-weight:700">'+openN+' terbuka</span>'
+            +' · <span style="color:var(--text3)">'+(kdlRows.length-openN)+' selesai</span>'
+            +' · total '+kdlRows.length+'</div>'
+          +kdlRows.map(function(k){
+            const st=cl(k[KDL.STATUS]);
+            const isOpen=st.toLowerCase()!=='selesai';
+            const rc=cl(k[KDL.RISIKO]).toLowerCase();
+            const rCol=rc==='tinggi'?'var(--red)':rc==='sedang'?'var(--amber)':'var(--green)';
+            const borderCol=isOpen?'rgba(239,68,68,.3)':'var(--border)';
+            const leftCol=isOpen?'var(--red)':'var(--green)';
+            const stCol=isOpen?'var(--amber)':'var(--green)';
+            const lamaNum=parseInt(cl(k[KDL.LAMA]))||0;
+            return '<div style="border:1px solid '+borderCol+';border-left:3px solid '+leftCol+';border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--surf2)">'
+              +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">'
+              +'<div style="font-size:12px;font-weight:700;color:var(--text);flex:1">'+cl(k[KDL.KENDALA])+'</div>'
+              +'<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:var(--surf3);color:'+stCol+';white-space:nowrap;font-weight:700">'+st+'</span>'
+              +'</div>'
+              +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">'
+              +(cl(k[KDL.KATEGORI])? '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:var(--blue-d);color:var(--blue)">'+cl(k[KDL.KATEGORI])+'</span>' :'')
+              +(cl(k[KDL.RISIKO])?  '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:var(--surf3);color:'+rCol+'">⚠ Risiko: '+cl(k[KDL.RISIKO])+'</span>' :'')
+              +(cl(k[KDL.DAMPAK])? '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:var(--surf3);color:var(--text3)">Dampak: '+cl(k[KDL.DAMPAK])+'</span>' :'')
+              +'</div>'
+              +(cl(k[KDL.TINDAK_LANJUT])? '<div style="font-size:11px;color:var(--text2);margin-bottom:4px">➡ '+cl(k[KDL.TINDAK_LANJUT])+'</div>' :'')
+              +'<div style="display:flex;gap:12px;font-size:10px;color:var(--text3);flex-wrap:wrap">'
+              +'<span>📅 '+excelDate(cl(k[KDL.TGL_LAPOR]))+'</span>'
+              +(cl(k[KDL.PIC])? '<span>👤 '+cl(k[KDL.PIC])+'</span>' :'')
+              +(cl(k[KDL.TARGET_SELESAI])? '<span>🎯 Target: '+excelDate(cl(k[KDL.TARGET_SELESAI]))+'</span>' :'')
+              +(lamaNum? '<span style="color:'+(lamaNum>30?'var(--red)':'var(--text3)')+'">⏱ '+lamaNum+' hari</span>' :'')
+              +'</div></div>';
+          }).join('');
+      })()}
+    </div>
+
     <div class="tab-pane" id="tp2">
       <div style="background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
         <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:6px">DOK SPK / Term Payment</div>
