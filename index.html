@@ -2361,6 +2361,23 @@ function openModal(src,idx){
              </div>`).join('')
         : `<div style="text-align:center;padding:24px;color:var(--text3)">Tidak ada invoice (Kode: ${kodeStr})</div>`}
     </div>
+    <div class="tab-pane" id="tp2">
+      <div style="background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:6px">DOK SPK / Term Payment</div>
+        <div style="font-size:13px;color:var(--text);font-weight:600;line-height:1.7;white-space:pre-wrap">${cl(r[C.DOK])||'<span style="color:var(--text3)">Tidak ada data</span>'}</div>
+      </div>
+      <div class="m-rows">
+        ${[['TGL SPK',        excelDate(cl(r[C.TGL_SPK]))],
+           ['TGL BA / BAST',  excelDate(cl(r[C.TGL_BA]))],
+           ['Start',          excelDate(cl(r[C.START]))],
+           ['End',            excelDate(cl(r[C.END]))],
+           ['Durasi',         cl(r[C.DURASI])?(cl(r[C.DURASI])+' hari'):'—'],
+           ['Tgl Retensi',    excelDate(cl(r[C.TGL_RET]))],
+           ['No. PO / SPK',   cl(r[C.NO_PO])||'—'],
+           ['Nilai SPI',      fmt(num(r[C.NILAI_SPI]),true)],
+        ].map(([k,v])=>`<div class="m-row"><div class="m-k">${k}</div><div class="m-v">${v}</div></div>`).join('')}
+      </div>
+    </div>
     <div class="tab-pane" id="tp3">
       ${(()=>{
         const lpRows=(LP_IDX[kodeStr]||[]).slice().sort((a,b)=>cl(b[LP.TGL]).localeCompare(cl(a[LP.TGL])));
@@ -2429,22 +2446,6 @@ function openModal(src,idx){
       })()}
     </div>
 
-    <div class="tab-pane" id="tp2">
-      <div style="background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
-        <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:6px">DOK SPK / Term Payment</div>
-        <div style="font-size:13px;color:var(--text);font-weight:600;line-height:1.7;white-space:pre-wrap">${cl(r[C.DOK])||'<span style="color:var(--text3)">Tidak ada data</span>'}</div>
-      </div>
-      <div class="m-rows">
-        ${[['TGL SPK',        excelDate(cl(r[C.TGL_SPK]))],
-           ['TGL BA / BAST',  excelDate(cl(r[C.TGL_BA]))],
-           ['Start',          excelDate(cl(r[C.START]))],
-           ['End',            excelDate(cl(r[C.END]))],
-           ['Durasi',         cl(r[C.DURASI])?(cl(r[C.DURASI])+' hari'):'—'],
-           ['Tgl Retensi',    excelDate(cl(r[C.TGL_RET]))],
-           ['No. PO / SPK',   cl(r[C.NO_PO])||'—'],
-           ['Nilai SPI',      fmt(num(r[C.NILAI_SPI]),true)],
-        ].map(([k,v])=>`<div class="m-row"><div class="m-k">${k}</div><div class="m-v">${v}</div></div>`).join('')}
-      </div>
     </div>`;
   $('modal').classList.add('open');
 }
