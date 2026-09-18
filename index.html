@@ -2384,9 +2384,9 @@ function openModal(src,idx){
         if(!lpRows.length) return '<div style="text-align:center;padding:24px;color:var(--text3)">Belum ada log progress</div>';
         return '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">'+lpRows.length+' entri · terbaru di atas</div>'
           +lpRows.map(function(l){
-            const pB=Math.round(parseFloat(cl(l[LP.PCT_BARU]))*100)||0;
-            const pS=Math.round(parseFloat(cl(l[LP.PCT_SBLM]))*100)||0;
-            const dlt=(parseFloat(cl(l[LP.DELTA]))*100)||0;
+            const pB=parseFloat(cl(l[LP.PCT_BARU]))||0;   /* sheet sudah dalam % (61.04) */
+            const pS=parseFloat(cl(l[LP.PCT_SBLM]))||0;
+            const dlt=parseFloat(cl(l[LP.DELTA]))||0;
             const naik=dlt>=0;
             const dColor=naik?'var(--green)':'var(--red)';
             const dBg=naik?'var(--green-d)':'var(--red-d)';
@@ -2394,13 +2394,13 @@ function openModal(src,idx){
               +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
               +'<div style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+excelDate(cl(l[LP.TGL]))+'</div>'
               +'<div style="display:flex;align-items:center;gap:8px">'
-              +'<span style="font-size:11px;color:var(--text3)">'+pS+'%</span>'
+              +'<span style="font-size:11px;color:var(--text3)">'+pS.toFixed(2)+'%</span>'
               +'<span style="color:var(--text3)">→</span>'
-              +'<span style="font-size:13px;font-weight:800;color:var(--green)">'+pB+'%</span>'
-              +'<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:'+dBg+';color:'+dColor+';font-weight:700">'+(naik?'+':'')+dlt.toFixed(1)+'%</span>'
+              +'<span style="font-size:13px;font-weight:800;color:var(--green)">'+pB.toFixed(2)+'%</span>'
+              +'<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:'+dBg+';color:'+dColor+';font-weight:700">'+(naik?'+':'')+dlt.toFixed(2)+'%</span>'
               +'</div></div>'
               +'<div style="background:var(--surf3);border-radius:4px;height:6px;margin-bottom:6px">'
-              +'<div style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#34d399);width:'+Math.min(100,pB)+'%"></div></div>'
+              +'<div style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#34d399);width:'+Math.min(100,pB).toFixed(1)+'%"></div></div>'
               +(cl(l[LP.KET])  ? '<div style="font-size:11px;color:var(--text2);margin-bottom:4px">📝 '+cl(l[LP.KET])+'</div>' : '')
               +(cl(l[LP.NO_INV])? '<div style="font-family:var(--mono);font-size:10px;color:var(--pink)">🧾 '+cl(l[LP.NO_INV])+' | '+fmt(num(l[LP.TAGIHAN]),true)+'</div>' : '')
               +'</div>';
