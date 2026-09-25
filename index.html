@@ -2380,7 +2380,16 @@ function openModal(src,idx){
     </div>
     <div class="tab-pane" id="tp3">
       ${(()=>{
-        const lpRows=(LP_IDX[kodeStr]||[]).slice().sort((a,b)=>cl(b[LP.TGL]).localeCompare(cl(a[LP.TGL])));
+        /* Parse tanggal ke timestamp untuk sorting yang benar */
+        function parseTglSort(v){
+          if(!v) return 0;
+          const s=v.toString().trim();
+          const n=parseInt(s);
+          if(!isNaN(n)&&n>40000&&n<70000) return n; // Excel serial
+          const d=new Date(s);
+          return isNaN(d.getTime())?0:d.getTime();
+        }
+        const lpRows=(LP_IDX[kodeStr]||[]).slice().sort((a,b)=>parseTglSort(cl(b[LP.TGL]))-parseTglSort(cl(a[LP.TGL])));
         if(!lpRows.length) return '<div style="text-align:center;padding:24px;color:var(--text3)">Belum ada log progress</div>';
         return '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">'+lpRows.length+' entri · terbaru di atas</div>'
           +lpRows.map(function(l){
