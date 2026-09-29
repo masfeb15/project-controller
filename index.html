@@ -640,7 +640,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         <option value="">Semua Delay</option>
         <option value="ontime">Lebih Awal / Tepat Waktu</option>
         <option value="warn">Terlambat 1–100 hari</option>
-        <option value="late">Terlambat >30 hari</option>
+        <option value="late">Terlambat >100 hari</option>
       </select>
       <select id="pf-jenis" title="Filter Jenis 2" onchange="filterProg()"><option value="">Semua Jenis</option></select>
       <button class="fb-export" onclick="exportXLS('prog')">⬇ Export Excel</button>
@@ -990,7 +990,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 
   <div class="page" id="page-alerts">
     <div class="sec-hd">
-      <div><div class="sec-title" style="color:var(--red)">🚨 Alert Delay</div><div class="sec-sub" id="alert-sub">Proyek terlambat > 30 hari</div></div>
+      <div><div class="sec-title" style="color:var(--red)">🚨 Alert Delay</div><div class="sec-sub" id="alert-sub">Semua proyek terlambat (delay < 0)</div></div>
     </div>
     <div class="alert-panel" id="alert-panel"></div>
   </div>
@@ -1651,7 +1651,7 @@ function buildAll(){
 }
 
 function updateBadges(){
-  const alerts=ALL.filter(r=>cl(r[C.STATUS])==='PROGRESS'&&(parseInt(r[C.DELAY])||0)<-30);
+  const alerts=ALL.filter(r=>cl(r[C.STATUS])==='PROGRESS'&&(parseInt(r[C.DELAY])||0)<0);
   $('sb-dash').textContent=ALL.length.toLocaleString('id');
   $('sb-progress').textContent=PG_F.length;
   $('sb-database').textContent=ALL.length.toLocaleString('id');
@@ -1661,7 +1661,7 @@ function updateBadges(){
   $('sb-alerts').textContent=alerts.length;
   $('alert-count').textContent=alerts.length;
   $('alert-btn').style.display=alerts.length?'flex':'none';
-  $('alert-sub').textContent=alerts.length+' proyek terlambat > 30 hari';
+  $('alert-sub').textContent=alerts.length+' proyek terlambat';
   $('dash-sub').textContent=ALL.length.toLocaleString('id')+' proyek · '+INV.length.toLocaleString('id')+' invoice';
   // Update CC badge
   const sbcc=$('sb-costcontrol');
@@ -1712,7 +1712,7 @@ function buildDash(){
   const totS=src.reduce((a,r)=>a+num(r[C.SISA]),0);
   const totR=src.reduce((a,r)=>a+num(r[C.RETENSI]),0);
   const totInv=INV.reduce((a,r)=>a+num(r[I.DPP]),0);
-  const alerts=prog.filter(r=>(parseInt(r[C.DELAY])||0)<-100);
+  const alerts=prog.filter(r=>(parseInt(r[C.DELAY])||0)<0);
   const stCnt={};src.forEach(r=>{const s=cl(r[C.STATUS])||'—';stCnt[s]=(stCnt[s]||0)+1;});
   const filterLabel = DASH_F ? ` (${src.length.toLocaleString('id')} proyek terfilter)` : '';
 
@@ -1724,7 +1724,7 @@ function buildDash(){
     {l:'Total Kontrak',v:fmt(totC,true),s:'Semua proyek',c:'c-blue',i:'💰'},
     {l:'Total Tertagih',v:fmt(totT,true),s:pct(totT/totC)+' dari kontrak',c:'c-green',i:'📈'},
     {l:'Sisa Tagihan',v:fmt(totS,true),s:'Belum tertagih',c:'c-amber',i:'📊'},
-    {l:'Alert Delay',v:alerts.length,s:'Proyek terlambat >30h',c:'c-red',i:'🚨'},
+    {l:'Alert Delay',v:alerts.length,s:'Semua proyek terlambat',c:'c-red',i:'🚨'},
     {l:'Kendala Aktif',v:KENDALA_DATA.filter(r=>cl(r[KDL.STATUS]).toLowerCase()!=='selesai').length,s:'Kendala belum selesai',c:'c-amber',i:'⚠️'},
   ].map(s=>`<div class="sc ${s.c}" style="cursor:${s.c==='c-red'||s.c==='c-amber'?'pointer':'default'}" onclick="${s.c==='c-red'?'goPage(\'alerts\')':''}"><div class="sc-icon">${s.i}</div><div class="sc-label">${s.l}</div><div class="sc-val">${s.v}</div><div class="sc-sub">${s.s}</div></div>`).join('');
 
@@ -2247,7 +2247,7 @@ function clearPICFilter(){
 
 /* ══ ALERTS ══ */
 function buildAlerts(){
-  const alerts=ALL.filter(r=>cl(r[C.STATUS])==='PROGRESS'&&(parseInt(r[C.DELAY])||0)<-30).sort((a,b)=>(parseInt(a[C.DELAY])||0)-(parseInt(b[C.DELAY])||0));
+  const alerts=ALL.filter(r=>cl(r[C.STATUS])==='PROGRESS'&&(parseInt(r[C.DELAY])||0)<0).sort((a,b)=>(parseInt(a[C.DELAY])||0)-(parseInt(b[C.DELAY])||0));
   const panel=$('alert-panel');
   if(!alerts.length){panel.innerHTML='<div style="padding:32px;text-align:center;color:var(--green)">✅ Tidak ada proyek yang terlambat lebih dari 30 hari</div>';return;}
   panel.innerHTML=`<div class="alert-hd"><span style="font-size:18px">🚨</span><div class="alert-hd-title">${alerts.length} Proyek Terlambat > 30 Hari</div></div>`+
