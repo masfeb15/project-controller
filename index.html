@@ -3702,23 +3702,55 @@ function initCostControl() {
     const dbMap = {};
     ALL.forEach(r => { const k = normKode(r[C.KODE]); if(k) dbMap[k] = r; });
 
+    /* Set kode yang sudah ada di CC_RAW */
+    const existingKodes = new Set(CC_RAW.map(x=>x.kode));
+
     CC_RAW.forEach(item => {
       const dbRow = dbMap[item.kode];
       if(!dbRow) return;
       const butam = num(dbRow[C.BUTAM]);
       const hpp   = num(dbRow[C.HPP]);
-      /* Timpa realisasi dengan BUTAM dari DB live */
       item.realisasi = butam;
       item.hpp       = hpp || item.hpp;
       item.selisih   = hpp ? (hpp - butam) : item.selisih;
       item.pct_angg  = (hpp && butam) ? parseFloat((butam / hpp * 100).toFixed(2)) : item.pct_angg;
-      /* Sync kolom lain dari DB */
       item.nk        = num(dbRow[C.NK])        || item.nk;
       item.progress  = parseFloat((num(dbRow[C.PROGRESS]) * 100).toFixed(2)) || item.progress;
       item.delay     = parseInt(dbRow[C.DELAY]) || item.delay;
       item.status    = cl(dbRow[C.STATUS])      || item.status;
       item.pic_tek   = cl(dbRow[C.PIC_TEK])     || item.pic_tek;
       item.pic_sales = cl(dbRow[C.PIC_SALES])   || item.pic_sales;
+    });
+
+    /* ── Tambahkan proyek dari DB yang BELUM ada di CC_RAW ── */
+    ALL.forEach(r => {
+      const kode = normKode(r[C.KODE]);
+      if(!kode || existingKodes.has(kode)) return;
+      const butam = num(r[C.BUTAM]);
+      const hpp   = num(r[C.HPP]);
+      CC_RAW.push({
+        kode,
+        spi      : cl(r[C.SPI]),
+        proyek   : cl(r[C.PROYEK]),
+        jenis    : cl(r[C.JENIS]),
+        area     : cl(r[C.AREA]),
+        thn      : cl(r[C.TAHUN]),
+        status   : cl(r[C.STATUS]),
+        progress : parseFloat((num(r[C.PROGRESS]) * 100).toFixed(2)),
+        arrow    : '',
+        pct_angg : (hpp && butam) ? parseFloat((butam/hpp*100).toFixed(2)) : 0,
+        nk       : num(r[C.NK]),
+        hpp,
+        realisasi: butam,
+        selisih  : hpp ? (hpp - butam) : 0,
+        delay    : parseInt(r[C.DELAY]) || 0,
+        pic_tek  : cl(r[C.PIC_TEK]),
+        pic_sales: cl(r[C.PIC_SALES]),
+        n_trans  : 0, bb_debit: 0, bb_kredit: 0,
+        start    : cl(r[C.START]).substring(0,10),
+        end      : cl(r[C.END]).substring(0,10),
+      });
+      existingKodes.add(kode);
     });
   }
 
