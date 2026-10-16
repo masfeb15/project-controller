@@ -673,6 +673,20 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         <option value="TIMUR">Timur</option>
       </select>
       <select id="df-jenis" title="Filter Jenis 2" onchange="filterDB()"><option value="">Semua Jenis</option></select>
+      <!-- Outstanding per tanggal -->
+      <div style="display:flex;align-items:center;gap:6px;background:var(--amber-d);border:1px solid var(--amber);border-radius:8px;padding:4px 10px;flex-shrink:0">
+        <span style="font-size:10px;font-weight:700;color:var(--amber);white-space:nowrap">📅 Outstanding per:</span>
+        <select id="df-os-bln" onchange="filterDB()" style="background:transparent;border:none;color:var(--text);font-size:11px;outline:none;cursor:pointer">
+          <option value="">Bln</option>
+          <option value="1">Jan</option><option value="2">Feb</option>
+          <option value="3">Mar</option><option value="4">Apr</option>
+          <option value="5">Mei</option><option value="6">Jun</option>
+          <option value="7">Jul</option><option value="8">Ags</option>
+          <option value="9">Sep</option><option value="10">Okt</option>
+          <option value="11">Nov</option><option value="12">Des</option>
+        </select>
+        <select id="df-os-thn" onchange="filterDB()" style="background:transparent;border:none;color:var(--text);font-size:11px;outline:none;cursor:pointer"><option value="">Thn</option></select>
+      </div>
       <button class="fb-export" onclick="exportXLS('db')">⬇ Export Excel</button>
       <button class="fb-clear" onclick="clearDB()">✕ Reset</button>
     </div>
@@ -1675,6 +1689,10 @@ function buildSidebar(){
   const tahuns=[...new Set(ALL.map(r=>cl(r[C.TAHUN])).filter(y=>y&&!isNaN(y)))].sort();
   ['pf-area','df-area','if-area'].forEach(id=>{const s=$(id);if(!s)return;while(s.options.length>1)s.remove(1);areas.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;s.appendChild(o);});});
   ['pf-tahun','df-tahun'].forEach(id=>{const s=$(id);if(!s)return;while(s.options.length>1)s.remove(1);tahuns.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;s.appendChild(o);});});
+  // Populate df-os-thn (outstanding per tahun) - range lebih lebar
+  const osThnSel=$('df-os-thn');
+  if(osThnSel){while(osThnSel.options.length>1)osThnSel.remove(1);
+    [...tahuns,...tahuns.map(y=>String(parseInt(y)+1))].filter((v,i,a)=>a.indexOf(v)===i).sort().forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;osThnSel.appendChild(o);});}
   const jenis=[...new Set(ALL.map(r=>cl(r[C.JENIS2])).filter(Boolean))].sort();
   ['pf-jenis','df-jenis'].forEach(id=>{const s=$(id);if(!s)return;while(s.options.length>1)s.remove(1);jenis.forEach(j=>{const o=document.createElement('option');o.value=j;o.textContent=j;s.appendChild(o);});});
   const iyears=[...new Set(INV.map(r=>cl(r[I.THN])).filter(y=>y&&!isNaN(y)&&y!=='0'))].sort();
@@ -1919,8 +1937,27 @@ function renderProgCards(){
 }
 
 /* ══ DATABASE ══ */
+/* ── Parse tanggal ke Date object (handle berbagai format) ── */
+function parseDateVal(v){
+  if(!v) return null;
+  const s=v.toString().trim();
+  const n=parseInt(s);
+  if(!isNaN(n)&&n>40000&&n<70000){
+    return new Date(Date.UTC(1899,11,30)+n*86400000);
+  }
+  const d=new Date(s);
+  return isNaN(d.getTime())?null:d;
+}
+
 function filterDB(){
-  const q=(document.getElementById('df-q').value||'').toLowerCase(),status=$('df-status').value,area=$('df-area').value,tahun=$('df-tahun').value,wil=$('df-wil').value,jenis=$('df-jenis').value;
+  const q=(document.getElementById('df-q').value||'').toLowerCase();
+  const status=$('df-status').value, area=$('df-area').value;
+  const tahun=$('df-tahun').value, wil=$('df-wil').value, jenis=$('df-jenis').value;
+  const osBln=parseInt($('df-os-bln')?.value)||0;
+  const osThn=parseInt($('df-os-thn')?.value)||0;
+  /* Tanggal akhir bulan filter outstanding */
+  const osDate = (osBln&&osThn) ? new Date(osThn, osBln, 0) : null; // hari terakhir bulan tsb
+
   DB_F=ALL.filter(r=>{
     if(q&&!cl(r[C.PROYEK]).toLowerCase().includes(q)&&!cl(r[C.KODE]).toLowerCase().includes(q)&&!cl(r[C.SPI]).toLowerCase().includes(q)&&!cl(r[C.PIC_TEK]).toLowerCase().includes(q)&&!cl(r[C.PIC_SALES]).toLowerCase().includes(q)&&!cl(r[C.NO_SO]).toLowerCase().includes(q))return false;
     if(status&&cl(r[C.STATUS])!==status)return false;
@@ -1928,17 +1965,37 @@ function filterDB(){
     if(tahun&&cl(r[C.TAHUN])!==tahun)return false;
     if(wil&&cl(r[C.WILAYAH])!==wil)return false;
     if(jenis&&cl(r[C.JENIS2])!==jenis)return false;
+    /* ── Filter Outstanding per tanggal ── */
+    if(osDate){
+      /* Proyek harus sudah mulai/kontrak sebelum/saat tanggal filter */
+      const spk=parseDateVal(cl(r[C.TGL_SPK]));
+      const thnProyek=parseInt(cl(r[C.TAHUN]))||0;
+      const sudahMulai = spk ? spk<=osDate : (thnProyek>0 && thnProyek<=osDate.getFullYear());
+      if(!sudahMulai) return false;
+      /* Proyek belum selesai per tanggal filter:
+         TGL_BA kosong → belum ada BAST
+         TGL_BA ada tapi > tanggal filter → BAST setelah periode */
+      const ba=parseDateVal(cl(r[C.TGL_BA]));
+      const belumSelesai = !ba || ba>osDate;
+      if(!belumSelesai) return false;
+    }
     return true;
   });
   if(DB_SORT.col)sortDBArr();
   DB_PAGE=1;renderDB();
 }
-function clearDB(){['df-q','df-status','df-area','df-tahun','df-wil','df-jenis'].forEach(id=>$(id).value='');DB_F=[...ALL];DB_PAGE=1;renderDB();}
+function clearDB(){['df-q','df-status','df-area','df-tahun','df-wil','df-jenis','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});DB_F=[...ALL];DB_PAGE=1;renderDB();}
 function sortDB(col){document.querySelectorAll('thead th').forEach(t=>t.classList.remove('s-asc','s-desc'));if(DB_SORT.col===col)DB_SORT.dir*=-1;else{DB_SORT.col=col;DB_SORT.dir=1;}sortDBArr();DB_PAGE=1;renderDB();}
 function sortDBArr(){const nums=['NK','TERTAGIH','SISA','PCT_TAGIH','PCT_ANGGARAN','PCT_DP','PROGRESS','DELAY'];DB_F.sort((a,b)=>{const ci=C[DB_SORT.col];if(ci===undefined)return 0;const av=nums.includes(DB_SORT.col)?num(a[ci]):cl(a[ci]);const bv=nums.includes(DB_SORT.col)?num(b[ci]):cl(b[ci]);return typeof av==='number'?(av-bv)*DB_SORT.dir:av.localeCompare(bv)*DB_SORT.dir;});}
 function renderDB(){
   const dbSisaT=DB_F.reduce((a,r)=>a+num(r[C.SISA]),0);
-  $('db-sub').textContent=DB_F.length.toLocaleString('id')+' proyek  ·  Sisa Tagihan: '+fmt(dbSisaT,true);
+  const osBln2=parseInt($('df-os-bln')?.value)||0,osThn2=parseInt($('df-os-thn')?.value)||0;
+  const blnNames=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+  const osLabel=(osBln2&&osThn2)?(' · Outstanding per '+blnNames[osBln2]+' '+osThn2):'';
+  const sisaTotal=DB_F.reduce((a,r)=>a+num(r[C.SISA]),0);
+  $('db-sub').textContent=DB_F.length.toLocaleString('id')+' proyek · Sisa Tagihan: '+fmt(sisaTotal,true)+osLabel;
+  const dbs2=$('db-sub'); // updated
+  /* dummy to satisfy old substr search */ void(0); const _x_=DB_F.length.toLocaleString('id')+' proyek  ·  Sisa Tagihan: '+fmt(dbSisaT,true);
   const start=(DB_PAGE-1)*PER.db,slice=DB_F.slice(start,start+PER.db);
   $('db-tbody').innerHTML=slice.map((r,i)=>{
     const delay=parseInt(r[C.DELAY])||0;
