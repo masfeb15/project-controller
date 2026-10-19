@@ -1967,17 +1967,36 @@ function filterDB(){
     if(jenis&&cl(r[C.JENIS2])!==jenis)return false;
     /* ── Filter Outstanding per tanggal ── */
     if(osDate){
+      const status=cl(r[C.STATUS]);
+      /* BATAL → tidak pernah outstanding */
+      if(status==='BATAL') return false;
+
       /* Proyek harus sudah mulai/kontrak sebelum/saat tanggal filter */
       const spk=parseDateVal(cl(r[C.TGL_SPK]));
       const thnProyek=parseInt(cl(r[C.TAHUN]))||0;
       const sudahMulai = spk ? spk<=osDate : (thnProyek>0 && thnProyek<=osDate.getFullYear());
       if(!sudahMulai) return false;
-      /* Proyek belum selesai per tanggal filter:
-         TGL_BA kosong → belum ada BAST
-         TGL_BA ada tapi > tanggal filter → BAST setelah periode */
-      const ba=parseDateVal(cl(r[C.TGL_BA]));
-      const belumSelesai = !ba || ba>osDate;
-      if(!belumSelesai) return false;
+
+      /* Cek apakah belum selesai per tanggal filter:
+         Urutan prioritas: TGL_BA → kolom END → STATUS saat ini */
+      const ba  = parseDateVal(cl(r[C.TGL_BA]));
+      const end = parseDateVal(cl(r[C.END]));
+
+      if(ba){
+        /* Ada TGL_BA: selesai jika BA ≤ tanggal filter */
+        if(ba <= osDate) return false;
+      } else if(end){
+        /* Tidak ada TGL_BA tapi ada END date:
+           Jika END ≤ filter dan STATUS adalah FINISH/FINISH RETENSI → sudah selesai */
+        const isFinished = status==='FINISH'||status==='FINISH RETENSI';
+        if(isFinished && end<=osDate) return false;
+      } else {
+        /* Tidak ada TGL_BA maupun END:
+           Pakai STATUS saat ini sebagai proxy:
+           FINISH/FINISH RETENSI dengan tahun proyek jauh lebih kecil → anggap sudah selesai */
+        const isFinished = status==='FINISH'||status==='FINISH RETENSI';
+        if(isFinished && thnProyek>0 && thnProyek < osDate.getFullYear()-1) return false;
+      }
     }
     return true;
   });
