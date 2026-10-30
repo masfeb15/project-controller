@@ -504,6 +504,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .scw-set-row{display:flex;flex-direction:column;gap:5px}
 .scw-set-row input,.scw-set-row textarea{background:var(--surf2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none;width:100%;max-width:640px;resize:vertical}
 .scw-set-row input:focus,.scw-set-row textarea:focus{border-color:var(--blue)}
+.scw-reset{align-self:flex-start;background:none;border:1px solid var(--border);border-radius:7px;color:var(--text3);font-size:11px;padding:5px 9px;cursor:pointer;font-family:var(--font)}
 @media(max-width:768px){.scw-dl{margin-left:0}.scw-scroll{max-height:none}}
 
 /* ── COST CONTROL ── */
@@ -993,6 +994,9 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         <div class="scw-set-row"><span class="scw-lbl">Label update</span><input type="text" id="scw-upd" maxlength="40" placeholder="UPDATE 30/10" aria-label="Label update"></div>
         <div class="scw-set-row"><span class="scw-lbl">NB — satu baris per poin, tampil di kotak bawah gambar (tersimpan otomatis)</span>
           <textarea id="scw-nb" rows="4" oninput="scwSaveNB()" aria-label="Isi NB"></textarea></div>
+        <div class="scw-set-row"><span class="scw-lbl">Daftar SC Teknik — format NAMA | WILAYAH, satu per baris. SC di daftar ini selalu tampil di tabel walau 0 proyek</span>
+          <textarea id="scw-master" rows="8" oninput="scwSaveMaster()" aria-label="Daftar SC Teknik"></textarea>
+          <button type="button" class="scw-reset" onclick="scwResetMaster()">↺ Kembalikan daftar awal (65 SC)</button></div>
       </div>
     </details>
     <div class="mkor-kpi" id="scw-kpi" style="border:1px solid var(--border);border-radius:var(--r2);margin-bottom:12px"></div>
@@ -3570,6 +3574,8 @@ function initScWeek(){
   const dflt='* FARHAN NUBLI - DIPERBANTUKAN RS EKA PURI IGM (DRAFTER)\n* DATA PROYEK DIAMBIL DARI TGL SPI\n* CUT OFF PER SENIN 16:00';
   let saved=null; try{saved=localStorage.getItem('scwNB');}catch(e){}
   $('scw-nb').value=saved!=null?saved:dflt;
+  let sm=null; try{sm=localStorage.getItem('scwMaster');}catch(e){}
+  $('scw-master').value=sm!=null&&sm.trim()?sm:SCW_MASTER_DEFAULT;
   $('scw-upd').value='UPDATE '+String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0');
   scwResetWeeks();
 }
@@ -3639,13 +3645,33 @@ function scwJoinAreas(arr){
   return arr.join(' & ');
 }
 
+const SCW_MASTER_DEFAULT="A. ZIDANE | SULAWESI\nABDUL JALIL | BARTATEN 1 & 3\nADAM RAKHMADI | SUMATERA 2\nADI KURNIAWAN | JATIM\nADITYA PRADHANA | JATIM\nADITYA PUTRA | JATIM\nADITYA WIBISONO | JATIM\nAGNES ANUGERAH LUMBAYA | BALI NUSRA\nAGUS BUDIANTO | SULAWESI\nAHMAD IRFAN MUSYAFFA | JATENG 1\nAKBAR FIRMANSYAH | KALIMANTAN\nALEK SUCANDRA | BARTATEN 2 & 4\nALEXANDER H MARPAUNG | SULAWESI\nALFIN REFINDA KUSUMA | BALI NUSRA\nALIF LUKMAN IRFANI | JATIM\nANDIK SUWANTORO | JATIM\nATTABIQ AS'AD | JATENG 2\nBAYU NUGROHO | BARTATEN 2 & 4\nBAYU SEPTIAWAN M | KALIMANTAN\nBUDI SANTOSO | BARTATEN 2 & 4\nBUNYAMUN MARSHUSH | SUMATERA 3\nCHAIRIL ANWAR | KALIMANTAN\nDEDE SYAHPUTRA | SUMATERA 1\nDIMAS ALEXANDER | SUMATERA 1\nDWI ELLY KURNIAWAN | JATIM\nFADHIL NUZMI | SUMATERA 3\nFAHMI MAHARDIKA | BALI NUSRA\nFAHRUR ROZI | SUMATERA 1\nFARHAN NUBLI | SUMATERA 3\nFARREL ERMANDO | SUMATERA 2\nFERDIAN MAULID R | SUMATERA 2\nGREGORIUS CAKRA | JATIM\nGREGORIUS GALA | SULAWESI\nHANIF RAMADHANI | JATIM\nJULIAN WIDYA P | JATENG 2\nLINGGAR SUMANTRI D. | SUMATERA 3\nLUKITA TRI C | JATIM\nM RAFLI | SUMATERA 3\nM. FAUZAN HILMI AL GHIFARI | BARTATEN 2 & 4\nM. HERI KURNIADIN | KALIMANTAN\nM. IDRIS R | JATIM\nM. ILHAM FAUZHAN | SUMATERA 2\nM. IRFAN RAMADHAN | KALIMANTAN\nM. RAFLY AKBAR S | JATIM\nMICHAEL JULIUS TARIGAN | BARTATEN 2 & 4\nMUHAMMAD HAPIS | BARTATEN 2 & 4\nNABIL ABDILLAH | SULAWESI\nNAPIH | BARTATEN 2 & 4\nPRASETYA FAIZ PAMBUDI | JATENG 1\nRAHIMI ATFA | SULAWESI\nRAMA PRAMUDIANA | BARTATEN 1 & 3\nRENDRA MAS SAID | JATENG 2\nRISWANTO | BARTATEN 2 & 4\nRIZKY DWI MARTA | BARTATEN 1 & 3\nSEPTO AKEN PRANOTO | BARTATEN 2 & 4\nSKETSA FAJAR PRATAMA | BARTATEN 1 & 3\nSULUNG JULI HAMZAH | BARTATEN 2 & 4\nTAUFIK HATTA | SUMATERA 1\nTEGAR RAFLY | BARTATEN 2 & 4\nTOMMY JS | SUMATERA 3\nWAHYU EKO PRIAMBODO | JATENG 1\nYOGI D.G | SUMATERA 2\nYOGIE WIDYA P | SULAWESI\nYUSUF SUDARMAWAN | BARTATEN 1 & 3\nZULFADHLI AFBAS | BARTATEN 2 & 4";
+const scwKey=v=>String(v||'').toUpperCase().replace(/[\u2018\u2019`\u00b4]/g,"'").replace(/[^A-Z0-9]/g,'');
+function scwMaster(){
+  const el=$('scw-master'), txt=el?el.value:SCW_MASTER_DEFAULT, out=[], seen=new Set();
+  txt.split('\n').forEach(l=>{
+    const parts=l.split('|'), name=(parts[0]||'').trim().toUpperCase().replace(/\s+/g,' ');
+    if(!name) return;
+    const key=scwKey(name); if(seen.has(key)) return; seen.add(key);
+    out.push({name,key,area:parts.slice(1).join('|').trim().toUpperCase()});
+  });
+  return out;
+}
+function scwSaveMaster(){try{localStorage.setItem('scwMaster',$('scw-master').value);}catch(e){} buildScWeek();}
+function scwResetMaster(){
+  $('scw-master').value=SCW_MASTER_DEFAULT;
+  try{localStorage.removeItem('scwMaster');}catch(e){}
+  buildScWeek(); toast('Daftar SC dikembalikan','ok');
+}
+
 function scwBuildModel(){
   const y=+$('scw-thn').value, m=+$('scw-bln').value;
   const weeks=scwWeeks(y,m), sel=weeks.filter(w=>SCW_SEL.has(w.n));
   const src=$('scw-src').value, showZero=$('scw-zero').checked;
   const M={y,m,weeks,sel,src,rows:[],totals:null,unmapped:0,srcLabel:src==='inv'?'Invoice (DPP)':'Log Progress (nilai ditagihkan)'};
   if(!sel.length) return M;
-  const normSC=v=>cl(v).toUpperCase().replace(/\s+/g,' ');
+  const master=scwMaster(), mKey={}; master.forEach(m=>mKey[m.key]=m);
+  const normSC=v=>{const n=cl(v).toUpperCase().replace(/\s+/g,' '); const m=mKey[scwKey(n)]; return m?m.name:n;};  /* samakan ejaan dengan daftar master */
 
   /* kode → SC & proyek */
   const kodeSC={}, kodeRow={}, projs=[];
@@ -3694,14 +3720,16 @@ function scwBuildModel(){
     }
   });
 
+  master.forEach(m=>{const o=get(m.name); o.master=true; if(m.area) o.fixedArea=m.area;});   /* SC di daftar master selalu ada */
   const rows=Object.values(S).filter(o=>{
+    if(o.master&&showZero) return true;
     const hasP=sel.some(w=>(o.wk[w.n]||{}).proyek>0);
     if(!hasP&&!o.total&&!o.cumul) return false;
     return showZero||o.total!==0||o.cumul!==0;
   });
   rows.forEach(o=>{
     const a=Object.keys(o.areas).length?o.areas:o.allAreas;
-    o.area=scwJoinAreas(Object.entries(a).sort((x,y2)=>y2[1]-x[1]).slice(0,2).map(e=>e[0]));
+    o.area=o.fixedArea||scwJoinAreas(Object.entries(a).sort((x,y2)=>y2[1]-x[1]).slice(0,2).map(e=>e[0]));
     o.entries.sort((a,b)=>a.t-b.t);
   });
   rows.sort((a,b)=>b.total-a.total||b.cumul-a.cumul||a.sc.localeCompare(b.sc));
