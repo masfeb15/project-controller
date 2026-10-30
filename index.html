@@ -498,6 +498,12 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .scw-det-in td,.scw-det-in th{padding:5px 8px !important;position:static;background:none;border-bottom:1px solid rgba(38,48,69,.4);font-size:11px;text-transform:none;letter-spacing:0}
 .scw-note{padding:10px 16px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);line-height:1.6}
 .scw-empty{padding:36px;text-align:center;color:var(--text3);font-size:12px}
+.scw-set{background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:12px}
+.scw-set summary{padding:10px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer}
+.scw-set-body{padding:4px 14px 14px;display:flex;flex-direction:column;gap:10px}
+.scw-set-row{display:flex;flex-direction:column;gap:5px}
+.scw-set-row input,.scw-set-row textarea{background:var(--surf2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none;width:100%;max-width:640px;resize:vertical}
+.scw-set-row input:focus,.scw-set-row textarea:focus{border-color:var(--blue)}
 @media(max-width:768px){.scw-dl{margin-left:0}.scw-scroll{max-height:none}}
 
 /* ── COST CONTROL ── */
@@ -980,6 +986,15 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         Unduh Gambar
       </button>
     </div>
+    <details class="scw-set" id="scw-set">
+      <summary>✏️ Edit NB &amp; pengaturan gambar unduhan</summary>
+      <div class="scw-set-body">
+        <label class="scw-chk"><input type="checkbox" id="scw-cum" checked> Sertakan tabel <b>TOTAL kumulatif</b> (1 s/d akhir minggu terakhir) di gambar</label>
+        <div class="scw-set-row"><span class="scw-lbl">Label update</span><input type="text" id="scw-upd" maxlength="40" placeholder="UPDATE 30/10" aria-label="Label update"></div>
+        <div class="scw-set-row"><span class="scw-lbl">NB — satu baris per poin, tampil di kotak bawah gambar (tersimpan otomatis)</span>
+          <textarea id="scw-nb" rows="4" oninput="scwSaveNB()" aria-label="Isi NB"></textarea></div>
+      </div>
+    </details>
     <div class="mkor-kpi" id="scw-kpi" style="border:1px solid var(--border);border-radius:var(--r2);margin-bottom:12px"></div>
     <div class="scw-wrap">
       <div class="scw-scroll" id="scw-scroll"></div>
@@ -3552,6 +3567,10 @@ function initScWeek(){
   $('scw-bln').innerHTML=SCW_MONTHS.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
   $('scw-thn').value=now.getFullYear(); $('scw-bln').value=now.getMonth();
   SCW_READY=true;
+  const dflt='* FARHAN NUBLI - DIPERBANTUKAN RS EKA PURI IGM (DRAFTER)\n* DATA PROYEK DIAMBIL DARI TGL SPI\n* CUT OFF PER SENIN 16:00';
+  let saved=null; try{saved=localStorage.getItem('scwNB');}catch(e){}
+  $('scw-nb').value=saved!=null?saved:dflt;
+  $('scw-upd').value='UPDATE '+String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0');
   scwResetWeeks();
 }
 
@@ -3595,6 +3614,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){const p=$('scw-dd-panel'); if(p&&!p.hidden){p.hidden=true;$('scw-dd-btn').setAttribute('aria-expanded','false');$('scw-dd-btn').focus();}}
 });
 
+function scwSaveNB(){try{localStorage.setItem('scwNB',$('scw-nb').value);}catch(e){}}
 function scwOnMonth(){scwResetWeeks();buildScWeek();}
 function scwOnWeek(){
   SCW_SEL=new Set([...document.querySelectorAll('.scw-wk:checked')].map(c=>+c.value));
@@ -3607,6 +3627,16 @@ function scwToggleAll(on){
   SCW_SEL=new Set(on?weeks.map(w=>w.n):[]);
   document.querySelectorAll('.scw-wk').forEach(c=>c.checked=on);
   scwUpdateLabel(weeks); buildScWeek();
+}
+
+/* "BARTATEN 2" + "BARTATEN 4" → "BARTATEN 2 & 4"; selain itu digabung dengan " & " */
+function scwJoinAreas(arr){
+  if(!arr.length) return '—';
+  if(arr.length===1) return arr[0];
+  const p=arr.map(a=>a.match(/^(.*?)\s*(\d+)$/));
+  if(p.every(Boolean)&&p[0][1]&&p.every(x=>x[1]===p[0][1]))
+    return p[0][1]+' '+p.map(x=>+x[2]).sort((a,b)=>a-b).join(' & ');
+  return arr.join(' & ');
 }
 
 function scwBuildModel(){
@@ -3671,7 +3701,7 @@ function scwBuildModel(){
   });
   rows.forEach(o=>{
     const a=Object.keys(o.areas).length?o.areas:o.allAreas;
-    o.area=Object.entries(a).sort((x,y2)=>y2[1]-x[1]).slice(0,2).map(e=>e[0]).join(' & ')||'—';
+    o.area=scwJoinAreas(Object.entries(a).sort((x,y2)=>y2[1]-x[1]).slice(0,2).map(e=>e[0]));
     o.entries.sort((a,b)=>a.t-b.t);
   });
   rows.sort((a,b)=>b.total-a.total||b.cumul-a.cumul||a.sc.localeCompare(b.sc));
@@ -3736,93 +3766,119 @@ function scwToggleDet(i){
   tr.hidden=false;
 }
 
-/* ── Unduh gambar (PNG) — digambar langsung di canvas, tanpa library tambahan ── */
+/* ── Unduh gambar (PNG) — format laporan Excel: satu tabel per minggu + tabel kumulatif + kotak NB.
+      Digambar langsung di canvas, tanpa library tambahan. ── */
 async function downloadScwImage(){
   const M=SCW_MODEL;
   if(!M||!M.sel.length||!M.rows.length){toast('Tidak ada data untuk diunduh','err');return;}
   try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
-  const F='"Plus Jakarta Sans",Arial,sans-serif', MONO='"JetBrains Mono",Consolas,monospace';
-  const sel=M.sel, multi=sel.length>1, SC=2, PAD=28, RH=30, H1=32, H2=28;
-  const cols=[{w:46,a:'c'},{w:250,a:'l'},{w:190,a:'l'}];
-  sel.forEach(()=>{cols.push({w:74,a:'r'});cols.push({w:140,a:'r'});});
-  if(multi) cols.push({w:156,a:'r'});
-  cols.push({w:156,a:'r'});
-  const tw=cols.reduce((a,c)=>a+c.w,0), W=Math.max(tw+PAD*2,640);
-  const TOP=PAD+92, hh=H1+H2, H=TOP+hh+RH*(M.rows.length+1)+64;
+  const FONT='Calibri,Carlito,"Segoe UI",Arial,sans-serif';
+  const num0=n=>n?Math.round(n).toLocaleString('en-US'):'-';           /* format gambar: 1,234,567 */
+  const mon=SCW_MON_S[M.m].toUpperCase(), last=M.sel[M.sel.length-1];
+  const rng=(a,b)=>(a===b?a:a+'-'+b)+' '+mon+' '+M.y;
+
+  /* definisi tabel: satu per minggu, ditambah kumulatif bila dicentang */
+  const tables=M.sel.map(w=>({kind:'wk',title:'MINGGU KE-'+w.n,date:rng(w.d1,w.d2),
+    get:o=>({p:(o.wk[w.n]||{}).proyek||0,r:(o.wk[w.n]||{}).real||0})}));
+  if($('scw-cum')&&$('scw-cum').checked)
+    tables.push({kind:'cum',title:'TOTAL '+SCW_MONTHS[M.m].toUpperCase()+' S/D W'+last.n,date:rng(1,last.d2),
+      get:o=>({p:(o.wk[last.n]||{}).proyek||0,r:o.cumul})});
+  tables.forEach(t=>{
+    t.items=M.rows.map(o=>Object.assign({sc:o.sc,area:o.area},t.get(o)))
+      .sort((a,b)=>b.r-a.r||b.p-a.p||a.sc.localeCompare(b.sc));         /* terbesar → terkecil */
+    t.totP=t.items.reduce((a,x)=>a+x.p,0); t.totR=t.items.reduce((a,x)=>a+x.r,0);
+  });
+
+  /* ukuran (px desain; dikali SC saat dirender) */
+  const SC=2, CW=[38,196,160,62,114], TW=CW.reduce((a,b)=>a+b,0), GAP=24, MG=18;
+  const BAN=28, GRP=22, HDR=38, RH=21, FOOT=24, ROWGAP=20;
+  const n=tables.length, perRow=n<=3?n:(n===4?2:3), nRows=Math.ceil(n/perRow);
+  const W=MG*2+perRow*TW+(perRow-1)*GAP;
+  const blockH=GRP+HDR+RH*M.rows.length+FOOT;
+
+  /* kotak NB */
+  const nb=($('scw-nb').value||'').split('\n').map(x=>x.replace(/\s+$/,'')).filter(x=>x.trim());
+  const upd=($('scw-upd').value||'').trim();
+  const meas=document.createElement('canvas').getContext('2d');
+  meas.font='bold 14px '+FONT;
+  const maxLine=Math.max(meas.measureText('NB :').width,...nb.map(l=>meas.measureText(l).width));
+  const lastW=nb.length?meas.measureText(nb[nb.length-1]).width:0;
+  const tagW=upd?meas.measureText(upd).width+24:0;
+  const boxW=Math.min(W-MG*2,Math.max(380,maxLine,lastW+tagW+24)+32);
+  const boxH=nb.length||upd?16+(nb.length+1)*21+14:0;
+
+  const H=BAN+14+nRows*blockH+(nRows-1)*ROWGAP+(boxH?18+boxH:0)+18;
   const cv=document.createElement('canvas'); cv.width=W*SC; cv.height=H*SC;
   const x=cv.getContext('2d'); x.scale(SC,SC); x.textBaseline='middle';
-  const fit=(t,max)=>{t=String(t);if(x.measureText(t).width<=max)return t;while(t.length>1&&x.measureText(t+'…').width>max)t=t.slice(0,-1);return t+'…';};
-  const txt=(t,cx,cy,al,w,pad=10)=>{x.textAlign=al==='r'?'right':al==='c'?'center':'left';const px=al==='r'?cx+w-pad:al==='c'?cx+w/2:cx+pad;x.fillText(fit(t,w-pad*2),px,cy);};
+  const T=(t,px,py,al)=>{x.textAlign=al;x.fillText(String(t),px,py);};
 
   x.fillStyle='#ffffff'; x.fillRect(0,0,W,H);
-  /* judul */
-  x.fillStyle='#14233b'; x.font='800 22px '+F; x.textAlign='left'; x.fillText('LAPORAN SC TEKNIK',PAD,PAD+14);
-  x.fillStyle='#2f5fa8'; x.font='700 14px '+F; x.fillText('Realisasi per Minggu · '+SCW_MONTHS[M.m]+' '+M.y,PAD,PAD+42);
-  x.fillStyle='#5a6678'; x.font='500 12px '+F;
-  x.fillText('Minggu: '+scwPeriodText(M),PAD,PAD+64);
-  x.fillText('Sumber realisasi: '+M.srcLabel,PAD,PAD+82);
-  x.textAlign='right'; x.fillStyle='#14233b'; x.font='700 12px '+F; x.fillText('PT Sandana',W-PAD,PAD+14);
-  x.fillStyle='#5a6678'; x.font='500 11px '+F; x.fillText('Total realisasi: Rp '+scwRp(M.totals.total),W-PAD,PAD+42);
-  x.textAlign='left';
+  /* banner judul */
+  x.fillStyle='#9ddcf7'; x.fillRect(0,0,W,BAN);
+  x.fillStyle='#000'; x.font='bold 17px '+FONT; T('LAPORAN SC TEKNIK',W/2,BAN/2+1,'center');
 
-  /* header */
-  let cx=PAD; const colX=cols.map(c=>{const p=cx;cx+=c.w;return p;});
-  x.fillStyle='#1e3a5f'; x.fillRect(PAD,TOP,tw,hh);
-  x.fillStyle='#ffffff'; x.font='700 11px '+F;
-  ['NO','SC TEKNIK','AREA'].forEach((t,i)=>txt(t,colX[i],TOP+hh/2,cols[i].a,cols[i].w));
-  sel.forEach((w,i)=>{
-    const c0=3+i*2, gx=colX[c0], gw=cols[c0].w+cols[c0+1].w;
-    x.fillStyle='#2a4f82'; x.fillRect(gx,TOP,gw,H1); x.fillStyle='#ffffff'; x.font='700 11px '+F;
-    txt('W'+w.n+' · '+w.label,gx,TOP+H1/2,'c',gw);
-    x.font='600 10px '+F; txt('PROYEK',colX[c0],TOP+H1+H2/2,'r',cols[c0].w); txt('REALISASI (RP)',colX[c0+1],TOP+H1+H2/2,'r',cols[c0+1].w);
-    x.strokeStyle='rgba(255,255,255,.25)'; x.beginPath(); x.moveTo(gx,TOP); x.lineTo(gx,TOP+hh); x.stroke();
-  });
-  x.font='700 11px '+F; let ci=3+sel.length*2;
-  if(multi){txt('TOTAL PILIHAN',colX[ci],TOP+hh/2,'r',cols[ci].w);ci++;}
-  txt('KUMULATIF S/D '+sel[sel.length-1].d2+' '+SCW_MON_S[M.m].toUpperCase(),colX[ci],TOP+hh/2,'r',cols[ci].w,8);
-
-  /* baris */
-  const medal=['#f5c542','#c5ccd6','#d9915a'];
-  M.rows.forEach((o,i)=>{
-    const y0=TOP+hh+i*RH, cy=y0+RH/2;
-    x.fillStyle=i%2?'#f4f7fb':'#ffffff'; x.fillRect(PAD,y0,tw,RH);
-    if(i<3&&o.total>0){x.fillStyle=i===0?'#fff8e1':'#f9fafc'; x.fillRect(PAD,y0,tw,RH);}
-    /* rank */
-    if(i<3&&o.total>0){x.fillStyle=medal[i];x.beginPath();x.arc(colX[0]+cols[0].w/2,cy,11,0,Math.PI*2);x.fill();x.fillStyle='#2b2b2b';}
-    else x.fillStyle='#6b778a';
-    x.font='700 11px '+F; txt(i+1,colX[0],cy,'c',cols[0].w);
-    x.fillStyle='#14233b'; x.font='700 12px '+F; txt(o.sc,colX[1],cy,'l',cols[1].w);
-    x.fillStyle='#4a566a'; x.font='500 12px '+F; txt(o.area,colX[2],cy,'l',cols[2].w);
-    sel.forEach((w,j)=>{
-      const d=o.wk[w.n]||{proyek:0,real:0}, c0=3+j*2;
-      x.font='500 12px '+MONO; x.fillStyle='#4a566a'; txt(d.proyek,colX[c0],cy,'r',cols[c0].w);
-      x.fillStyle=d.real?'#5b21b6':'#a3adbd'; x.font=(d.real?'700':'500')+' 12px '+MONO; txt(scwRp(d.real),colX[c0+1],cy,'r',cols[c0+1].w);
+  /* teks rata kiri yang otomatis mengecil bila melebihi lebar kolom */
+  const fitT=(t,px,py,maxW)=>{let f=14;x.font=f+'px '+FONT;while(f>10&&x.measureText(t).width>maxW){f--;x.font=f+'px '+FONT;}T(t,px,py,'left');};
+  const BLUE='#1b5a86', ROW1='#c9e8f8', ROW2='#b1dbf2', PINK='#ffc7ce', WHITE='rgba(255,255,255,.7)';
+  function drawTable(t,x0,y0){
+    /* judul kelompok */
+    x.fillStyle=t.kind==='cum'?'#92e28f':'#ffff00'; x.fillRect(x0,y0,TW,GRP);
+    x.fillStyle='#000'; x.font='bold 14px '+FONT; T(t.title,x0+TW/2,y0+GRP/2+1,'center');
+    /* header kolom */
+    const hy=y0+GRP; x.fillStyle=BLUE; x.fillRect(x0,hy,TW,HDR);
+    x.fillStyle='#fff'; x.font='bold 13px '+FONT;
+    let cx=x0; const cxs=CW.map(w=>{const p=cx;cx+=w;return p;});
+    T('NO',cxs[0]+CW[0]/2,hy+HDR/2,'center'); T('SC TEKNIK',cxs[1]+CW[1]/2,hy+HDR/2,'center'); T('WILAYAH',cxs[2]+CW[2]/2,hy+HDR/2,'center');
+    T('JUMLAH',cxs[3]+CW[3]/2,hy+HDR/2-8,'center'); T('PROYEK',cxs[3]+CW[3]/2,hy+HDR/2+8,'center');
+    T('REALISASI',cxs[4]+CW[4]/2,hy+HDR/2-8,'center'); T(t.date,cxs[4]+CW[4]/2,hy+HDR/2+8,'center');
+    /* baris */
+    const ry=hy+HDR;
+    t.items.forEach((it,i)=>{
+      const y1=ry+i*RH, cy=y1+RH/2+1;
+      x.fillStyle=i%2?ROW2:ROW1; x.fillRect(x0,y1,TW,RH);
+      if(!it.p){x.fillStyle=PINK;x.fillRect(cxs[3],y1,CW[3],RH);}
+      if(!it.r){x.fillStyle=PINK;x.fillRect(cxs[4],y1,CW[4],RH);}
+      x.fillStyle='#000'; x.font='14px '+FONT;
+      T(i+1,cxs[0]+CW[0]/2,cy,'center');
+      fitT(it.sc,cxs[1]+6,cy,CW[1]-10); fitT(it.area,cxs[2]+6,cy,CW[2]-10); x.font='14px '+FONT;
+      x.fillStyle=it.p?'#000':'#9c0006'; T(it.p,cxs[3]+CW[3]/2,cy,'center');
+      x.fillStyle='#000'; T(num0(it.r),cxs[4]+CW[4]-8,cy,'right');
     });
-    let k=3+sel.length*2;
-    if(multi){x.fillStyle=o.total?'#5b21b6':'#a3adbd';x.font=(o.total?'800':'500')+' 12px '+MONO;txt(scwRp(o.total),colX[k],cy,'r',cols[k].w);k++;}
-    x.fillStyle=o.cumul?'#14233b':'#a3adbd'; x.font='600 12px '+MONO; txt(scwRp(o.cumul),colX[k],cy,'r',cols[k].w);
+    /* garis putih tipis */
+    x.strokeStyle=WHITE; x.lineWidth=1; x.beginPath();
+    for(let i=0;i<=t.items.length;i++){const yy=Math.round(ry+i*RH)+.5;x.moveTo(x0,yy);x.lineTo(x0+TW,yy);}
+    cxs.slice(1).forEach(c=>{const xx=Math.round(c)+.5;x.moveTo(xx,hy);x.lineTo(xx,ry+t.items.length*RH);});
+    x.stroke();
+    /* total */
+    const fy=ry+t.items.length*RH; x.fillStyle='#ffff00'; x.fillRect(x0,fy,TW,FOOT);
+    x.fillStyle='#000'; x.font='bold 14px '+FONT;
+    T(t.items.length,cxs[1]+CW[1]/2,fy+FOOT/2+1,'center'); T(t.totP,cxs[3]+CW[3]/2,fy+FOOT/2+1,'center'); T(num0(t.totR),cxs[4]+CW[4]-8,fy+FOOT/2+1,'right');
+  }
+  tables.forEach((t,i)=>{
+    const r=Math.floor(i/perRow), c=i%perRow;
+    drawTable(t,MG+c*(TW+GAP),BAN+14+r*(blockH+ROWGAP));
   });
-  /* total */
-  const ty=TOP+hh+M.rows.length*RH;
-  x.fillStyle='#e6edf7'; x.fillRect(PAD,ty,tw,RH);
-  x.strokeStyle='#1e3a5f'; x.lineWidth=2; x.beginPath(); x.moveTo(PAD,ty); x.lineTo(PAD+tw,ty); x.stroke(); x.lineWidth=1;
-  x.fillStyle='#14233b'; x.font='800 12px '+F; txt('TOTAL',colX[0],ty+RH/2,'l',cols[0].w+cols[1].w+cols[2].w);
-  sel.forEach((w,j)=>{const c0=3+j*2;x.font='800 12px '+MONO;txt(M.totals.wk[w.n].proyek,colX[c0],ty+RH/2,'r',cols[c0].w);txt(scwRp(M.totals.wk[w.n].real),colX[c0+1],ty+RH/2,'r',cols[c0+1].w);});
-  let k2=3+sel.length*2;
-  if(multi){x.font='800 12px '+MONO;txt(scwRp(M.totals.total),colX[k2],ty+RH/2,'r',cols[k2].w);k2++;}
-  x.font='800 12px '+MONO; txt(scwRp(M.totals.cumul),colX[k2],ty+RH/2,'r',cols[k2].w);
-  /* garis tipis */
-  x.strokeStyle='#d5dce8'; x.strokeRect(PAD+.5,TOP+.5,tw-1,hh+RH*(M.rows.length+1)-1);
-  /* footer */
-  x.fillStyle='#8a95a8'; x.font='500 10px '+F; x.textAlign='left';
-  const now=new Date();
-  x.fillText('Dibuat '+now.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})+' '+now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})+' · Dashboard Project Controller PT Sandana',PAD,ty+RH+24);
-  if(M.unmapped){x.fillText('Catatan: realisasi tanpa PIC Teknik (Rp '+scwRp(M.unmapped)+') tidak termasuk dalam tabel.',PAD,ty+RH+42);}
+
+  /* kotak NB */
+  if(boxH){
+    const bx=MG, by=BAN+14+nRows*blockH+(nRows-1)*ROWGAP+18;
+    x.fillStyle='#fff'; x.fillRect(bx,by,boxW,boxH);
+    x.strokeStyle='#111'; x.lineWidth=2.5; x.strokeRect(bx+1,by+1,boxW-2,boxH-2);
+    x.fillStyle='#000'; x.font='bold 14px '+FONT;
+    const nbw=meas.measureText('NB :').width; T('NB :',bx+14,by+16+10,'left');
+    x.fillRect(bx+14,by+16+19,nbw,1.5);                                   /* garis bawah "NB :" */
+    nb.forEach((l,i)=>T(l,bx+14,by+16+(i+1)*21+10,'left'));
+    if(upd){
+      const ty=by+boxH-14-21, tx=bx+boxW-14-tagW;
+      x.fillStyle='#ffff00'; x.fillRect(tx,ty,tagW,21);
+      x.fillStyle='#000'; x.font='bold 14px '+FONT; T(upd,tx+tagW/2,ty+11,'center');
+    }
+  }
 
   cv.toBlob(b=>{
     if(!b){toast('Gagal membuat gambar','err');return;}
     const a=document.createElement('a'), u=URL.createObjectURL(b);
-    a.href=u; a.download='Realisasi_SC_Teknik_'+SCW_MON_S[M.m]+M.y+'_W'+sel.map(w=>w.n).join('-')+'.png';
+    a.href=u; a.download='Laporan_SC_Teknik_'+SCW_MON_S[M.m]+M.y+'_W'+M.sel.map(w=>w.n).join('-')+'.png';
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
     toast('Gambar diunduh','ok');
   },'image/png');
