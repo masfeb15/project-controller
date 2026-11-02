@@ -982,7 +982,6 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
       <select id="scw-src" onchange="buildScWeek()" aria-label="Sumber realisasi">
         <option value="inv2">Invoice — Δ% progress × nilai kontrak (dihitung dari sheet inv)</option>
         <option value="log">Log Progress — Δ% progress × nilai kontrak</option>
-        <option value="inv">Invoice — nilai DPP</option>
       </select>
       <label class="scw-chk"><input type="checkbox" id="scw-zero" checked onchange="buildScWeek()"> Tampilkan SC realisasi 0</label>
       <button type="button" class="scw-dl" onclick="downloadScwImage()">
@@ -3528,7 +3527,7 @@ function downloadMkorPDF(){
 /* ══════════════════════════════════════
    REALISASI SC TEKNIK PER MINGGU
    SC Teknik = kolom PIC TEKNIK pada sheet db.
-   Realisasi = jumlah nilai nota pada minggu terpilih. Sumber utama: log_progress, nota = (% progress baru - % progress sebelumnya) x nilai kontrak; alternatif: invoice (DPP).
+   Realisasi = jumlah nilai nota pada minggu terpilih. Nota = (% progress baru - % progress sebelumnya) x nilai kontrak (DP tidak dihitung); sumber: sheet inv atau log_progress.
    Jumlah proyek = proyek dengan SPI sebelum akhir minggu yang masih berjalan,
    atau selesai tetapi BAST-nya jatuh setelah akhir minggu (aturan sama dengan laporan Excel).
 ══════════════════════════════════════ */
@@ -3681,8 +3680,8 @@ function scwResetMaster(){
 function scwBuildModel(){
   const y=+$('scw-thn').value, m=+$('scw-bln').value;
   const weeks=scwWeeks(y,m), sel=weeks.filter(w=>SCW_SEL.has(w.n));
-  const src=$('scw-src').value, showZero=$('scw-zero').checked;
-  const M={y,m,weeks,sel,src,rows:[],totals:null,unmapped:0,srcLabel:{inv:'Invoice (DPP)',inv2:'Invoice (Δ% progress × nilai kontrak)',log:'Log Progress (Δ% progress × nilai kontrak)'}[src]};
+  const src=$('scw-src').value==='log'?'log':'inv2', showZero=$('scw-zero').checked;
+  const M={y,m,weeks,sel,src,rows:[],totals:null,unmapped:0,srcLabel:src==='log'?'Log Progress (Δ% progress × nilai kontrak)':'Invoice (Δ% progress × nilai kontrak)'};
   if(!sel.length) return M;
   const master=scwMaster(), mKey={}; master.forEach(m=>mKey[m.key]=m);
   const normSC=v=>{const n=cl(v).toUpperCase().replace(/\s+/g,' '); const m=mKey[scwKey(n)]; return m?m.name:n;};  /* samakan ejaan dengan daftar master */
@@ -3720,8 +3719,7 @@ function scwBuildModel(){
 
   /* realisasi */
   const ms=scwDay(y,m,1), ents=[];
-  if(src==='inv') INV.forEach(r=>ents.push([normKode(r[I.AC_CODE]),scwParseDay(r[I.TGL]),num(r[I.DPP]),cl(r[I.INV])]));
-  else if(src==='inv2'){
+  if(src==='inv2'){
     /* meniru rumus log_progress langsung dari sheet inv: % baru = % dari keterangan (kolom T), atau % tertinggi sebelumnya
        bila kosong/retensi; % sebelumnya = % tertinggi pada tanggal yang lebih awal; nota = (baru − sebelumnya) × nilai kontrak */
     const by={}; let hasT=false;
@@ -3729,14 +3727,14 @@ function scwBuildModel(){
       const tipe=cl(r[I.TIPE]).toUpperCase(); if(tipe==='DP') return;
       const k=normKode(r[I.AC_CODE]), t=scwParseDay(r[I.TGL]); if(!k||t==null) return;
       const ts=cl(r[SCW_INV_PCT_COL]); if(ts!=='') hasT=true;
-      (by[k]=by[k]||[]).push({t,pT:ts===''?null:scwPct(ts),ret:tipe==='OMSET'&&cl(r[I.PROYEK]).toLowerCase().indexOf('retensi')>=0});
+      (by[k]=by[k]||[]).push({t,no:cl(r[I.INV]),pT:ts===''?null:scwPct(ts),ret:tipe==='OMSET'&&cl(r[I.PROYEK]).toLowerCase().indexOf('retensi')>=0});
     });
     Object.keys(by).forEach(k=>{
       const L=by[k].sort((a,b)=>a.t-b.t), nk=kodeRow[k]?num(kodeRow[k][C.NK]):0;
       L.forEach(e=>{
         let prev=0; L.forEach(x=>{if(x!==e&&x.pb!=null&&x.t<e.t&&x.pb>prev) prev=x.pb;});
         e.pb=(e.ret||e.pT==null)?prev:e.pT;
-        ents.push([k,e.t,(e.pb-prev)*nk,Math.round(prev*10000)/100+'% → '+Math.round(e.pb*10000)/100+'%']);
+        ents.push([k,e.t,(e.pb-prev)*nk,e.no+' · '+Math.round(prev*10000)/100+'% → '+Math.round(e.pb*10000)/100+'%']);
       });
     });
     if(!hasT&&INV.length) M.warn='Kolom T sheet inv (% progress dari keterangan) tidak terbaca, sehingga realisasi dari sumber ini kosong.';
@@ -3746,7 +3744,7 @@ function scwBuildModel(){
     const k=normKode(r[LP.KODE]); if(!k) return;
     const pb=scwPct(r[LP.PCT_BARU]), ps=scwPct(r[LP.PCT_SBLM]);
     let nk=num(r[LP.NK]); if(!nk&&kodeRow[k]) nk=num(kodeRow[k][C.NK]);
-    ents.push([k,scwParseDay(r[LP.TGL]),(pb-ps)*nk,Math.round(ps*10000)/100+'% → '+Math.round(pb*10000)/100+'%']);
+    ents.push([k,scwParseDay(r[LP.TGL]),(pb-ps)*nk,cl(r[LP.NO_INV])+' · '+Math.round(ps*10000)/100+'% → '+Math.round(pb*10000)/100+'%']);
   });
   if(src==='log'){   /* peringatan bila log_progress tertinggal dari invoice */
     let logLast=null, invLast=null;
