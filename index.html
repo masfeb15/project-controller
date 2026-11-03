@@ -493,6 +493,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .scw-rk{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-weight:800;font-size:11px;background:var(--surf3);color:var(--text3)}
 .scw-rk.g1{background:#f5c542;color:#4a3500}.scw-rk.g2{background:#c5ccd6;color:#2b3340}.scw-rk.g3{background:#d9915a;color:#3d1f08}
 .scw-det td{background:var(--surf2);padding:0 !important;white-space:normal}
+.scw-lnk{color:var(--cyan);text-decoration:none;border-bottom:1px dotted currentColor}.scw-lnk:hover{filter:brightness(1.25)}
 .scw-det-in{padding:10px 14px 12px 48px;font-size:11px;color:var(--text2)}
 .scw-det-in table{width:100%;border-collapse:collapse}
 .scw-det-in td,.scw-det-in th{padding:5px 8px !important;position:static;background:none;border-bottom:1px solid rgba(38,48,69,.4);font-size:11px;text-transform:none;letter-spacing:0}
@@ -2470,6 +2471,7 @@ function openModal(src,idx){
   else if(src==='prog')r=PG_F[idx];
   else if(src==='db')r=DB_F[idx];
   else if(src==='fin')r=window._FIN?.[idx];
+  else if(src==='kode')r=ALL.find(x=>normKode(x[C.KODE])===String(idx));   /* dari halaman Realisasi SC */
   if(!r)return;
   CURRENT_ROW=r;CURRENT_SRC=src;CURRENT_IDX=idx;
 
@@ -3684,6 +3686,12 @@ function scwBuildModel(){
   const normSC=v=>{const n=cl(v).toUpperCase().replace(/\s+/g,' '); const m=mKey[scwKey(n)]; return m?m.name:n;};  /* samakan ejaan dengan daftar master */
 
   /* kode → SC & proyek */
+  /* tanggal pertama proyek mencapai 100% di log_progress → sejak itu tidak lagi dihitung sebagai proyek berjalan */
+  const fin100={};
+  LOG_PROG.forEach(r=>{
+    const k=normKode(r[LP.KODE]); if(!k||scwPct(r[LP.PCT_BARU])<0.9999) return;
+    const t=scwParseDay(r[LP.TGL]); if(t!=null&&(fin100[k]==null||t<fin100[k])) fin100[k]=t;
+  });
   const kodeSC={}, kodeRow={}, projs=[];
   ALL.forEach(r=>{
     const k=normKode(r[C.KODE]), sc=normSC(r[C.PIC_TEK]);
@@ -3695,23 +3703,32 @@ function scwBuildModel(){
     let spi=scwParseDay(r[C.BULAN]); if(spi==null) spi=scwParseDay(r[C.TGL_SPK]);
     if(spi==null){const th=parseInt(cl(r[C.TAHUN])); spi=th>2000?scwDay(th,0,1):null;}
     if(spi==null) return;
-    projs.push({sc,spi,fin:SCW_FIN.has(st),ba:scwParseDay(r[C.TGL_BA]),area:cl(r[C.AREA]).toUpperCase()});
+    /* tanggal selesai = yang paling awal antara 100% di log_progress dan BAST (untuk status selesai) */
+    const ba=SCW_FIN.has(st)?scwParseDay(r[C.TGL_BA]):null;
+    let done=fin100[k]!=null?fin100[k]:null;
+    if(ba!=null&&(done==null||ba<done)) done=ba;
+    projs.push({k,sc,spi,done,fin:SCW_FIN.has(st),area:cl(r[C.AREA]).toUpperCase(),nama:cl(r[C.PROYEK])});
   });
 
   const S={}; /* sc → data */
-  const get=sc=>S[sc]||(S[sc]={sc,wk:{},areas:{},allAreas:{},total:0,cumul:0,entries:[]});
+  const get=sc=>S[sc]||(S[sc]={sc,wk:{},areas:{},allAreas:{},total:0,cumul:0,entries:[],projs:[]});
   const lastTo=sel[sel.length-1].to;
 
   projs.forEach(p=>{
     const o=get(p.sc);
     if(p.area) o.allAreas[p.area]=(o.allAreas[p.area]||0)+1;
+    /* aturan: proyek dihitung bila SPI sudah terbit, dan belum selesai (100% / BAST) pada akhir minggu itu.
+       Proyek yang mencapai 100% di minggu W otomatis berkurang dari jumlah W; proyek baru menambah. */
+    let counted=false, doneIn=null;
     sel.forEach(w=>{
       const cut=w.to+1;
-      if(p.spi<cut&&(!p.fin||(p.ba!=null&&p.ba>=cut))){
-        o.wk[w.n]=o.wk[w.n]||{proyek:0,real:0}; o.wk[w.n].proyek++;
+      if(p.spi<cut&&(p.done==null||p.done>=cut)){
+        o.wk[w.n]=o.wk[w.n]||{proyek:0,real:0}; o.wk[w.n].proyek++; counted=true;
         if(w.n===sel[sel.length-1].n&&p.area) o.areas[p.area]=(o.areas[p.area]||0)+1;
       }
     });
+    if(p.spi<=lastTo&&p.done!=null&&p.done>=sel[0].from&&p.done<=lastTo) doneIn=p.done;   /* selesai di dalam periode terpilih */
+    if(counted||doneIn!=null) o.projs.push({k:p.k,nama:p.nama,area:p.area,done:doneIn});
   });
 
   /* realisasi */
@@ -3801,9 +3818,11 @@ function buildScWeek(){
   $('scw-scroll').innerHTML=M.rows.length
     ?`<table class="scw-table"><thead>${h1}${h2}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table>`
     :'<div class="scw-empty">Tidak ada data SC Teknik untuk periode ini.</div>';
-  $('scw-note').innerHTML=`Sumber realisasi: <b>${scwEsc(M.srcLabel)}</b>. Jumlah proyek dihitung per akhir tiap minggu. Klik baris SC untuk melihat rincian nota.`+
+  $('scw-note').innerHTML=`Sumber realisasi: <b>${scwEsc(M.srcLabel)}</b>. Jumlah proyek dihitung per akhir tiap minggu: proyek yang mencapai 100% berkurang, proyek baru bertambah. Klik baris SC untuk rincian nota &amp; daftar proyek.`+
     (M.unmapped?` · Realisasi tanpa PIC Teknik pada periode ini (tidak masuk tabel): <b>Rp ${scwRp(M.unmapped)}</b>.`:'');
 }
+
+function scwOpenProj(k){ openModal('kode',k); }
 
 function scwToggleDet(i){
   const tr=$('scw-det-'+i), o=SCW_MODEL&&SCW_MODEL.rows[i]; if(!tr||!o) return;
@@ -3811,9 +3830,12 @@ function scwToggleDet(i){
   const td=tr.firstElementChild;
   td.innerHTML=o.entries.length
     ?`<div class="scw-det-in"><table><thead><tr><th>Tanggal</th><th>Kode</th><th>Proyek</th><th>Ref</th><th class="r" style="text-align:right">Nilai (Rp)</th></tr></thead><tbody>`+
-      o.entries.slice(0,300).map(e=>`<tr><td>${scwDayStr(e.t)}</td><td>${scwEsc(e.k)}</td><td>${scwEsc(e.nama)||'—'}</td><td>${scwEsc(e.ref)||'—'}</td><td style="text-align:right;font-family:var(--mono)">${scwRp(e.v)}</td></tr>`).join('')+
+      o.entries.slice(0,300).map(e=>`<tr><td>${scwDayStr(e.t)}</td><td><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(e.k)});return false">${scwEsc(e.k)}</a></td><td>${scwEsc(e.nama)||'—'}</td><td>${scwEsc(e.ref)||'—'}</td><td style="text-align:right;font-family:var(--mono)">${scwRp(e.v)}</td></tr>`).join('')+
       `</tbody></table></div>`
     :'<div class="scw-det-in">Tidak ada nota pada minggu terpilih.</div>';
+  const pl=(o.projs||[]).slice().sort((a,b)=>(a.done!=null)-(b.done!=null)||a.nama.localeCompare(b.nama));
+  if(pl.length) td.innerHTML+=`<div class="scw-det-in"><div style="font-weight:600;margin-bottom:4px;color:var(--text)">Proyek (${pl.length}) — klik untuk membuka database proyek</div><table><thead><tr><th>Kode</th><th>Proyek</th><th>Area</th><th>Status periode</th></tr></thead><tbody>`+
+    pl.map(p=>`<tr><td><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(p.k)});return false">${scwEsc(p.k)}</a></td><td><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(p.k)});return false">${scwEsc(p.nama)||'—'}</a></td><td>${scwEsc(p.area)||'—'}</td><td>${p.done!=null?'Selesai 100% · '+scwDayStr(p.done):'Berjalan'}</td></tr>`).join('')+`</tbody></table></div>`;
   tr.hidden=false;
 }
 
