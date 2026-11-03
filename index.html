@@ -978,11 +978,6 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         </button>
         <div class="scw-dd-panel" id="scw-dd-panel" hidden></div>
       </div>
-      <span class="scw-lbl">Sumber</span>
-      <select id="scw-src" onchange="buildScWeek()" aria-label="Sumber realisasi">
-        <option value="inv2">Invoice — Δ% progress × nilai kontrak (dihitung dari sheet inv)</option>
-        <option value="log">Log Progress — Δ% progress × nilai kontrak</option>
-      </select>
       <label class="scw-chk"><input type="checkbox" id="scw-zero" checked onchange="buildScWeek()"> Tampilkan SC realisasi 0</label>
       <button type="button" class="scw-dl" onclick="downloadScwImage()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -3548,14 +3543,16 @@ function scwPct(v){
   if(s.indexOf('%')>=0) return n/100;
   return Math.abs(n)<=1?n:n/100;
 }
-const SCW_INV_PCT_COL=19; /* kolom T sheet inv: "% PROGRESS (dari keterangan)" */
 
+const SCW_MON_IDX={jan:0,feb:1,mar:2,apr:3,mei:4,may:4,jun:5,jul:6,agu:7,aug:7,sep:8,okt:9,oct:9,nov:10,des:11,dec:11};
 function scwParseDay(v){
   const s=cl(v); if(!s||s==='—') return null;
   let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if(m) return scwDay(+m[1],+m[2]-1,+m[3]);
   m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
   if(m){let a=+m[1],b=+m[2]; if(b>12&&a<=12){const t=a;a=b;b=t;} return scwDay(+m[3],b-1,a);} /* dd/mm/yyyy */
+  m=s.match(/^(\d{1,2})\s+([A-Za-z]{3,})\.?,?\s+(\d{4})/);   /* 8 Okt 2026 / 8 Oct 2026 */
+  if(m){const mi=SCW_MON_IDX[m[2].slice(0,3).toLowerCase()]; if(mi!=null) return scwDay(+m[3],mi,+m[1]);}
   if(/^\d+$/.test(s)){const n=parseInt(s); if(n>40000&&n<70000) return n-25569;}                /* serial Excel */
   const d=new Date(s); return isNaN(d)?null:scwDay(d.getFullYear(),d.getMonth(),d.getDate());
 }
@@ -3680,8 +3677,8 @@ function scwResetMaster(){
 function scwBuildModel(){
   const y=+$('scw-thn').value, m=+$('scw-bln').value;
   const weeks=scwWeeks(y,m), sel=weeks.filter(w=>SCW_SEL.has(w.n));
-  const src=$('scw-src').value==='log'?'log':'inv2', showZero=$('scw-zero').checked;
-  const M={y,m,weeks,sel,src,rows:[],totals:null,unmapped:0,srcLabel:src==='log'?'Log Progress (Δ% progress × nilai kontrak)':'Invoice (Δ% progress × nilai kontrak)'};
+  const showZero=$('scw-zero').checked;
+  const M={y,m,weeks,sel,rows:[],totals:null,unmapped:0,srcLabel:'Log Progress (Δ% progress × nilai kontrak)'};
   if(!sel.length) return M;
   const master=scwMaster(), mKey={}; master.forEach(m=>mKey[m.key]=m);
   const normSC=v=>{const n=cl(v).toUpperCase().replace(/\s+/g,' '); const m=mKey[scwKey(n)]; return m?m.name:n;};  /* samakan ejaan dengan daftar master */
@@ -3719,39 +3716,19 @@ function scwBuildModel(){
 
   /* realisasi */
   const ms=scwDay(y,m,1), ents=[];
-  if(src==='inv2'){
-    /* meniru rumus log_progress langsung dari sheet inv: % baru = % dari keterangan (kolom T), atau % tertinggi sebelumnya
-       bila kosong/retensi; % sebelumnya = % tertinggi pada tanggal yang lebih awal; nota = (baru − sebelumnya) × nilai kontrak */
-    const by={}; let hasT=false;
-    INV.forEach(r=>{
-      const tipe=cl(r[I.TIPE]).toUpperCase(); if(tipe==='DP') return;
-      const k=normKode(r[I.AC_CODE]), t=scwParseDay(r[I.TGL]); if(!k||t==null) return;
-      const ts=cl(r[SCW_INV_PCT_COL]); if(ts!=='') hasT=true;
-      (by[k]=by[k]||[]).push({t,no:cl(r[I.INV]),pT:ts===''?null:scwPct(ts),ret:tipe==='OMSET'&&cl(r[I.PROYEK]).toLowerCase().indexOf('retensi')>=0});
-    });
-    Object.keys(by).forEach(k=>{
-      const L=by[k].sort((a,b)=>a.t-b.t), nk=kodeRow[k]?num(kodeRow[k][C.NK]):0;
-      L.forEach(e=>{
-        let prev=0; L.forEach(x=>{if(x!==e&&x.pb!=null&&x.t<e.t&&x.pb>prev) prev=x.pb;});
-        e.pb=(e.ret||e.pT==null)?prev:e.pT;
-        ents.push([k,e.t,(e.pb-prev)*nk,e.no+' · '+Math.round(prev*10000)/100+'% → '+Math.round(e.pb*10000)/100+'%']);
-      });
-    });
-    if(!hasT&&INV.length) M.warn='Kolom T sheet inv (% progress dari keterangan) tidak terbaca, sehingga realisasi dari sumber ini kosong.';
-  }
-  else LOG_PROG.forEach(r=>{
-    /* Aktual nota = (% progress baru − % progress sebelumnya) × nilai kontrak */
+  /* Sumber tunggal: sheet log_progress. Realisasi = (% progress baru − % progress sebelumnya) × nilai kontrak (DP tidak dihitung) */
+  LOG_PROG.forEach(r=>{
     const k=normKode(r[LP.KODE]); if(!k) return;
     const pb=scwPct(r[LP.PCT_BARU]), ps=scwPct(r[LP.PCT_SBLM]);
     let nk=num(r[LP.NK]); if(!nk&&kodeRow[k]) nk=num(kodeRow[k][C.NK]);
     ents.push([k,scwParseDay(r[LP.TGL]),(pb-ps)*nk,cl(r[LP.NO_INV])+' · '+Math.round(ps*10000)/100+'% → '+Math.round(pb*10000)/100+'%']);
   });
-  if(src==='log'){   /* peringatan bila log_progress tertinggal dari invoice */
+  { /* peringatan bila log_progress tertinggal dari invoice */
     let logLast=null, invLast=null;
     LOG_PROG.forEach(r=>{const t=scwParseDay(r[LP.TGL]); if(t!=null&&(logLast==null||t>logLast)) logLast=t;});
     INV.forEach(r=>{const t=scwParseDay(r[I.TGL]); if(t!=null&&(invLast==null||t>invLast)) invLast=t;});
     if(invLast!=null&&(logLast==null||invLast-logLast>7))
-      M.warn='Log Progress tertinggal: entri terakhir '+(logLast==null?'(kosong)':scwDayStr(logLast))+', sedangkan invoice terakhir '+scwDayStr(invLast)+'. Realisasi dari sumber ini belum lengkap — perbaiki sheet log_progress atau pilih sumber "Invoice — Δ% progress × nilai kontrak".';
+      M.warn='Log Progress belum mengikuti invoice: entri terakhir '+(logLast==null?'(kosong)':scwDayStr(logLast))+', sedangkan invoice terakhir '+scwDayStr(invLast)+'. Realisasi minggu terbaru bisa kurang — jalankan "Log Progress → Perbarui sekarang" di Google Sheet.';
   }
   ents.forEach(([k,t,v,ref])=>{
     if(!k||t==null||!v||t<ms||t>lastTo) return;
