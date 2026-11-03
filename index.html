@@ -3707,6 +3707,7 @@ function scwBuildModel(){
     const ba=SCW_FIN.has(st)?scwParseDay(r[C.TGL_BA]):null;
     let done=fin100[k]!=null?fin100[k]:null;
     if(ba!=null&&(done==null||ba<done)) done=ba;
+    if(done==null&&SCW_FIN.has(st)) done=-1e9;   /* status selesai tanpa BAST & tanpa 100% di log: dianggap sudah lama selesai, tidak dihitung */
     projs.push({k,sc,spi,done,fin:SCW_FIN.has(st),area:cl(r[C.AREA]).toUpperCase(),nama:cl(r[C.PROYEK])});
   });
 
