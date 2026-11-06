@@ -493,6 +493,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .scw-rk{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-weight:800;font-size:11px;background:var(--surf3);color:var(--text3)}
 .scw-rk.g1{background:#f5c542;color:#4a3500}.scw-rk.g2{background:#c5ccd6;color:#2b3340}.scw-rk.g3{background:#d9915a;color:#3d1f08}
 .scw-det td{background:var(--surf2);padding:0 !important;white-space:normal}
+.scw-ranges{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}.scw-rg{display:flex;align-items:center;gap:6px;background:var(--bg3,rgba(255,255,255,.04));border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--text2)}.scw-rg input{width:52px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:3px 6px;font:inherit;text-align:center}.scw-rg b{color:var(--blue)}.scw-rgb{background:none;border:1px dashed var(--border);border-radius:8px;color:var(--text2);padding:5px 10px;font-size:11px;cursor:pointer}.scw-rgb:hover{color:var(--text)}
 .scw-lnk{color:var(--cyan);text-decoration:none;border-bottom:1px dotted currentColor}.scw-lnk:hover{filter:brightness(1.25)}
 .scw-det-in{padding:10px 14px 12px 48px;font-size:11px;color:var(--text2)}
 .scw-det-in table{width:100%;border-collapse:collapse}
@@ -988,6 +989,9 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     <details class="scw-set" id="scw-set">
       <summary>✏️ Edit NB &amp; pengaturan gambar unduhan</summary>
       <div class="scw-set-body">
+        <div class="scw-set-row"><span class="scw-lbl">Rentang minggu bulan ini — isi <b>tanggal akhir</b> tiap minggu (tanggal awal mengikuti otomatis). Tersimpan per bulan di browser ini.</span>
+          <div id="scw-ranges" class="scw-ranges"></div>
+          <label class="scw-chk"><input type="checkbox" id="scw-merge" checked onchange="scwOnRangeOpt()"> Otomatis gabungkan minggu pertama yang pendek (≤ 3 hari) ke minggu ke-2</label></div>
         <label class="scw-chk"><input type="checkbox" id="scw-cum" checked> Sertakan tabel <b>TOTAL kumulatif</b> (1 s/d akhir minggu terakhir) di gambar</label>
         <div class="scw-set-row"><span class="scw-lbl">Label update</span><input type="text" id="scw-upd" maxlength="40" placeholder="UPDATE 30/10" aria-label="Label update"></div>
         <div class="scw-set-row"><span class="scw-lbl">NB — satu baris per poin, tampil di kotak bawah gambar (tersimpan otomatis)</span>
@@ -3553,6 +3557,7 @@ function scwPct(v){
   return Math.abs(n)<=1?n:n/100;
 }
 
+const SCW_MERGE_MAX=3;   /* minggu pertama ≤ 3 hari digabung ke minggu ke-2 (bila opsi aktif) */
 const SCW_MON_IDX={jan:0,feb:1,mar:2,apr:3,mei:4,may:4,jun:5,jul:6,agu:7,aug:7,sep:8,okt:9,oct:9,nov:10,des:11,dec:11};
 function scwParseDay(v){
   const s=cl(v); if(!s||s==='—') return null;
@@ -3566,16 +3571,35 @@ function scwParseDay(v){
   const d=new Date(s); return isNaN(d)?null:scwDay(d.getFullYear(),d.getMonth(),d.getDate());
 }
 
-function scwWeeks(y,m){
-  const last=new Date(y,m+1,0).getDate(), out=[]; let start=1;
+/* akhir tiap minggu (tanggal) – default: berakhir Senin; minggu pertama yang pendek bisa digabung ke minggu ke-2 */
+function scwDefaultEnds(y,m){
+  const last=new Date(y,m+1,0).getDate(), ends=[]; let start=1;
   while(start<=last){
     const dow=new Date(y,m,start).getDay();
-    const len=(SCW_WEEK_END_DOW-dow+7)%7+1;
-    const end=Math.min(last,start+len-1);
+    const end=Math.min(last,start+(SCW_WEEK_END_DOW-dow+7)%7);
+    ends.push(end); start=end+1;
+  }
+  const mg=$('scw-merge');
+  if(mg&&mg.checked&&ends.length>2&&ends[0]<=SCW_MERGE_MAX) ends.splice(0,1);
+  return ends;
+}
+function scwRangeKey(y,m){return y+'-'+m;}
+function scwLoadRanges(){let o={}; try{o=JSON.parse(localStorage.getItem('scwRanges')||'{}')||{};}catch(e){} return o;}
+function scwEnds(y,m){
+  const last=new Date(y,m+1,0).getDate(), c=scwLoadRanges()[scwRangeKey(y,m)];
+  if(Array.isArray(c)&&c.length){
+    const e=[...new Set(c.map(Number).filter(x=>x>=1&&x<last))].sort((a,b)=>a-b);
+    e.push(last); return e;
+  }
+  return scwDefaultEnds(y,m);
+}
+function scwWeeks(y,m){
+  const out=[]; let start=1;
+  scwEnds(y,m).forEach(end=>{
     out.push({n:out.length+1,from:scwDay(y,m,start),to:scwDay(y,m,end),d1:start,d2:end,
       label:(start===end?start:start+'-'+end)+' '+SCW_MON_S[m]});
     start=end+1;
-  }
+  });
   return out;
 }
 
@@ -3595,11 +3619,49 @@ function initScWeek(){
   $('scw-nb').value=saved!=null?saved:dflt;
   let sm=null; try{sm=localStorage.getItem('scwMaster');}catch(e){}
   $('scw-master').value=sm!=null&&sm.trim()?sm:SCW_MASTER_DEFAULT;
+  let mg=null; try{mg=localStorage.getItem('scwMerge');}catch(e){}
+  if(mg==='0') $('scw-merge').checked=false;
   $('scw-upd').value='UPDATE '+String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0');
   scwResetWeeks();
 }
 
 /* default: semua minggu yang sudah berjalan (bulan lampau → semua minggu) */
+function scwRenderRanges(){
+  const y=+$('scw-thn').value, m=+$('scw-bln').value, weeks=scwWeeks(y,m), last=weeks[weeks.length-1].d2;
+  $('scw-ranges').innerHTML=weeks.map((w,i)=>{
+    const isLast=i===weeks.length-1;
+    return `<div class="scw-rg"><b>W${w.n}</b> ${w.d1} –`+(isLast?` <b>${w.d2}</b>`:` <input type="number" min="${w.d1}" max="${last-1}" value="${w.d2}" onchange="scwSetEnd(${i},this.value)" aria-label="Akhir minggu ${w.n}">`)+` ${SCW_MON_S[m]}</div>`;
+  }).join('')+
+  `<button type="button" class="scw-rgb" onclick="scwAddWeek()">+ Minggu</button><button type="button" class="scw-rgb" onclick="scwDelWeek()">− Minggu</button><button type="button" class="scw-rgb" onclick="scwDefaultRange()">↺ Default</button>`;
+}
+function scwStoreEnds(ends){
+  const y=+$('scw-thn').value, m=+$('scw-bln').value, last=new Date(y,m+1,0).getDate();
+  const o=scwLoadRanges(); o[scwRangeKey(y,m)]=ends.filter(x=>x<last);
+  try{localStorage.setItem('scwRanges',JSON.stringify(o));}catch(e){}
+  scwResetWeeks(); buildScWeek();
+}
+function scwCurEnds(){const y=+$('scw-thn').value, m=+$('scw-bln').value; return scwEnds(y,m).slice(0,-1);}
+function scwSetEnd(i,v){
+  const y=+$('scw-thn').value, m=+$('scw-bln').value, last=new Date(y,m+1,0).getDate();
+  const e=scwCurEnds(), prev=i>0?e[i-1]:0; let n=parseInt(v);
+  if(isNaN(n)){scwRenderRanges();toast('Isi tanggal akhir minggu','err');return;}
+  n=Math.max(prev+1,Math.min(last-1,n)); e[i]=n;
+  scwStoreEnds(e.sort((a,b)=>a-b));
+}
+function scwAddWeek(){
+  const y=+$('scw-thn').value, m=+$('scw-bln').value, last=new Date(y,m+1,0).getDate();
+  const e=scwCurEnds(), from=(e.length?e[e.length-1]:0)+1;
+  if(from>=last){toast('Tidak ada ruang untuk menambah minggu','info');return;}
+  e.push(Math.min(last-1,from+6)); scwStoreEnds(e);
+}
+function scwDelWeek(){const e=scwCurEnds(); if(!e.length){toast('Minimal satu minggu','info');return;} e.pop(); scwStoreEnds(e);}
+function scwDefaultRange(){
+  const y=+$('scw-thn').value, m=+$('scw-bln').value, o=scwLoadRanges(); delete o[scwRangeKey(y,m)];
+  try{localStorage.setItem('scwRanges',JSON.stringify(o));}catch(e){}
+  scwResetWeeks(); buildScWeek();
+}
+function scwOnRangeOpt(){try{localStorage.setItem('scwMerge',$('scw-merge').checked?'1':'0');}catch(e){} scwResetWeeks(); buildScWeek();}
+
 function scwResetWeeks(){
   const y=+$('scw-thn').value, m=+$('scw-bln').value, weeks=scwWeeks(y,m);
   const t=new Date(), today=scwDay(t.getFullYear(),t.getMonth(),t.getDate());
@@ -3607,6 +3669,7 @@ function scwResetWeeks(){
   if(!pick.length) pick=[1];
   SCW_SEL=new Set(pick);
   scwFillWeeks(weeks);
+  scwRenderRanges();
 }
 
 function scwFillWeeks(weeks){
