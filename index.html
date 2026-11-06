@@ -1450,6 +1450,13 @@ let CURRENT_ROW=null,CURRENT_SRC=null,CURRENT_IDX=null;
 /* ══ UTILS ══ */
 const $=id=>document.getElementById(id);
 /* Escape string agar aman dipakai sebagai literal JS di atribut onclick="…" */
+/* nama proyek + jenis: "RS SILOAM BANJARMASIN" + IGM → "RS SILOAM BANJARMASIN - IGM" (tidak dobel bila nama sudah berakhiran jenis) */
+function pn(r){
+  const n=cl(r[C.PROYEK]), j=cl(r[C.JENIS]);
+  if(!j||j==='—'||j==='-') return n;
+  const nu=n.toUpperCase().replace(/\s+/g,' '), ju=j.toUpperCase();
+  return (nu.endsWith('- '+ju)||nu.endsWith('-'+ju)||nu.endsWith(' '+ju))?n:n+' - '+j;
+}
 const jsq=v=>"'"+String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'\\x3c')+"'";
 const cl=v=>(v||'').toString().trim();
 const num=v=>{
@@ -1873,7 +1880,7 @@ function buildDash(){
   $('top-tbl').innerHTML=`<thead><tr><th>#</th><th>Proyek</th><th>Kode</th><th>Tahun</th><th>Area</th><th>Progress</th><th>Delay</th><th>DOK SPK</th><th>Nilai Kontrak</th><th>Tertagih</th></tr></thead>
   <tbody>${window._TOP10.map((r,i)=>`<tr onclick="openModal('top',${i})">
     <td style="color:var(--text3);font-family:var(--mono)">${i+1}</td>
-    <td class="t-name">${cl(r[C.PROYEK])}</td>
+    <td class="t-name">${pn(r)}</td>
     <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${cl(r[C.KODE])}</td>
     <td style="font-family:var(--mono);font-size:11px">${cl(r[C.TAHUN])}</td>
     <td><span class="pill pill-blue">${cl(r[C.AREA])}</span></td>
@@ -1981,7 +1988,7 @@ function globalSearch(q){
   const pm=ALL.filter(r=>cl(r[C.PROYEK]).toLowerCase().includes(ql)||normKode(r[C.KODE]).includes(ql)||cl(r[C.SPI]).toLowerCase().includes(ql)||cl(r[C.NO_SO]).toLowerCase().includes(ql)).slice(0,6);
   const im=INV.filter(r=>cl(r[I.INV]).toLowerCase().includes(ql)||cl(r[I.NAMA_PROYEK]).toLowerCase().includes(ql)||cl(r[I.SPI]).toLowerCase().includes(ql)||normKode(r[I.AC_CODE]).includes(ql)).slice(0,5);
   let html='';
-  if(pm.length){html+=`<div class="gd-sec">Proyek (${pm.length})</div>`;html+=pm.map(r=>`<div class="gd-item" onclick="goFromSearch('proj',${ALL.indexOf(r)})"><div class="gd-ico" style="background:var(--blue-d)">${cl(r[C.STATUS])==='PROGRESS'?'⚙️':'✅'}</div><div class="gd-main"><div class="gd-name">${cl(r[C.PROYEK])}</div><div class="gd-meta">${normKode(r[C.KODE])} · ${cl(r[C.SPI])} · ${cl(r[C.AREA])} · ${cl(r[C.TAHUN])}</div></div><div class="gd-tag">${cl(r[C.STATUS])}</div></div>`).join('');}
+  if(pm.length){html+=`<div class="gd-sec">Proyek (${pm.length})</div>`;html+=pm.map(r=>`<div class="gd-item" onclick="goFromSearch('proj',${ALL.indexOf(r)})"><div class="gd-ico" style="background:var(--blue-d)">${cl(r[C.STATUS])==='PROGRESS'?'⚙️':'✅'}</div><div class="gd-main"><div class="gd-name">${pn(r)}</div><div class="gd-meta">${normKode(r[C.KODE])} · ${cl(r[C.SPI])} · ${cl(r[C.AREA])} · ${cl(r[C.TAHUN])}</div></div><div class="gd-tag">${cl(r[C.STATUS])}</div></div>`).join('');}
   if(im.length){html+=`<div class="gd-sec">Invoice (${im.length})</div>`;html+=im.map(r=>`<div class="gd-item" onclick="goFromSearch('inv',${INV.indexOf(r)})"><div class="gd-ico" style="background:var(--pink-d)">🧾</div><div class="gd-main"><div class="gd-name">${cl(r[I.INV])}</div><div class="gd-meta">${cl(r[I.NAMA_PROYEK])} · Kode: ${normKode(r[I.AC_CODE])}</div></div><div class="gd-tag">${fmt(num(r[I.DPP]),true)}</div></div>`).join('');}
   if(!html)html=`<div class="gd-empty">Tidak ditemukan untuk "${q}"</div>`;
   drop.innerHTML=html;drop.style.display='block';
@@ -2019,7 +2026,7 @@ function renderProgCards(){
     return`<div class="pcard ${cls}" onclick="openModal('prog',${start+i})">
       <div class="pc-top">
         <div>
-          <div class="pc-name">${cl(r[C.PROYEK])}</div>
+          <div class="pc-name">${pn(r)}</div>
           <div class="pc-area">${normKode(r[C.KODE])} · ${cl(r[C.SPI])} · ${cl(r[C.AREA])} · ${cl(r[C.TAHUN])}</div>
         </div>${delayTag(r[C.DELAY])}
       </div>
@@ -2127,7 +2134,7 @@ function renderDB(){
     const delay=parseInt(r[C.DELAY])||0;
     const rowCls=delay<-100&&cl(r[C.STATUS])==='PROGRESS'?'row-alert':delay<0&&cl(r[C.STATUS])==='PROGRESS'?'row-warn':'';
     return`<tr class="${rowCls}" onclick="openModal('db',${start+i})">
-      <td class="t-name">${cl(r[C.PROYEK])}</td>
+      <td class="t-name">${pn(r)}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${normKode(r[C.KODE])}</td>
       <td style="font-family:var(--mono);font-size:11px">${cl(r[C.SPI])}</td>
       <td style="font-family:var(--mono);font-size:11px">${cl(r[C.TAHUN])}</td>
@@ -2280,7 +2287,7 @@ function renderFinansial(){
   $('fin-bar-inv').innerHTML=topY.map(([k,v])=>`<div class="bar-row"><div class="bar-lbl">${k}</div><div class="bar-track"><div class="bar-fill" style="width:${(v/maxY*100).toFixed(1)}%;background:linear-gradient(90deg,var(--purple),#c084fc)"><span class="bar-txt">${fmt(v,true)}</span></div></div><div class="bar-num">${fmt(v,true)}</div></div>`).join('');
   window._FIN=[...finSrc].sort((a,b)=>num(b[C.NK])-num(a[C.NK]));
   $('fin-tbody').innerHTML=window._FIN.map((r,i)=>`<tr onclick="openModal('fin',${i})">
-    <td class="t-name">${cl(r[C.PROYEK])}</td>
+    <td class="t-name">${pn(r)}</td>
     <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${normKode(r[C.KODE])}</td>
     <td style="font-family:var(--mono);font-size:11px">${cl(r[C.SPI])}</td>
     <td style="font-family:var(--mono);font-size:11px">${cl(r[C.TAHUN])}</td>
@@ -2439,7 +2446,7 @@ function buildAlerts(){
       const dlCls=d<-100?'dl-bad':'dl-warn';
       return`<div class="alert-item">
         <div style="flex:1;min-width:0">
-          <div class="alert-item-name">${cl(r[C.PROYEK])}</div>
+          <div class="alert-item-name">${pn(r)}</div>
           <div class="alert-item-meta">${cl(r[C.KODE])} · ${cl(r[C.SPI])} · ${cl(r[C.AREA])} · Tahun ${cl(r[C.TAHUN])}</div>
           ${cl(r[C.DOK])?`<div style="font-size:10px;color:var(--text3);margin-top:2px">📋 ${cl(r[C.DOK])}</div>`:''}
         </div>
@@ -2480,7 +2487,7 @@ function openModal(src,idx){
   const totalInv = relInv.reduce((a,i)=>a+num(i[I.DPP]),0);
   const kodeStr = normKode(r[C.KODE]);
 
-  $('m-title').textContent=cl(r[C.PROYEK]);
+  $('m-title').textContent=pn(r);
   $('m-sub').textContent=kodeStr+' · '+cl(r[C.SPI])+' · Tahun '+cl(r[C.TAHUN])+' · '+cl(r[C.AREA]);
   $('m-edit-btn').style.display=cl(r[C.STATUS])==='PROGRESS'?'block':'none';
   $('m-body').innerHTML=`
@@ -2675,7 +2682,7 @@ function openModalInv(idx){
 /* ══ EDIT MODAL ══ */
 function openEdit(){
   const r=CURRENT_ROW;if(!r)return;
-  $('edit-sub').textContent=cl(r[C.PROYEK]);
+  $('edit-sub').textContent=pn(r);
   $('edit-form').innerHTML=`
     <div class="ef-grid">
       <div class="ef-row"><div class="ef-label">Status</div>
@@ -3708,7 +3715,7 @@ function scwBuildModel(){
     let done=fin100[k]!=null?fin100[k]:null;
     if(ba!=null&&(done==null||ba<done)) done=ba;
     if(done==null&&SCW_FIN.has(st)) done=-1e9;   /* status selesai tanpa BAST & tanpa 100% di log: dianggap sudah lama selesai, tidak dihitung */
-    projs.push({k,sc,spi,done,fin:SCW_FIN.has(st),area:cl(r[C.AREA]).toUpperCase(),nama:cl(r[C.PROYEK])});
+    projs.push({k,sc,spi,done,fin:SCW_FIN.has(st),area:cl(r[C.AREA]).toUpperCase(),nama:pn(r)});
   });
 
   const S={}; /* sc → data */
@@ -3756,7 +3763,7 @@ function scwBuildModel(){
     const w=sel.find(x=>t>=x.from&&t<=x.to);
     if(w){
       o.wk[w.n]=o.wk[w.n]||{proyek:0,real:0}; o.wk[w.n].real+=v; o.total+=v;
-      o.entries.push({t,k,v,ref,nama:cl(kodeRow[k]&&kodeRow[k][C.PROYEK])});
+      o.entries.push({t,k,v,ref,nama:kodeRow[k]?pn(kodeRow[k]):''});
     }
   });
 
