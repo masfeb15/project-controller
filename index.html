@@ -494,6 +494,23 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .scw-rk.g1{background:#f5c542;color:#4a3500}.scw-rk.g2{background:#c5ccd6;color:#2b3340}.scw-rk.g3{background:#d9915a;color:#3d1f08}
 .scw-det td{background:var(--surf2);padding:0 !important;white-space:normal}
 .os-col{display:none;white-space:nowrap;text-align:right}.os-on .os-col{display:table-cell}.os-flag{display:inline-block;margin-left:4px;padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700;background:var(--amber-d);color:var(--amber);border:1px solid var(--amber);cursor:help}
+.tgt-chips{display:flex;gap:5px}
+.tgt-chips button,.tgt-tabs button{background:var(--surf2);border:1px solid var(--border2);border-radius:7px;color:var(--text2);font-family:var(--font);font-size:11px;font-weight:700;padding:6px 10px;cursor:pointer}
+.tgt-chips button.on,.tgt-tabs button.on{background:var(--green-d);border-color:var(--green);color:var(--green)}
+.tgt-q{background:var(--surf2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;outline:none;min-width:160px}
+.tgt-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.tgt-sts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.tgt-st{font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--border2);color:var(--text2);cursor:pointer;background:var(--surf2)}
+.tgt-st b{font-family:var(--mono);margin-left:4px;color:var(--text)}
+.tgt-b{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap;border:1px solid}
+.tgt-b.ok{background:var(--green-d);color:var(--green);border-color:var(--green)}
+.tgt-b.part{background:var(--amber-d);color:var(--amber);border-color:var(--amber)}
+.tgt-b.bad{background:var(--red-d);color:var(--red);border-color:var(--red)}
+.tgt-b.out{background:var(--blue-d);color:var(--blue);border-color:var(--blue)}
+.tgt-b.nil{color:var(--text3);border-color:var(--border2)}
+.scw-table td.tgt-sub{padding-left:28px;color:var(--text2)}
+.scw-table tr.tgt-tot td{font-weight:800;background:var(--surf2);position:sticky;bottom:0}
+.scw-table th.sortable{cursor:pointer}
 .scw-ranges{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}.scw-rg{display:flex;align-items:center;gap:6px;background:var(--bg3,rgba(255,255,255,.04));border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--text2)}.scw-rg input{width:52px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:3px 6px;font:inherit;text-align:center}.scw-rg b{color:var(--blue)}.scw-rgb{background:none;border:1px dashed var(--border);border-radius:8px;color:var(--text2);padding:5px 10px;font-size:11px;cursor:pointer}.scw-rgb:hover{color:var(--text)}
 .scw-lnk{color:var(--cyan);text-decoration:none;border-bottom:1px dotted currentColor}.scw-lnk:hover{filter:brightness(1.25)}
 .scw-det-in{padding:10px 14px 12px 48px;font-size:11px;color:var(--text2)}
@@ -613,6 +630,10 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
   <div class="s-item" onclick="goPage('scweek',this)" id="si-scweek" style="color:var(--blue)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
     Realisasi SC / Minggu
+  </div>
+  <div class="s-item" onclick="goPage('target',this)" id="si-target" style="color:var(--green)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+    Target Bulanan
   </div>
   <div class="s-item" onclick="goPage('alerts',this)" id="si-alerts" style="color:var(--red)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -767,15 +788,15 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
             <th onclick="sortDB('PIC_TEK')">PIC Teknik</th>
             <th onclick="sortDB('PIC_SALES')">PIC Sales</th>
             <th onclick="sortDB('KORWIL_TEK')">Korwil Teknik</th>
-            <th onclick="sortDB('STATUS')">Status</th>
-            <th onclick="sortDB('PROGRESS')">Progress</th>
-            <th onclick="sortDB('DELAY')">Delay</th>
+            <th onclick="sortDB('STATUS')" data-os="Status">Status</th>
+            <th onclick="sortDB('PROGRESS')" id="th-prog">Progress</th>
+            <th onclick="sortDB('DELAY')" data-os="Delay">Delay</th>
             <th>DOK SPK / Term Payment</th>
             <th onclick="sortDB('NK')">Nilai Kontrak</th>
-            <th onclick="sortDB('TERTAGIH')">Tertagih</th>
-            <th onclick="sortDB('PCT_TAGIH')">% Tertagih</th>
-            <th onclick="sortDB('PCT_ANGGARAN')">% Anggaran</th>
-            <th onclick="sortDB('PCT_DP')">% DP</th>
+            <th onclick="sortDB('TERTAGIH')" data-os="Tertagih">Tertagih</th>
+            <th onclick="sortDB('PCT_TAGIH')" data-os="% Tertagih">% Tertagih</th>
+            <th onclick="sortDB('PCT_ANGGARAN')" data-os="% Anggaran">% Anggaran</th>
+            <th onclick="sortDB('PCT_DP')" data-os="% DP">% DP</th>
             <th class="os-col" title="% progress tertinggi di log_progress sebelum tanggal acuan × nilai kontrak">Realisasi Teknik<br>s/d tgl</th>
             <th class="os-col" title="Jumlah DPP seluruh invoice (termasuk DP) sebelum tanggal acuan">Tertagih Invoice<br>s/d tgl</th>
             <th class="os-col" title="Realisasi teknik − tertagih invoice. Positif = pekerjaan belum ditagih">Selisih<br>(belum ditagih)</th>
@@ -1015,6 +1036,47 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     </div>
   </div>
 
+  <!-- ═══ TARGET BULANAN ═══ -->
+  <div class="page" id="page-target">
+    <div class="sec-hd">
+      <div>
+        <div class="sec-title" style="color:var(--green)">🎯 Target Bulanan</div>
+        <div class="sec-sub" id="tgt-sub">Target teknik dari sheet projects</div>
+      </div>
+    </div>
+    <div class="scw-warn" id="tgt-warn" role="status" hidden></div>
+    <div class="scw-bar">
+      <select id="tgt-wil" onchange="buildTarget()" aria-label="Wilayah"><option value="">Semua Wilayah</option></select>
+      <select id="tgt-area" onchange="buildTarget()" aria-label="Area"><option value="">Semua Area</option></select>
+      <select id="tgt-sc" onchange="buildTarget()" aria-label="SC Teknik"><option value="">Semua SC Teknik</option></select>
+      <select id="tgt-stat" onchange="buildTarget()" aria-label="Status"><option value="">Semua Status</option></select>
+      <select id="tgt-scope" onchange="buildTarget()" aria-label="Tampilkan">
+        <option value="td">Bertarget + di luar proyeksi</option>
+        <option value="t">Hanya bertarget</option>
+        <option value="all">Semua baris sheet</option>
+      </select>
+      <span class="scw-lbl">Week</span>
+      <div class="tgt-chips" id="tgt-wk"></div>
+      <input type="search" id="tgt-q" class="tgt-q" placeholder="Cari proyek / kode…" oninput="buildTarget()" aria-label="Cari">
+      <button type="button" class="scw-dl" onclick="tgtExport()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Unduh Excel
+      </button>
+    </div>
+    <div class="mkor-kpi" id="tgt-kpi" style="border:1px solid var(--border);border-radius:var(--r2);margin-bottom:10px"></div>
+    <div class="tgt-sts" id="tgt-sts"></div>
+    <div class="tgt-tabs" id="tgt-tabs">
+      <button type="button" data-v="proyek" class="on" onclick="tgtView('proyek')">Per Proyek</button>
+      <button type="button" data-v="sc" onclick="tgtView('sc')">Per SC Teknik</button>
+      <button type="button" data-v="wil" onclick="tgtView('wil')">Per Wilayah &amp; Area</button>
+      <button type="button" data-v="wk" onclick="tgtView('wk')">Per Week</button>
+    </div>
+    <div class="scw-wrap">
+      <div class="scw-scroll" id="tgt-scroll"></div>
+      <div class="scw-note" id="tgt-note"></div>
+    </div>
+  </div>
+
   <!-- ═══ ALERT DELAY ═══ -->
   <!-- ═══ LAPORAN TAGIHAN ═══ -->
   <div class="page" id="page-tagihan">
@@ -1249,6 +1311,10 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     <button class="bn-btn" id="bn-scweek" onclick="goPage('scweek',this)" style="color:var(--blue)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
       SC/Mgg
+    </button>
+    <button class="bn-btn" id="bn-target" onclick="goPage('target',this)" style="color:var(--green)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      Target
     </button>
     <button class="bn-btn" id="bn-tagihan" onclick="goPage('tagihan',this)" style="color:var(--cyan)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M6 8h.01M10 8h4"/></svg>
@@ -1550,6 +1616,12 @@ function pb(p){
               : 'linear-gradient(90deg,var(--amber),#fcd34d)';
   return`<div class="pb-wrap"><div class="pb-track"><div class="pb-fill" style="width:${v}%;background:${color}"></div></div><div class="pb-txt">${v}%</div></div>`;
 }
+/* bar progress dengan desimal (mis. 8.5%) — dipakai untuk "progress per tanggal" pada filter Outstanding */
+function pbx(frac){
+  const v=Math.max(0,Math.min(100,Math.round(frac*10000)/100));
+  const color=v>=80?'linear-gradient(90deg,var(--green),#34d399)':v>=50?'linear-gradient(90deg,var(--blue),var(--cyan))':'linear-gradient(90deg,var(--amber),#fcd34d)';
+  return`<div class="pb-wrap"><div class="pb-track"><div class="pb-fill" style="width:${v}%;background:${color}"></div></div><div class="pb-txt">${v}%</div></div>`;
+}
 function toast(m,t='info'){const e=$('toast');e.textContent=m;e.className=t;e.style.display='block';setTimeout(()=>e.style.display='none',3000);}
 function setDot(s){const d=$('conn-dot');d.className='dot'+(s==='err'?' err':s==='spin'?' spin':'');}
 function ldP(p,m){$('ld-fill').style.width=p+'%';if(m)$('ld-msg').textContent=m;}
@@ -1656,6 +1728,13 @@ async function loadData(manual=false){
           buildLPIdx();
         }
       }catch(e){console.warn('log_progress gagal:',e);}
+
+      // Fetch sheet target bulanan (spreadsheet lain; gagal tidak mengganggu dashboard)
+      try{
+        const r7=await fetchSheet(URL_TGT,2,1500);
+        if(r7&&r7.ok){ TGT_RAW=parseCSV(await r7.text()); TGT_ERR=''; }
+        else TGT_ERR='Sheet target tidak bisa dibaca (HTTP '+(r7&&r7.status)+'). Pastikan dibagikan "Siapa saja yang memiliki link → Viewer".';
+      }catch(e){ TGT_ERR='Sheet target gagal dimuat: '+e.message; console.warn('target gagal:',e); }
 
       // Fetch kendala
       ldP(80,'Mengambil data kendala...');
@@ -1788,7 +1867,7 @@ async function loadData(manual=false){
 function buildAll(){
   buildInvIdx();
   DB_F=[...ALL];PG_F=ALL.filter(r=>cl(r[C.STATUS])==='PROGRESS');INV_F=[...INV];
-  buildSidebar();buildDash();buildProgPage();renderDB();renderInv();renderFinansial();buildPIC();buildAlerts();initCostControl();initTagihan();buildMkorChart();buildScWeek();updateBadges();
+  buildSidebar();buildDash();buildProgPage();renderDB();renderInv();renderFinansial();buildPIC();buildAlerts();initCostControl();initTagihan();buildMkorChart();buildScWeek();buildTarget();updateBadges();
 }
 
 function updateBadges(){
@@ -2095,6 +2174,8 @@ function scwLogMax(cut){
   });
   return m;
 }
+/* pecahan → teks persen (1 desimal); null → — */
+function osP(f){return f==null||isNaN(f)?'—':(Math.round(f*1000)/10)+'%';}
 function osCells(r){const o=window.OS_INFO&&window.OS_INFO[normKode(r[C.KODE])]; return o?[Math.round(o.real),Math.round(o.tag),Math.round(o.sel)]:['','',''];}
 
 function filterDB(){
@@ -2112,6 +2193,8 @@ function filterDB(){
   window.OS_INFO=osCut!=null?{}:null;
   const osFin=osCut!=null?scwFin100Map():null, osLog=osCut!=null?scwLogMax(osCut):null;
   $('db-table')&&$('db-table').classList.toggle('os-on',osCut!=null);
+  if($('th-prog')) $('th-prog').textContent=osCut!=null?'Progress per tgl':'Progress';
+  document.querySelectorAll('#db-table th[data-os]').forEach(t=>t.textContent=t.dataset.os+(osCut!=null?' per tgl':''));
 
   DB_F=ALL.filter(r=>{
     if(q&&!cl(r[C.PROYEK]).toLowerCase().includes(q)&&!cl(r[C.KODE]).toLowerCase().includes(q)&&!cl(r[C.SPI]).toLowerCase().includes(q)&&!cl(r[C.PIC_TEK]).toLowerCase().includes(q)&&!cl(r[C.PIC_SALES]).toLowerCase().includes(q)&&!cl(r[C.NO_SO]).toLowerCase().includes(q))return false;
@@ -2137,14 +2220,24 @@ function filterDB(){
       if(unknown&&osHide) return false;
       const nk=num(r[C.NK]), real=(osLog[k]||0)*nk;
       let tag=0; (INV_IDX[k]||[]).forEach(iv=>{const t=scwParseDay(iv[I.TGL]); if(t!=null&&t<osCut) tag+=num(iv[I.DPP]);});
-      window.OS_INFO[k]={real,tag,sel:real-tag,unknown};
+      const pctAsOf=(LP_IDX[k]&&LP_IDX[k].length)?(osLog[k]||0):null;   /* null = proyek tidak punya log progress sama sekali */
+      let dp=0; (INV_IDX[k]||[]).forEach(iv=>{ if(cl(iv[I.TIPE]).toUpperCase()!=='DP') return; const t=scwParseDay(iv[I.TGL]); if(t!=null&&t<osCut) dp+=num(iv[I.DPP]); });
+      const endD=scwParseDay(r[C.END]);
+      let bbNet=null; const bb=BB_RAW[k];
+      if(bb&&bb.trans){bbNet=0; bb.trans.forEach(x=>{const t=scwParseDay(x.tgl); if(t!=null&&t<osCut) bbNet+=x.debit-x.kredit;});}
+      const hpp=num(r[C.HPP]);
+      window.OS_INFO[k]={real,tag,sel:real-tag,unknown,pct:pctAsOf,
+        status:unknown?cl(r[C.STATUS]):'PROGRESS',                     /* belum 100% pada tanggal acuan → masih berjalan */
+        delay:(!unknown&&endD!=null)?endD-osCut:null,                  /* END − tanggal acuan (sama dengan rumus kolom DELAY: END − hari ini) */
+        pctTag:nk?tag/nk:null, pctDp:nk?dp/nk:null,
+        pctAng:(bbNet!=null&&hpp)?bbNet/hpp:null};
     }
     return true;
   });
   if(DB_SORT.col)sortDBArr();
   DB_PAGE=1;renderDB();
 }
-function clearDB(){if($('df-os-hide'))$('df-os-hide').checked=false;window.OS_INFO=null;if($('db-table'))$('db-table').classList.remove('os-on');if($('os-hint'))$('os-hint').textContent='';['df-q','df-status','df-area','df-tahun','df-wil','df-jenis','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});DB_F=[...ALL];DB_PAGE=1;renderDB();}
+function clearDB(){document.querySelectorAll('#db-table th[data-os]').forEach(t=>t.textContent=t.dataset.os);if($('th-prog'))$('th-prog').textContent='Progress';if($('df-os-hide'))$('df-os-hide').checked=false;window.OS_INFO=null;if($('db-table'))$('db-table').classList.remove('os-on');if($('os-hint'))$('os-hint').textContent='';['df-q','df-status','df-area','df-tahun','df-wil','df-jenis','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});DB_F=[...ALL];DB_PAGE=1;renderDB();}
 function sortDB(col){document.querySelectorAll('thead th').forEach(t=>t.classList.remove('s-asc','s-desc'));if(DB_SORT.col===col)DB_SORT.dir*=-1;else{DB_SORT.col=col;DB_SORT.dir=1;}sortDBArr();DB_PAGE=1;renderDB();}
 function sortDBArr(){const nums=['NK','TERTAGIH','SISA','PCT_TAGIH','PCT_ANGGARAN','PCT_DP','PROGRESS','DELAY'];DB_F.sort((a,b)=>{const ci=C[DB_SORT.col];if(ci===undefined)return 0;const av=nums.includes(DB_SORT.col)?num(a[ci]):cl(a[ci]);const bv=nums.includes(DB_SORT.col)?num(b[ci]):cl(b[ci]);return typeof av==='number'?(av-bv)*DB_SORT.dir:av.localeCompare(bv)*DB_SORT.dir;});}
 function renderDB(){
@@ -2171,15 +2264,15 @@ function renderDB(){
       <td style="font-size:11px;color:var(--text2)">${cl(r[C.PIC_TEK])||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${cl(r[C.PIC_SALES])||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${cl(r[C.KORWIL_TEK])||'—'}</td>
-      <td>${badge(cl(r[C.STATUS]))}${osO&&osO.unknown?'<span class="os-flag" title="Berstatus selesai, tetapi tidak ada tanggal BAST maupun 100% di log progress — tanggal selesai tidak diketahui">tgl selesai ?</span>':''}</td>
-      <td>${pb(r[C.PROGRESS])}</td>
-      <td>${delayTag(r[C.DELAY])}</td>
+      <td>${badge(osO?osO.status:cl(r[C.STATUS]))}${osO&&osO.unknown?'<span class="os-flag" title="Berstatus selesai, tetapi tidak ada tanggal BAST maupun 100% di log progress — tanggal selesai tidak diketahui">tgl selesai ?</span>':''}</td>
+      <td>${osO?(osO.pct==null?'<span style="color:var(--text3)" title="Tidak ada log progress untuk proyek ini">—</span>':pbx(osO.pct)):pb(r[C.PROGRESS])}</td>
+      <td>${osO?(osO.delay==null?'<span style="color:var(--text3)">—</span>':delayTag(osO.delay)):delayTag(r[C.DELAY])}</td>
       <td class="t-dok" title="${cl(r[C.DOK])}">${cl(r[C.DOK])||'—'}</td>
       <td class="money">${fmt(num(r[C.NK]),true)}</td>
-      <td class="money">${fmt(num(r[C.TERTAGIH]),true)}</td>
-      <td style="font-family:var(--mono);font-size:11px;font-weight:700;color:${pctColor(num(r[C.PCT_TAGIH]))}">${pct(r[C.PCT_TAGIH])}</td>
-      <td style="font-family:var(--mono);font-size:11px;font-weight:600;color:${pctColor(num(r[C.PCT_ANGGARAN]))}">${pct(r[C.PCT_ANGGARAN])}</td>
-      <td style="font-family:var(--mono);font-size:11px">${pct(r[C.PCT_DP])}</td>
+      <td class="money">${fmt(osO?osO.tag:num(r[C.TERTAGIH]),true)}</td>
+      <td style="font-family:var(--mono);font-size:11px;font-weight:700;color:${pctColor(osO?osP(osO.pctTag):num(r[C.PCT_TAGIH]))}">${osO?osP(osO.pctTag):pct(r[C.PCT_TAGIH])}</td>
+      <td style="font-family:var(--mono);font-size:11px;font-weight:600;color:${pctColor(osO?osP(osO.pctAng):num(r[C.PCT_ANGGARAN]))}">${osO?osP(osO.pctAng):pct(r[C.PCT_ANGGARAN])}</td>
+      <td style="font-family:var(--mono);font-size:11px">${osO?osP(osO.pctDp):pct(r[C.PCT_DP])}</td>
       <td class="os-col money">${osO?fmt(osO.real,true):''}</td>
       <td class="os-col money">${osO?fmt(osO.tag,true):''}</td>
       <td class="os-col money" style="color:${osO&&osO.sel>0?'var(--amber)':osO&&osO.sel<0?'var(--red)':'var(--text3)'}">${osO?fmt(osO.sel,true):''}</td>
@@ -2769,7 +2862,7 @@ function exportXLS(src){
     sheetName='Database Proyek';
     headers=['Proyek','Kode','SPI','Tahun','Area','Wilayah','Jenis','Status','Progress (%)','Delay (hari)','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','Nilai Retensi','PIC Teknik','PIC Sales'];
     data=DB_F.map(r=>[cl(r[C.PROYEK]),cl(r[C.KODE]),cl(r[C.SPI]),cl(r[C.TAHUN]),cl(r[C.AREA]),cl(r[C.WILAYAH]),cl(r[C.JENIS2])||cl(r[C.JENIS]),cl(r[C.STATUS]),parseFloat((num(r[C.PROGRESS])*100).toFixed(2)),parseInt(r[C.DELAY])||0,cl(r[C.DOK]),Math.round(num(r[C.NK])),Math.round(num(r[C.HPP])),Math.round(num(r[C.TERTAGIH])),Math.round(num(r[C.SISA])),parseFloat((num(r[C.PCT_TAGIH])*100).toFixed(2)),Math.round(num(r[C.RETENSI])),cl(r[C.PIC_TEK]),cl(r[C.PIC_SALES])]);
-    if(window.OS_INFO){headers=headers.concat(['Realisasi Teknik s/d tgl','Tertagih Invoice s/d tgl','Selisih (belum ditagih)','Tgl selesai tidak diketahui']);data=data.map((row,i)=>row.concat(osCells(DB_F[i]),[(window.OS_INFO[normKode(DB_F[i][C.KODE])]||{}).unknown?'YA':'']));}
+    if(window.OS_INFO){headers=headers.concat(['Realisasi Teknik s/d tgl','Tertagih Invoice s/d tgl','Selisih (belum ditagih)','Tgl selesai tidak diketahui']);headers[7]='Status per tgl';headers[8]='Progress per tgl (%)';headers[9]='Delay per tgl (hari)';headers[13]='Tertagih per tgl';headers[14]='Sisa Tagihan per tgl';headers[15]='% Tertagih per tgl';data=data.map((row,i)=>{const o=window.OS_INFO[normKode(DB_F[i][C.KODE])];if(o){row[7]=o.status;row[8]=o.pct==null?'':parseFloat((o.pct*100).toFixed(2));row[9]=o.delay==null?'':o.delay;row[13]=Math.round(o.tag);row[14]=Math.round(Math.max(0,row[11]-o.tag));row[15]=o.pctTag==null?'':parseFloat((o.pctTag*100).toFixed(2));}return row;}).map((row,i)=>row.concat(osCells(DB_F[i]),[(window.OS_INFO[normKode(DB_F[i][C.KODE])]||{}).unknown?'YA':'']));}
   }else if(src==='prog'){
     sheetName='Proyek Berjalan';
     headers=['Proyek','Kode','SPI','Tahun','Area','Jenis','Progress (%)','Delay (hari)','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','% DP','% Pemakaian Angg','PIC Teknik','PIC Sales'];
@@ -3593,8 +3686,10 @@ function scwParseDay(v){
   if(m) return scwDay(+m[1],+m[2]-1,+m[3]);
   m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
   if(m){let a=+m[1],b=+m[2]; if(b>12&&a<=12){const t=a;a=b;b=t;} return scwDay(+m[3],b-1,a);} /* dd/mm/yyyy */
-  m=s.match(/^(\d{1,2})\s+([A-Za-z]{3,})\.?,?\s+(\d{4})/);   /* 8 Okt 2026 / 8 Oct 2026 */
-  if(m){const mi=SCW_MON_IDX[m[2].slice(0,3).toLowerCase()]; if(mi!=null) return scwDay(+m[3],mi,+m[1]);}
+  m=s.match(/^(\d{1,2})[\s\-\/.]+([A-Za-z]{3,})\.?,?[\s\-\/.]+(\d{2,4})/);   /* 8 Okt 2026 / 8-Oct-26 */
+  if(m){const mi=SCW_MON_IDX[m[2].slice(0,3).toLowerCase()]; if(mi!=null) return scwDay(+m[3]<100?2000+ +m[3]:+m[3],mi,+m[1]);}
+  m=s.match(/^([A-Za-z]{3,})\.?\s+(\d{1,2}),?\s+(\d{4})/);   /* Nov 2, 2026 */
+  if(m){const mi=SCW_MON_IDX[m[1].slice(0,3).toLowerCase()]; if(mi!=null) return scwDay(+m[3],mi,+m[2]);}
   if(/^\d+$/.test(s)){const n=parseInt(s); if(n>40000&&n<70000) return n-25569;}                /* serial Excel */
   const d=new Date(s); return isNaN(d)?null:scwDay(d.getFullYear(),d.getMonth(),d.getDate());
 }
@@ -4056,6 +4151,197 @@ async function downloadScwImage(){
   },'image/png');
 }
 
+/* ══════════ TARGET BULANAN ══════════
+   Sumber target : sheet "projects" (spreadsheet target) — ESTIMASI %, TARGET NOTA, DATE diisi manual tiap bulan.
+   Realisasi     : dari log_progress (Δ% progress × nilai kontrak), BUKAN dari kolom BAST di sheet.
+     progress awal  = % tertinggi di log SEBELUM tanggal 1 bulan target
+     V (kini)       = % tertinggi di log s/d akhir bulan, bila ada entri log di bulan itu, jika tidak 0
+     aktual nota    = V > 0 ? (V − progress awal) × nilai kontrak : 0
+   Status (sama dengan kolom X sheet): TERCAPAI = ada kenaikan progress di bulan itu, walau belum sampai estimasi. */
+const URL_TGT=`https://docs.google.com/spreadsheets/d/1CFmQxjRUqWWRh3lp3qJDdGwDQtGBvZh7jZlpbCPX198/export?format=csv&gid=1631770224&t=`;
+let TGT_RAW=[], TGT_ERR='', TGT_MODEL=null, TGT_VIEW='proyek', TGT_WK=new Set(), TGT_SORT={k:'tn',d:-1};
+const TGT_STATUSES=['TERCAPAI','TERCAPAI TIDAK BISA DITAGIHKAN','TIDAK TERCAPAI','TERCAPAI DILUAR PROYEKSI','TERCAPAI DILUAR DATA AKUNTANSI','-'];
+const TGT_STATUS_LBL={'-':'Belum jatuh tempo / tanpa realisasi'};
+const TGT_STATUS_CLS={'TERCAPAI':'ok','TERCAPAI TIDAK BISA DITAGIHKAN':'part','TIDAK TERCAPAI':'bad','TERCAPAI DILUAR PROYEKSI':'out','TERCAPAI DILUAR DATA AKUNTANSI':'out','-':'nil'};
+const tgtNorm=s=>cl(s).replace(/\s+/g,' ').toUpperCase();
+
+/* tanggal: ISO, d-Mon-yy, d Mon yyyy, serial Excel, atau dd/mm vs mm/dd (dipilih yang jatuh dekat bulan target) */
+function tgtDay(v,win){
+  const s=cl(v); if(!s||s==='—'||s==='-') return null;
+  const m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
+  if(m&&win){
+    const a=+m[1], b=+m[2], c1=b<=12?scwDay(+m[3],b-1,a):null, c2=a<=12?scwDay(+m[3],a-1,b):null;
+    const in1=c1!=null&&c1>=win.lo&&c1<win.hi, in2=c2!=null&&c2>=win.lo&&c2<win.hi;
+    if(in2&&!in1) return c2; if(in1) return c1;
+  }
+  return scwParseDay(s);
+}
+function tgtPctVal(v){   /* "80%" → 0.8 ; "0.8" → 0.8 ; "80" → 0.8 ; kosong → null */
+  const s=cl(v); if(s===''||s==='—') return null;
+  const n=parseFloat(s.replace('%','').replace(/,/g,'')); if(isNaN(n)) return null;
+  return s.includes('%')?n/100:(n>1?n/100:n);
+}
+function tgtCols(hdr){
+  const find=(names,prefix)=>{for(let i=0;i<hdr.length;i++){const h=hdr[i]; if(names.includes(h)||(prefix&&h.startsWith(prefix)&&/\d/.test(h))) return i;} return -1;};
+  const c={kode:find(['KODE']),nama:find(['NAMA PROYEK']),wil:find(['WILAYAH']),area:find(['AREA']),sc:find(['SC TEKNIK','PIC TEKNIK']),
+    nk:find(['NILAI KONTRAK']),est:find(['ESTIMASI %','ESTIMASI']),tn:find(['TARGET NOTA']),date:find(['DATE','TGL TARGET']),ket:find(['KETERANGAN']),u:find([],'PROGRESS ')};
+  const miss=['kode','est','tn','date'].filter(k=>c[k]<0);
+  return miss.length?{err:'Kolom wajib tidak ditemukan di sheet projects: '+miss.map(k=>({kode:'KODE',est:'ESTIMASI %',tn:'TARGET NOTA',date:'DATE'}[k])).join(', ')+'. Judul kolom terbaca: '+hdr.filter(Boolean).slice(0,14).join(' | ')}:c;
+}
+const TGT_MON={jan:0,feb:1,mar:2,apr:3,mei:4,may:4,jun:5,jul:6,agu:7,aug:7,sep:8,okt:9,oct:9,nov:10,des:11,dec:11};
+function tgtStatus(est,V,W,td,today){
+  const vp=V>0, wp=W>0.5, wz=Math.abs(W)<=0.5;
+  if(est==null&&vp&&wp) return 'TERCAPAI DILUAR DATA AKUNTANSI';
+  if(est===0&&vp&&wp) return 'TERCAPAI DILUAR PROYEKSI';
+  if(est>0&&vp&&wp) return 'TERCAPAI';
+  if(est>0&&vp&&wz) return 'TERCAPAI TIDAK BISA DITAGIHKAN';
+  if(est>0&&!vp&&(td==null?0:td)<today) return 'TIDAK TERCAPAI';
+  return '-';
+}
+function tgtWeekOf(td){ if(td==null) return 0; const d=new Date(td*864e5).getUTCDate(); return d<=8?1:d<=15?2:d<=22?3:d<=30?4:5; }
+
+function tgtBuildModel(){
+  const R=TGT_RAW;
+  if(!R.length) return {err:TGT_ERR||'Sheet target belum termuat. Pastikan sheet dibagikan "Siapa saja yang memiliki link → Viewer", lalu klik Sync.'};
+  const hdr=R[0].map(tgtNorm), c=tgtCols(hdr); if(c.err) return {err:c.err};
+  /* bulan target: dari judul kolom "PROGRESS 1 NOV '26"; cadangan: bulan yang paling sering muncul di kolom DATE */
+  let y=null,m=null;
+  if(c.u>=0){const mm=String(R[0][c.u]).match(/(\d{1,2})\s+([A-Za-z]{3,})\W*(\d{2,4})/); if(mm&&TGT_MON[mm[2].slice(0,3).toLowerCase()]!=null){m=TGT_MON[mm[2].slice(0,3).toLowerCase()]; y=+mm[3]; if(y<100) y+=2000;}}
+  if(m==null){const cnt={}; R.slice(1).forEach(r=>{const t=scwParseDay(r[c.date]); if(t!=null){const d=new Date(t*864e5),k=d.getUTCFullYear()*12+d.getUTCMonth(); cnt[k]=(cnt[k]||0)+1;}});
+    const best=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]; if(best==null) return {err:'Bulan target tidak terbaca (judul kolom "PROGRESS 1 NOV \'26" atau kolom DATE).'}; y=Math.floor(best/12); m=best%12;}
+  const mStart=scwDay(y,m,1), mNext=scwDay(y,m+1,1), win={lo:mStart-45,hi:mNext+45};
+  const now=new Date(), today=scwDay(now.getFullYear(),now.getMonth(),now.getDate());
+  const kodeRow={}; ALL.forEach(r=>{const k=normKode(r[C.KODE]); if(k) kodeRow[k]=r;});
+  const mKey={}; scwMaster().forEach(x=>mKey[x.key]=x);
+  const normSC=v=>{const n=cl(v).toUpperCase().replace(/\s+/g,' '); const x=mKey[scwKey(n)]; return x?x.name:n;};   /* samakan ejaan dengan daftar master SC */
+  let lastWil='',lastArea='';
+  const rows=[];
+  R.slice(1).forEach(r=>{
+    const k=normKode(r[c.kode]); if(!k||isNaN(parseFloat(k))) return;
+    let wil=c.wil>=0?cl(r[c.wil]).toUpperCase():'', area=c.area>=0?cl(r[c.area]).toUpperCase():'';
+    if(wil) lastWil=wil; else wil=lastWil;           /* sel yang digabung di sheet hanya terisi di baris pertama */
+    if(area) lastArea=area; else area=lastArea;
+    const db=kodeRow[k];
+    const nk=db?num(db[C.NK]):(c.nk>=0?num(r[c.nk]):0);
+    const est=tgtPctVal(r[c.est]), tn=num(r[c.tn]);
+    const td=tgtDay(r[c.date],win);
+    /* realisasi dari log_progress */
+    let pStart=0,pNow=0,inMonth=false;
+    (LP_IDX[k]||[]).forEach(e=>{const t=scwParseDay(e[LP.TGL]); if(t==null||t>=mNext) return; const p=scwPct(e[LP.PCT_BARU]);
+      if(t<mStart){ if(p>pStart) pStart=p; } else inMonth=true;
+      if(p>pNow) pNow=p;});
+    const V=inMonth?pNow:0, W=V>0?(V-pStart)*nk:0;
+    const status=tgtStatus(est,V,W,td,today);
+    rows.push({k,nama:db?pn(db):(c.nama>=0?cl(r[c.nama]):''),wil:wil||'—',area:area||'—',
+      sc:(db?normSC(db[C.PIC_TEK]):'')||(c.sc>=0?normSC(r[c.sc]):'')||'—',
+      est,tn,td,week:tgtWeekOf(td),nk,pStart,pNow,aktual:W,status,ket:c.ket>=0?cl(r[c.ket]):'',isT:est!=null&&est>0});
+  });
+  /* peringatan: log belum memuat bulan target */
+  let logLast=null; LOG_PROG.forEach(r=>{const t=scwParseDay(r[LP.TGL]); if(t!=null&&(logLast==null||t>logLast)) logLast=t;});
+  let warn=''; if(logLast==null||logLast<mStart) warn='Log Progress belum berisi data '+SCW_MONTHS[m]+' '+y+' — realisasi masih 0. Jalankan "Log Progress → Perbarui sekarang" di Google Sheet.';
+  return {y,m,mStart,mNext,rows,warn,logLast};
+}
+function tgtAgg(rows){
+  const a={n:0,tn:0,ok:0,part:0,fail:0,wait:0,aktual:0,nLuar:0,aktualLuar:0};
+  rows.forEach(r=>{
+    if(r.isT){a.n++;a.tn+=r.tn;a.aktual+=r.aktual>0?r.aktual:0;
+      if(r.status==='TERCAPAI')a.ok++; else if(r.status==='TERCAPAI TIDAK BISA DITAGIHKAN')a.part++; else if(r.status==='TIDAK TERCAPAI')a.fail++; else a.wait++;}
+    else if(r.status.startsWith('TERCAPAI DILUAR')){a.nLuar++;a.aktualLuar+=r.aktual;}
+  });
+  a.pct=a.tn>0?a.aktual/a.tn:null; return a;
+}
+const tgtBadge=s=>`<span class="tgt-b ${TGT_STATUS_CLS[s]||'nil'}" title="${scwEsc(TGT_STATUS_LBL[s]||s)}">${scwEsc(s==='-'?'—':s)}</span>`;
+function tgtFiltered(M){
+  const g=id=>($(id)||{}).value||'', wil=g('tgt-wil'), area=g('tgt-area'), sc=g('tgt-sc'), st=g('tgt-stat'), scope=g('tgt-scope')||'td', q=g('tgt-q').trim().toLowerCase();
+  return M.rows.filter(r=>{
+    if(scope==='t'&&!r.isT) return false;
+    if(scope==='td'&&!(r.isT||r.status.startsWith('TERCAPAI DILUAR'))) return false;
+    if(wil&&r.wil!==wil) return false; if(area&&r.area!==area) return false; if(sc&&r.sc!==sc) return false; if(st&&r.status!==st) return false;
+    if(TGT_WK.size&&!TGT_WK.has(r.week)) return false;
+    if(q&&!(r.nama.toLowerCase().includes(q)||r.k.includes(q))) return false;
+    return true;
+  });
+}
+function tgtFillSelect(id,vals,all){
+  const el=$(id), cur=el.value; el.innerHTML=`<option value="">${all}</option>`+vals.map(v=>`<option value="${scwEsc(v)}">${scwEsc(v)}</option>`).join(''); if(vals.includes(cur)) el.value=cur;
+}
+function tgtView(v){TGT_VIEW=v; document.querySelectorAll('#tgt-tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); buildTarget(true);}
+function tgtToggleWk(n){ if(TGT_WK.has(n)) TGT_WK.delete(n); else TGT_WK.add(n); buildTarget(true); }
+function tgtSort(k){ TGT_SORT=TGT_SORT.k===k?{k,d:-TGT_SORT.d}:{k,d:(k==='td'||k==='sc'||k==='nama')?1:-1}; buildTarget(true); }
+function tgtPickSC(sc){ $('tgt-sc').value=sc; tgtView('proyek'); }
+function tgtPickStatus(s){ $('tgt-stat').value=$('tgt-stat').value===s?'':s; buildTarget(true); }
+
+function buildTarget(keepOpts){
+  if(!$('page-target')) return;
+  const M=TGT_MODEL=tgtBuildModel();
+  const wEl=$('tgt-warn');
+  if(M.err){ wEl.textContent='⚠️ '+M.err; wEl.hidden=false; $('tgt-kpi').innerHTML=''; $('tgt-sts').innerHTML=''; $('tgt-scroll').innerHTML='<div class="scw-empty">Data target belum tersedia.</div>'; $('tgt-note').textContent=''; $('tgt-sub').textContent='Target teknik dari sheet projects'; return; }
+  wEl.textContent=M.warn?'⚠️ '+M.warn:''; wEl.hidden=!M.warn;
+  if(!keepOpts){
+    tgtFillSelect('tgt-wil',[...new Set(M.rows.map(r=>r.wil))].sort(),'Semua Wilayah');
+    tgtFillSelect('tgt-area',[...new Set(M.rows.map(r=>r.area))].sort(),'Semua Area');
+    tgtFillSelect('tgt-sc',[...new Set(M.rows.map(r=>r.sc))].sort(),'Semua SC Teknik');
+    const sel=$('tgt-stat'), cur=sel.value; sel.innerHTML='<option value="">Semua Status</option>'+TGT_STATUSES.map(s=>`<option value="${scwEsc(s)}">${scwEsc(s==='-'?'— (belum jatuh tempo)':s)}</option>`).join(''); sel.value=cur;
+  }
+  $('tgt-wk').innerHTML=[1,2,3,4,5].map(n=>`<button type="button" class="${TGT_WK.has(n)?'on':''}" onclick="tgtToggleWk(${n})" title="${['tgl 1–8','tgl 9–15','tgl 16–22','tgl 23–30','tgl 31'][n-1]}">W${n}</button>`).join('');
+  const rows=tgtFiltered(M), A=tgtAgg(rows);
+  $('tgt-sub').textContent=SCW_MONTHS[M.m]+' '+M.y+' · '+A.n+' proyek ditarget · realisasi dari log progress s/d '+(M.logLast!=null?scwDayStr(M.logLast):'—');
+  const tercapai=A.ok+A.part;
+  $('tgt-kpi').innerHTML=[
+    {l:'Total Target Nota',v:fmt(A.tn,true),s:A.n+' proyek',c:'var(--purple)'},
+    {l:'Aktual Nota (proyek bertarget)',v:fmt(A.aktual,true),s:(A.pct!=null?osP(A.pct):'—')+' dari target',c:'var(--green)'},
+    {l:'Sisa Target',v:fmt(Math.max(0,A.tn-A.aktual),true),s:'target − aktual',c:'var(--amber)'},
+    {l:'Proyek Tercapai',v:tercapai+' / '+A.n,s:A.n?osP(tercapai/A.n)+' · ada kenaikan progress':'—',c:'var(--cyan)'},
+    {l:'Tidak Tercapai',v:String(A.fail),s:'tanggal target lewat, belum ada progress',c:'var(--red)'},
+    {l:'Di Luar Proyeksi',v:String(A.nLuar),s:fmt(A.aktualLuar,true)+' aktual nota',c:'var(--blue)'}
+  ].map(s=>`<div class="mkor-kpi-card" style="border-top:3px solid ${s.c}"><div class="mkor-kpi-l">${s.l}</div><div class="mkor-kpi-v" style="color:${s.c};font-size:${String(s.v).length>16?12:15}px">${scwEsc(s.v)}</div><div class="mkor-kpi-s">${scwEsc(s.s)}</div></div>`).join('');
+  const cnt={}; rows.forEach(r=>{cnt[r.status]=(cnt[r.status]||0)+1;});
+  const curSt=$('tgt-stat').value;
+  $('tgt-sts').innerHTML=TGT_STATUSES.filter(s=>cnt[s]).map(s=>`<span class="tgt-st" style="${curSt===s?'border-color:var(--green);color:var(--green)':''}" onclick="tgtPickStatus('${s}')" title="Klik untuk menyaring">${s==='-'?'Belum jatuh tempo':scwEsc(s)}<b>${cnt[s]}</b></span>`).join('');
+  const body=({proyek:tgtRenderProyek,sc:tgtRenderSC,wil:tgtRenderWil,wk:tgtRenderWk})[TGT_VIEW];
+  $('tgt-scroll').innerHTML=rows.length?body(rows):'<div class="scw-empty">Tidak ada proyek yang cocok dengan filter.</div>';
+  $('tgt-note').textContent='TERCAPAI = ada kenaikan progress di '+SCW_MONTHS[M.m]+' (walau belum sampai estimasi). Aktual nota = (progress kini − progress 1 '+SCW_MON_S[M.m]+') × nilai kontrak, dari log progress. Week: tgl 1–8, 9–15, 16–22, 23–30, 31.';
+}
+function tgtRenderProyek(rows){
+  const k=TGT_SORT.k, d=TGT_SORT.d, val=r=>k==='td'?(r.td==null?9e9:r.td):k==='nama'?r.nama:k==='sc'?r.sc:k==='aktual'?r.aktual:k==='pct'?(r.tn>0?r.aktual/r.tn:-1):r.tn;
+  const sorted=rows.slice().sort((a,b)=>{const x=val(a),y=val(b); return (typeof x==='string'?x.localeCompare(y):x-y)*d||a.k.localeCompare(b.k);});
+  const th=(key,l,cls='')=>`<th class="sortable ${cls}" onclick="tgtSort('${key}')">${l}${TGT_SORT.k===key?(TGT_SORT.d>0?' ▲':' ▼'):''}</th>`;
+  const A=tgtAgg(rows);
+  return `<table class="scw-table"><thead><tr><th>Kode</th>${th('nama','Proyek')}<th>Wilayah</th><th>Area</th>${th('sc','SC Teknik')}<th class="r">Estimasi</th>${th('tn','Target Nota','r')}<th class="r">Week</th>${th('td','Tgl Target','r')}<th class="r">Progress Awal</th><th class="r">Progress Kini</th>${th('aktual','Aktual Nota','r')}${th('pct','Capaian','r')}<th>Status</th><th>Keterangan</th></tr></thead><tbody>`+
+    sorted.map(r=>`<tr><td><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.k)}</a></td><td title="${scwEsc(r.nama)}" style="max-width:300px;overflow:hidden;text-overflow:ellipsis"><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.nama)||'—'}</a></td><td>${scwEsc(r.wil)}</td><td>${scwEsc(r.area)}</td><td>${scwEsc(r.sc)}</td><td class="r">${r.est==null?'—':osP(r.est)}</td><td class="r">${scwRp(r.tn)}</td><td class="r">${r.week||'—'}</td><td class="r">${r.td!=null?scwDayStr(r.td):'—'}</td><td class="r">${osP(r.pStart)}</td><td class="r">${osP(r.pNow)}</td><td class="r ${r.aktual>0?'real':'z'}">${scwRp(r.aktual)}</td><td class="r">${r.isT&&r.tn>0?osP(r.aktual/r.tn):'—'}</td><td>${tgtBadge(r.status)}</td><td title="${scwEsc(r.ket)}" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;color:var(--text2)">${scwEsc(r.ket)}</td></tr>`).join('')+
+    `<tr class="tgt-tot"><td colspan="6">TOTAL · ${A.n} proyek ditarget${A.nLuar?' (+'+A.nLuar+' di luar proyeksi)':''}</td><td class="r">${scwRp(A.tn)}</td><td colspan="4"></td><td class="r">${scwRp(A.aktual+A.aktualLuar)}</td><td class="r">${A.pct!=null?osP(A.pct):'—'}</td><td colspan="2"></td></tr></tbody></table>`;
+}
+function tgtAggRow(label,a,cls,click){
+  return `<tr class="${click?'row':''}" ${click?`onclick="${click}" title="Klik untuk melihat proyeknya"`:''}><td class="${cls==='sub'?'tgt-sub':'scn'}">${scwEsc(label)}</td><td class="r">${a.n}</td><td class="r">${scwRp(a.tn)}</td><td class="r">${a.ok+a.part}</td><td class="r">${a.fail}</td><td class="r">${a.wait}</td><td class="r ${a.aktual?'real':'z'}">${scwRp(a.aktual)}</td><td class="r">${a.pct!=null?osP(a.pct):'—'}</td><td class="r">${a.nLuar}</td><td class="r">${scwRp(a.aktualLuar)}</td></tr>`;
+}
+const TGT_AGG_HEAD=l=>`<table class="scw-table"><thead><tr><th>${l}</th><th class="r">Proyek Target</th><th class="r">Target Nota</th><th class="r">Tercapai</th><th class="r">Tidak Tercapai</th><th class="r">Belum Jatuh Tempo</th><th class="r">Aktual Nota</th><th class="r">Capaian</th><th class="r">Di Luar Proyeksi</th><th class="r">Aktual Di Luar</th></tr></thead><tbody>`;
+function tgtGroup(rows,fn){const g={}; rows.forEach(r=>{const k=fn(r); (g[k]=g[k]||[]).push(r);}); return g;}
+function tgtTotRow(rows){const a=tgtAgg(rows); return `<tr class="tgt-tot"><td>TOTAL</td><td class="r">${a.n}</td><td class="r">${scwRp(a.tn)}</td><td class="r">${a.ok+a.part}</td><td class="r">${a.fail}</td><td class="r">${a.wait}</td><td class="r">${scwRp(a.aktual)}</td><td class="r">${a.pct!=null?osP(a.pct):'—'}</td><td class="r">${a.nLuar}</td><td class="r">${scwRp(a.aktualLuar)}</td></tr>`;}
+function tgtRenderSC(rows){
+  const g=tgtGroup(rows,r=>r.sc), list=Object.keys(g).map(k=>({k,a:tgtAgg(g[k])})).sort((x,y)=>y.a.tn-x.a.tn||y.a.aktual-x.a.aktual||x.k.localeCompare(y.k));
+  return TGT_AGG_HEAD('SC Teknik')+list.map(o=>tgtAggRow(o.k,o.a,'',`tgtPickSC(${jsq(o.k)})`)).join('')+tgtTotRow(rows)+'</tbody></table>';
+}
+function tgtRenderWil(rows){
+  const g=tgtGroup(rows,r=>r.wil); let h=TGT_AGG_HEAD('Wilayah / Area');
+  Object.keys(g).sort().forEach(w=>{
+    h+=tgtAggRow(w,tgtAgg(g[w]),'');
+    const ga=tgtGroup(g[w],r=>r.area); Object.keys(ga).sort().forEach(a=>{h+=tgtAggRow(a,tgtAgg(ga[a]),'sub');});
+  });
+  return h+tgtTotRow(rows)+'</tbody></table>';
+}
+function tgtRenderWk(rows){
+  const g=tgtGroup(rows,r=>r.week); const lbl={0:'Tanpa tanggal',1:'W1 · tgl 1–8',2:'W2 · tgl 9–15',3:'W3 · tgl 16–22',4:'W4 · tgl 23–30',5:'W5 · tgl 31'};
+  return TGT_AGG_HEAD('Week (tanggal target)')+Object.keys(g).sort((a,b)=>a-b).map(w=>tgtAggRow(lbl[w]||('W'+w),tgtAgg(g[w]),'')).join('')+tgtTotRow(rows)+'</tbody></table>';
+}
+function tgtExport(){
+  if(!TGT_MODEL||TGT_MODEL.err||typeof XLSX==='undefined'){toast('Data target belum siap','err');return;}
+  const rows=tgtFiltered(TGT_MODEL), M=TGT_MODEL;
+  const p=rows.map(r=>({'Kode':r.k,'Proyek':r.nama,'Wilayah':r.wil,'Area':r.area,'SC Teknik':r.sc,'Estimasi (%)':r.est==null?'':Math.round(r.est*10000)/100,'Target Nota':Math.round(r.tn),'Week':r.week||'','Tgl Target':r.td!=null?scwDayStr(r.td):'','Progress Awal (%)':Math.round(r.pStart*10000)/100,'Progress Kini (%)':Math.round(r.pNow*10000)/100,'Aktual Nota':Math.round(r.aktual),'Capaian (%)':r.isT&&r.tn>0?Math.round(r.aktual/r.tn*1000)/10:'','Status':r.status,'Keterangan':r.ket}));
+  const g=tgtGroup(rows,r=>r.sc), s=Object.keys(g).map(k=>{const a=tgtAgg(g[k]); return {'SC Teknik':k,'Proyek Target':a.n,'Target Nota':Math.round(a.tn),'Tercapai':a.ok+a.part,'Tidak Tercapai':a.fail,'Belum Jatuh Tempo':a.wait,'Aktual Nota':Math.round(a.aktual),'Capaian (%)':a.pct!=null?Math.round(a.pct*1000)/10:'','Di Luar Proyeksi':a.nLuar,'Aktual Di Luar':Math.round(a.aktualLuar)};}).sort((a,b)=>b['Target Nota']-a['Target Nota']);
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(p),'Per Proyek'); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(s),'Per SC');
+  XLSX.writeFile(wb,'Target-Bulanan-'+SCW_MON_S[M.m]+'-'+M.y+'.xlsx');
+}
+
 function goPage(page,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   $('page-'+page)?.classList.add('active');
@@ -4067,6 +4353,7 @@ function goPage(page,el){
   if(page==='tagihan' && INV.length) buildTagihan();
   if(page==='pic' && INV.length) { initMkorFilter(); buildMkorChart(); }
   if(page==='scweek' && ALL.length) buildScWeek();
+  if(page==='target') buildTarget();
 }
 function filterToArea(a){goPage('database',$('si-database'));$('df-area').value=a;filterDB();}
 function filterToStatus(s){goPage('database',$('si-database'));$('df-status').value=s;filterDB();}
