@@ -493,6 +493,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .scw-rk{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-weight:800;font-size:11px;background:var(--surf3);color:var(--text3)}
 .scw-rk.g1{background:#f5c542;color:#4a3500}.scw-rk.g2{background:#c5ccd6;color:#2b3340}.scw-rk.g3{background:#d9915a;color:#3d1f08}
 .scw-det td{background:var(--surf2);padding:0 !important;white-space:normal}
+.os-col{display:none;white-space:nowrap;text-align:right}.os-on .os-col{display:table-cell}.os-flag{display:inline-block;margin-left:4px;padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700;background:var(--amber-d);color:var(--amber);border:1px solid var(--amber);cursor:help}
 .scw-ranges{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}.scw-rg{display:flex;align-items:center;gap:6px;background:var(--bg3,rgba(255,255,255,.04));border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--text2)}.scw-rg input{width:52px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text);padding:3px 6px;font:inherit;text-align:center}.scw-rg b{color:var(--blue)}.scw-rgb{background:none;border:1px dashed var(--border);border-radius:8px;color:var(--text2);padding:5px 10px;font-size:11px;cursor:pointer}.scw-rgb:hover{color:var(--text)}
 .scw-lnk{color:var(--cyan);text-decoration:none;border-bottom:1px dotted currentColor}.scw-lnk:hover{filter:brightness(1.25)}
 .scw-det-in{padding:10px 14px 12px 48px;font-size:11px;color:var(--text2)}
@@ -747,13 +748,15 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
           <option value="11">Nov</option><option value="12">Des</option>
         </select>
         <select id="df-os-thn" onchange="filterDB()" style="background:transparent;border:none;color:var(--text);font-size:11px;outline:none;cursor:pointer"><option value="">Thn</option></select>
+        <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);white-space:nowrap;cursor:pointer" title="Proyek berstatus selesai yang tidak punya tanggal BAST maupun 100% di log progress"><input type="checkbox" id="df-os-hide" onchange="filterDB()"> Sembunyikan tgl selesai tak diketahui</label>
+        <span id="os-hint" style="font-size:10px;color:var(--amber)"></span>
       </div>
       <button class="fb-export" onclick="exportXLS('db')">⬇ Export Excel</button>
       <button class="fb-clear" onclick="clearDB()">✕ Reset</button>
     </div>
     <div class="tbl-wrap">
       <div class="tbl-scroll">
-        <table>
+        <table id="db-table">
           <thead><tr>
             <th onclick="sortDB('PROYEK')">Proyek</th>
             <th onclick="sortDB('KODE')">Kode</th>
@@ -773,6 +776,9 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
             <th onclick="sortDB('PCT_TAGIH')">% Tertagih</th>
             <th onclick="sortDB('PCT_ANGGARAN')">% Anggaran</th>
             <th onclick="sortDB('PCT_DP')">% DP</th>
+            <th class="os-col" title="% progress tertinggi di log_progress sebelum tanggal acuan × nilai kontrak">Realisasi Teknik<br>s/d tgl</th>
+            <th class="os-col" title="Jumlah DPP seluruh invoice (termasuk DP) sebelum tanggal acuan">Tertagih Invoice<br>s/d tgl</th>
+            <th class="os-col" title="Realisasi teknik − tertagih invoice. Positif = pekerjaan belum ditagih">Selisih<br>(belum ditagih)</th>
           </tr></thead>
           <tbody id="db-tbody"></tbody>
         </table>
@@ -2070,14 +2076,42 @@ function parseDateVal(v){
   return isNaN(d.getTime())?null:d;
 }
 
+/* tanggal pertama proyek mencapai 100% di log_progress (kode → hari) */
+function scwFin100Map(){
+  const m={};
+  LOG_PROG.forEach(r=>{
+    const k=normKode(r[LP.KODE]); if(!k||scwPct(r[LP.PCT_BARU])<0.9999) return;
+    const t=scwParseDay(r[LP.TGL]); if(t!=null&&(m[k]==null||t<m[k])) m[k]=t;
+  });
+  return m;
+}
+/* % progress tertinggi per proyek dari log_progress dengan tanggal < cut (kode → pecahan) */
+function scwLogMax(cut){
+  const m={};
+  LOG_PROG.forEach(r=>{
+    const k=normKode(r[LP.KODE]); if(!k) return;
+    const t=scwParseDay(r[LP.TGL]); if(t==null||t>=cut) return;
+    const p=scwPct(r[LP.PCT_BARU]); if(p>(m[k]||0)) m[k]=p;
+  });
+  return m;
+}
+function osCells(r){const o=window.OS_INFO&&window.OS_INFO[normKode(r[C.KODE])]; return o?[Math.round(o.real),Math.round(o.tag),Math.round(o.sel)]:['','',''];}
+
 function filterDB(){
   const q=(document.getElementById('df-q').value||'').toLowerCase();
   const status=$('df-status').value, area=$('df-area').value;
   const tahun=$('df-tahun').value, wil=$('df-wil').value, jenis=$('df-jenis').value;
   const osBln=parseInt($('df-os-bln')?.value)||0;
   const osThn=parseInt($('df-os-thn')?.value)||0;
-  /* Tanggal akhir bulan filter outstanding */
-  const osDate = (osBln&&osThn) ? new Date(osThn, osBln, 0) : null; // hari terakhir bulan tsb
+  /* Outstanding per tanggal: acuan = TANGGAL 1 bulan terpilih (mis. Jan 2026 → per 1 Jan 2026).
+     Aturan sama dengan Realisasi SC / Minggu: SPI sudah terbit & belum selesai (100% di log_progress / BAST) pada tanggal acuan. */
+  const osHint=$('os-hint');
+  if(osHint) osHint.textContent=(osBln&&!osThn)?'← pilih tahun':(!osBln&&osThn)?'← pilih bulan':'';
+  const osCut=(osBln&&osThn)?scwDay(osThn,osBln-1,1):null;
+  const osHide=!!($('df-os-hide')&&$('df-os-hide').checked);
+  window.OS_INFO=osCut!=null?{}:null;
+  const osFin=osCut!=null?scwFin100Map():null, osLog=osCut!=null?scwLogMax(osCut):null;
+  $('db-table')&&$('db-table').classList.toggle('os-on',osCut!=null);
 
   DB_F=ALL.filter(r=>{
     if(q&&!cl(r[C.PROYEK]).toLowerCase().includes(q)&&!cl(r[C.KODE]).toLowerCase().includes(q)&&!cl(r[C.SPI]).toLowerCase().includes(q)&&!cl(r[C.PIC_TEK]).toLowerCase().includes(q)&&!cl(r[C.PIC_SALES]).toLowerCase().includes(q)&&!cl(r[C.NO_SO]).toLowerCase().includes(q))return false;
@@ -2087,44 +2121,30 @@ function filterDB(){
     if(wil&&cl(r[C.WILAYAH])!==wil)return false;
     if(jenis&&cl(r[C.JENIS2])!==jenis)return false;
     /* ── Filter Outstanding per tanggal ── */
-    if(osDate){
-      const status=cl(r[C.STATUS]);
-      /* BATAL → tidak pernah outstanding */
-      if(status==='BATAL') return false;
-
-      /* Proyek harus sudah mulai/kontrak sebelum/saat tanggal filter */
-      const spk=parseDateVal(cl(r[C.TGL_SPK]));
-      const thnProyek=parseInt(cl(r[C.TAHUN]))||0;
-      const sudahMulai = spk ? spk<=osDate : (thnProyek>0 && thnProyek<=osDate.getFullYear());
-      if(!sudahMulai) return false;
-
-      /* Cek apakah belum selesai per tanggal filter:
-         Urutan prioritas: TGL_BA → kolom END → STATUS saat ini */
-      const ba  = parseDateVal(cl(r[C.TGL_BA]));
-      const end = parseDateVal(cl(r[C.END]));
-
-      if(ba){
-        /* Ada TGL_BA: selesai jika BA ≤ tanggal filter */
-        if(ba <= osDate) return false;
-      } else if(end){
-        /* Tidak ada TGL_BA tapi ada END date:
-           Jika END ≤ filter dan STATUS adalah FINISH/FINISH RETENSI → sudah selesai */
-        const isFinished = status==='FINISH'||status==='FINISH RETENSI';
-        if(isFinished && end<=osDate) return false;
-      } else {
-        /* Tidak ada TGL_BA maupun END:
-           Pakai STATUS saat ini sebagai proxy:
-           FINISH/FINISH RETENSI dengan tahun proyek jauh lebih kecil → anggap sudah selesai */
-        const isFinished = status==='FINISH'||status==='FINISH RETENSI';
-        if(isFinished && thnProyek>0 && thnProyek < osDate.getFullYear()-1) return false;
-      }
+    if(osCut!=null){
+      const st=cl(r[C.STATUS]).toUpperCase(); if(st==='BATAL') return false;
+      const k=normKode(r[C.KODE]);
+      let spi=scwParseDay(r[C.BULAN]); if(spi==null) spi=scwParseDay(r[C.TGL_SPK]);
+      if(spi==null){const th=parseInt(cl(r[C.TAHUN])); spi=th>2000?scwDay(th,0,1):null;}
+      if(spi==null||spi>=osCut) return false;
+      const fin=SCW_FIN.has(st);
+      const ba=fin?scwParseDay(r[C.TGL_BA]):null;
+      let done=osFin[k]!=null?osFin[k]:null;
+      if(ba!=null&&(done==null||ba<done)) done=ba;
+      let unknown=false;
+      if(done==null&&fin) unknown=true;               /* selesai menurut status, tetapi tanggalnya tidak ada */
+      else if(done!=null&&done<osCut) return false;   /* sudah 100% / BAST sebelum tanggal acuan */
+      if(unknown&&osHide) return false;
+      const nk=num(r[C.NK]), real=(osLog[k]||0)*nk;
+      let tag=0; (INV_IDX[k]||[]).forEach(iv=>{const t=scwParseDay(iv[I.TGL]); if(t!=null&&t<osCut) tag+=num(iv[I.DPP]);});
+      window.OS_INFO[k]={real,tag,sel:real-tag,unknown};
     }
     return true;
   });
   if(DB_SORT.col)sortDBArr();
   DB_PAGE=1;renderDB();
 }
-function clearDB(){['df-q','df-status','df-area','df-tahun','df-wil','df-jenis','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});DB_F=[...ALL];DB_PAGE=1;renderDB();}
+function clearDB(){if($('df-os-hide'))$('df-os-hide').checked=false;window.OS_INFO=null;if($('db-table'))$('db-table').classList.remove('os-on');if($('os-hint'))$('os-hint').textContent='';['df-q','df-status','df-area','df-tahun','df-wil','df-jenis','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});DB_F=[...ALL];DB_PAGE=1;renderDB();}
 function sortDB(col){document.querySelectorAll('thead th').forEach(t=>t.classList.remove('s-asc','s-desc'));if(DB_SORT.col===col)DB_SORT.dir*=-1;else{DB_SORT.col=col;DB_SORT.dir=1;}sortDBArr();DB_PAGE=1;renderDB();}
 function sortDBArr(){const nums=['NK','TERTAGIH','SISA','PCT_TAGIH','PCT_ANGGARAN','PCT_DP','PROGRESS','DELAY'];DB_F.sort((a,b)=>{const ci=C[DB_SORT.col];if(ci===undefined)return 0;const av=nums.includes(DB_SORT.col)?num(a[ci]):cl(a[ci]);const bv=nums.includes(DB_SORT.col)?num(b[ci]):cl(b[ci]);return typeof av==='number'?(av-bv)*DB_SORT.dir:av.localeCompare(bv)*DB_SORT.dir;});}
 function renderDB(){
@@ -2132,10 +2152,14 @@ function renderDB(){
   const blnNames=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
   const osLabel=(osBln2&&osThn2)?(' · Outstanding per '+blnNames[osBln2]+' '+osThn2):'';
   const sisaTotal=DB_F.reduce((a,r)=>a+num(r[C.SISA]),0);
-  $('db-sub').textContent=DB_F.length.toLocaleString('id')+' proyek · Sisa Tagihan: '+fmt(sisaTotal,true)+osLabel;
+  if(window.OS_INFO){
+    let R=0,T=0,U=0; DB_F.forEach(r=>{const o=window.OS_INFO[normKode(r[C.KODE])]; if(o){R+=o.real;T+=o.tag;if(o.unknown)U++;}});
+    $('db-sub').textContent=DB_F.length.toLocaleString('id')+' proyek'+(U?' ('+U+' tanggal selesai tidak diketahui)':'')+' · Realisasi teknik: '+fmt(R,true)+' · Tertagih invoice: '+fmt(T,true)+' · Selisih: '+fmt(R-T,true)+' · Outstanding per 1 '+blnNames[osBln2]+' '+osThn2;
+  } else $('db-sub').textContent=DB_F.length.toLocaleString('id')+' proyek · Sisa Tagihan: '+fmt(sisaTotal,true)+osLabel;
   const start=(DB_PAGE-1)*PER.db,slice=DB_F.slice(start,start+PER.db);
   $('db-tbody').innerHTML=slice.map((r,i)=>{
     const delay=parseInt(r[C.DELAY])||0;
+    const osO=window.OS_INFO&&window.OS_INFO[normKode(r[C.KODE])];
     const rowCls=delay<-100&&cl(r[C.STATUS])==='PROGRESS'?'row-alert':delay<0&&cl(r[C.STATUS])==='PROGRESS'?'row-warn':'';
     return`<tr class="${rowCls}" onclick="openModal('db',${start+i})">
       <td class="t-name">${pn(r)}</td>
@@ -2147,7 +2171,7 @@ function renderDB(){
       <td style="font-size:11px;color:var(--text2)">${cl(r[C.PIC_TEK])||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${cl(r[C.PIC_SALES])||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${cl(r[C.KORWIL_TEK])||'—'}</td>
-      <td>${badge(cl(r[C.STATUS]))}</td>
+      <td>${badge(cl(r[C.STATUS]))}${osO&&osO.unknown?'<span class="os-flag" title="Berstatus selesai, tetapi tidak ada tanggal BAST maupun 100% di log progress — tanggal selesai tidak diketahui">tgl selesai ?</span>':''}</td>
       <td>${pb(r[C.PROGRESS])}</td>
       <td>${delayTag(r[C.DELAY])}</td>
       <td class="t-dok" title="${cl(r[C.DOK])}">${cl(r[C.DOK])||'—'}</td>
@@ -2156,7 +2180,10 @@ function renderDB(){
       <td style="font-family:var(--mono);font-size:11px;font-weight:700;color:${pctColor(num(r[C.PCT_TAGIH]))}">${pct(r[C.PCT_TAGIH])}</td>
       <td style="font-family:var(--mono);font-size:11px;font-weight:600;color:${pctColor(num(r[C.PCT_ANGGARAN]))}">${pct(r[C.PCT_ANGGARAN])}</td>
       <td style="font-family:var(--mono);font-size:11px">${pct(r[C.PCT_DP])}</td>
-    </tr>`;}).join('')||'<tr><td colspan="17" style="text-align:center;padding:32px;color:var(--text3)">Tidak ada data</td></tr>';
+      <td class="os-col money">${osO?fmt(osO.real,true):''}</td>
+      <td class="os-col money">${osO?fmt(osO.tag,true):''}</td>
+      <td class="os-col money" style="color:${osO&&osO.sel>0?'var(--amber)':osO&&osO.sel<0?'var(--red)':'var(--text3)'}">${osO?fmt(osO.sel,true):''}</td>
+    </tr>`;}).join('')||'<tr><td colspan="21" style="text-align:center;padding:32px;color:var(--text3)">Tidak ada data</td></tr>';
   renderPag('db-pag',DB_PAGE,Math.ceil(DB_F.length/PER.db),p=>{DB_PAGE=p;renderDB();});
 }
 
@@ -2742,6 +2769,7 @@ function exportXLS(src){
     sheetName='Database Proyek';
     headers=['Proyek','Kode','SPI','Tahun','Area','Wilayah','Jenis','Status','Progress (%)','Delay (hari)','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','Nilai Retensi','PIC Teknik','PIC Sales'];
     data=DB_F.map(r=>[cl(r[C.PROYEK]),cl(r[C.KODE]),cl(r[C.SPI]),cl(r[C.TAHUN]),cl(r[C.AREA]),cl(r[C.WILAYAH]),cl(r[C.JENIS2])||cl(r[C.JENIS]),cl(r[C.STATUS]),parseFloat((num(r[C.PROGRESS])*100).toFixed(2)),parseInt(r[C.DELAY])||0,cl(r[C.DOK]),Math.round(num(r[C.NK])),Math.round(num(r[C.HPP])),Math.round(num(r[C.TERTAGIH])),Math.round(num(r[C.SISA])),parseFloat((num(r[C.PCT_TAGIH])*100).toFixed(2)),Math.round(num(r[C.RETENSI])),cl(r[C.PIC_TEK]),cl(r[C.PIC_SALES])]);
+    if(window.OS_INFO){headers=headers.concat(['Realisasi Teknik s/d tgl','Tertagih Invoice s/d tgl','Selisih (belum ditagih)','Tgl selesai tidak diketahui']);data=data.map((row,i)=>row.concat(osCells(DB_F[i]),[(window.OS_INFO[normKode(DB_F[i][C.KODE])]||{}).unknown?'YA':'']));}
   }else if(src==='prog'){
     sheetName='Proyek Berjalan';
     headers=['Proyek','Kode','SPI','Tahun','Area','Jenis','Progress (%)','Delay (hari)','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','% DP','% Pemakaian Angg','PIC Teknik','PIC Sales'];
