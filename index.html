@@ -364,7 +364,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .mg-tc{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
 .mg-bars{display:flex;align-items:flex-end;gap:4px;height:130px;width:100%;justify-content:center}
 .mg-b{width:42%;max-width:34px;border-radius:4px 4px 0 0;min-height:2px}
-.mg-b.t{background:var(--border);}.mg-b.a{background:var(--green)}.mg-b.l{background:var(--text4);opacity:.55}
+.mg-b.t{background:var(--text3);opacity:.45}.mg-b.a{background:var(--green)}.mg-b.l{background:var(--blue);opacity:.45}
 .mg-bl{font-size:11px;color:var(--text3);font-weight:700}.mg-bv{font-size:10px;color:var(--text2);font-family:var(--mono);white-space:nowrap}
 .mg-lg{display:flex;gap:14px;font-size:11px;color:var(--text3);margin-top:8px;flex-wrap:wrap}.mg-lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 .mg-li{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12px}
@@ -1131,7 +1131,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     <div class="mg-grid">
       <div class="mg-card mg-wide"><div class="mg-h">Target vs pencapaian per wilayah / area</div><div class="scw-wrap" id="mg-wil"></div></div>
       <div class="mg-card"><div class="mg-h">Tren target vs pencapaian</div><div id="mg-trend"></div></div>
-      <div class="mg-card"><div class="mg-h">Kendala aktif terlama</div><div id="mg-kdl"></div></div>
+      <div class="mg-card"><div class="mg-h">Kendala aktif prioritas <span class="mg-hs">urut: lewat target waktu → dampak tinggi → paling lama terbuka</span></div><div id="mg-kdl"></div></div>
       <div class="mg-card mg-wide"><div class="mg-h">Proyek berisiko teratas <span class="mg-hs">proyek berjalan bernilai terbesar yang terlambat, melebihi anggaran, atau tidak mencapai target</span></div><div id="mg-risk"></div></div>
     </div>
     <div class="mg-note" id="mg-note"></div>
@@ -1578,6 +1578,8 @@ let LOG_PROG=[]; // log_progress sheet
 let KENDALA_DATA=[]; // kendala sheet
 let LP_IDX={}; // kode→[log entries]
 let KDL_IDX={}; // kode→[kendala entries]
+/* kendala AKTIF = ada uraian kendala + kategori terisi + status belum Selesai (baris catatan seperti "masih on schedule" tanpa kategori tidak dihitung) */
+const kdlAktif=r=>!!cl(r[KDL.KENDALA])&&!!cl(r[KDL.KATEGORI])&&cl(r[KDL.STATUS]).toLowerCase()!=='selesai';
 function buildLPIdx(){
   LP_IDX={};
   LOG_PROG.forEach(r=>{
@@ -1826,7 +1828,7 @@ async function loadData(manual=false){
               pct_angg: parseFloat((pct_raw>1 ? pct_raw : pct_raw*100).toFixed(2)),
               nk      : num(r[CC.NK]),             // [16] Q ✓
               hpp, realisasi: butam,               // [17] R, [18] S ✓
-              selisih : num(r[CC.SELISIH]),        // [19] T ✓
+              selisih : (/^#|^$/.test(cl(r[CC.SELISIH]))? hpp-butam : num(r[CC.SELISIH])),  // [19] T; bila kolom T error (#REF!) / kosong → HPP − realisasi biaya
               delay   : parseInt(r[CC.DELAY])||0,  // [15] P ✓
               n_trans:0, bb_debit:0, bb_kredit:0,
               start   : cl(r[CC.START]).substring(0,10), // [12] M ✓
@@ -1878,7 +1880,7 @@ async function loadData(manual=false){
         const r6=await fetchSheet(URL_KDL,2,1500);
         if(r6&&r6.ok){
           const t6=await r6.text();
-          KENDALA_DATA=parseCSV(t6).slice(1).filter(r=>r.length>2&&cl(r[KDL.KODE]));
+          KENDALA_DATA=parseCSV(t6).slice(1).filter(r=>r.length>2&&cl(r[KDL.KODE])&&cl(r[KDL.KENDALA]));
           buildKDLIdx();
           srcSet('kdl',true,KENDALA_DATA.length);
         }else srcSet('kdl',false,null,'HTTP '+(r6&&r6.status));
@@ -2086,7 +2088,7 @@ function buildDash(){
     {l:'Total Tertagih',v:fmt(totT,true),s:pct(totT/totC)+' dari kontrak',c:'c-green',i:'📈'},
     {l:'Sisa Tagihan',v:fmt(totS,true),s:'Belum tertagih',c:'c-amber',i:'📊'},
     {l:'Alert Delay',v:alerts.length,s:'Semua proyek terlambat',c:'c-red',i:'🚨'},
-    {l:'Kendala Aktif',v:KENDALA_DATA.filter(r=>cl(r[KDL.STATUS]).toLowerCase()!=='selesai').length,s:'Kendala belum selesai',c:'c-amber',i:'⚠️'},
+    {l:'Kendala Aktif',v:KENDALA_DATA.filter(kdlAktif).length,s:'Kendala belum selesai',c:'c-amber',i:'⚠️'},
   ].map(s=>`<div class="sc ${s.c}" style="cursor:${s.c==='c-red'||s.c==='c-amber'?'pointer':'default'}" onclick="${s.c==='c-red'?'goPage(\'alerts\')':''}"><div class="sc-icon">${s.i}</div><div class="sc-label">${s.l}</div><div class="sc-val">${s.v}</div><div class="sc-sub">${s.s}</div></div>`).join('');
 
   // Donut
@@ -2267,7 +2269,7 @@ function renderProgCards(){
       </div>
       ${cl(r[C.DOK])?`<div class="pc-dok">📋 <b>DOK SPK:</b> ${cl(r[C.DOK])}</div>`:''}
       ${(k=>{
-        const kdlOpen=(KDL_IDX[k]||[]).filter(x=>cl(x[KDL.STATUS]).toLowerCase()!=='selesai').length;
+        const kdlOpen=(KDL_IDX[k]||[]).filter(kdlAktif).length;
         const lpCount=(LP_IDX[k]||[]).length;
         if(!kdlOpen&&!lpCount) return '';
         return '<div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">'
@@ -2757,7 +2759,7 @@ function openModal(src,idx){
       <div class="m-tab" onclick="swTab(1)">Invoice (${relInv.length})</div>
       <div class="m-tab" onclick="swTab(2)">DOK &amp; Term</div>
       <div class="m-tab" onclick="swTab(3)" style="${(LP_IDX[kodeStr]||[]).length?'color:var(--cyan)':''}">Log Progress (${(LP_IDX[kodeStr]||[]).length})</div>
-      <div class="m-tab" onclick="swTab(4)" style="${(KDL_IDX[kodeStr]||[]).filter(x=>cl(x[KDL.STATUS])!=='Selesai').length?'color:var(--red)':''}">Kendala (${(KDL_IDX[kodeStr]||[]).length})</div>
+      <div class="m-tab" onclick="swTab(4)" style="${(KDL_IDX[kodeStr]||[]).filter(kdlAktif).length?'color:var(--red)':''}">Kendala (${(KDL_IDX[kodeStr]||[]).length})</div>
     </div>
     <div class="tab-pane active" id="tp0">
       <div class="m-grid2">
@@ -2872,7 +2874,7 @@ function openModal(src,idx){
       ${(()=>{
         const kdlRows=(KDL_IDX[kodeStr]||[]).slice().sort((a,b)=>cl(b[KDL.TGL_LAPOR]).localeCompare(cl(a[KDL.TGL_LAPOR])));
         if(!kdlRows.length) return '<div style="text-align:center;padding:24px;color:var(--text3)">Tidak ada kendala tercatat ✅</div>';
-        const openN=kdlRows.filter(function(x){return cl(x[KDL.STATUS]).toLowerCase()!=='selesai';}).length;
+        const openN=kdlRows.filter(kdlAktif).length;
         return '<div style="font-size:11px;margin-bottom:10px">'
             +'<span style="color:var(--red);font-weight:700">'+openN+' terbuka</span>'
             +' · <span style="color:var(--text3)">'+(kdlRows.length-openN)+' selesai</span>'
@@ -5207,8 +5209,8 @@ function buildMgmt(key){
   for(let i=5;i>=0;i--){const d=new Date(Date.UTC(ey,em-1-i,1)); seq.push(d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0'));}
   const pts=seq.map(q=>{const hasM=(q===live)||TGT_ARC[q]; if(hasM){const m=q===key?M:mgModel(q===live?'':q); if(m&&!m.err){const c=tgtWilCalc(m.rows); return {q,t:c.tgtRp,a:c.totRp,l:null};}} return {q,t:null,a:null,l:logM[q]||0};});
   const mx=Math.max(1,...pts.map(p=>Math.max(p.t||0,p.a||0,p.l||0))), h=v=>Math.max(2,Math.round(v/mx*128));
-  $('mg-trend').innerHTML=`<div class="mg-tr">${pts.map(p=>`<div class="mg-tc"><div class="mg-bars">${p.t!=null?`<div class="mg-b t" style="height:${h(p.t)}px" title="Target ${fmt(p.t,true)}"></div><div class="mg-b a" style="height:${h(p.a)}px" title="Pencapaian ${fmt(p.a,true)}"></div>`:`<div class="mg-b l" style="height:${h(p.l)}px" title="Realisasi (log) ${fmt(p.l,true)}"></div>`}</div><div class="mg-bv">${p.t!=null?fmt(p.a,true):fmt(p.l,true)}</div><div class="mg-bl">${SCW_MON_S[+p.q.split('-')[1]-1]}</div></div>`).join('')}</div>
-    <div class="mg-lg"><span><i style="background:var(--border)"></i>Target</span><span><i style="background:var(--green)"></i>Pencapaian</span><span><i style="background:var(--text4);opacity:.55"></i>Realisasi seluruh proyek (log) — bulan tanpa arsip target</span></div>`;
+  $('mg-trend').innerHTML=`<div class="mg-tr">${pts.map(p=>`<div class="mg-tc"><div class="mg-bars">${p.t!=null?`<div class="mg-b t" style="height:${h(p.t)}px" title="Target ${fmt(p.t,true)}"></div><div class="mg-b a" style="height:${h(p.a)}px" title="Pencapaian ${fmt(p.a,true)}"></div>`:`<div class="mg-b l" style="height:${h(p.l)}px" title="Realisasi (log) ${fmt(p.l,true)}"></div>`}</div><div class="mg-bv">${p.t!=null?fmt(p.a,true):fmt(p.l,true)}</div><div class="mg-bl">${SCW_MON_S[+p.q.split('-')[1]-1]}${p.q===live?' *':''}</div></div>`).join('')}</div>
+    <div class="mg-lg"><span><i style="background:var(--text3);opacity:.45"></i>Target</span><span><i style="background:var(--green)"></i>Pencapaian</span><span><i style="background:var(--blue);opacity:.45"></i>Realisasi seluruh proyek (log) — bulan tanpa arsip target</span>${pts.some(p=>p.q===live)?'<span>* bulan berjalan, belum penuh</span>':''}</div>`;
   /* risiko */
   const failK=new Set(tg.filter(r=>r.status==='TIDAK TERCAPAI').map(r=>r.k)), risk=[];
   ALL.forEach(r=>{ if(cl(r[C.STATUS])!=='PROGRESS') return; const why=[]; const d=parseInt(r[C.DELAY])||0; if(d<0) why.push(['Terlambat '+(-d)+' hari',0]);
@@ -5217,8 +5219,9 @@ function buildMgmt(key){
   risk.sort((a,b)=>b.nk-a.nk);
   $('mg-risk').innerHTML=risk.length?risk.slice(0,5).map(x=>`<div class="mg-li"><div><a onclick="scwOpenProj(${jsq(normKode(x.r[C.KODE]))})">${scwEsc(pn(x.r))}</a><small>${scwEsc(cl(x.r[C.AREA]))} · ${scwEsc(cl(x.r[C.PIC_TEK])||'—')}</small>${x.why.map(w=>`<span class="mg-chip ${w[1]?'w':''}">${scwEsc(w[0])}</span>`).join('')}</div><div class="mg-r">${fmt(x.nk,true)}</div></div>`).join('')+`<div class="mg-note" style="margin-top:6px">${risk.length} proyek berisiko seluruhnya</div>`:'<div class="scw-empty">Tidak ada proyek berisiko.</div>';
   /* kendala */
-  const open=(KENDALA_DATA||[]).filter(r=>cl(r[KDL.STATUS]).toLowerCase()!=='selesai').sort((a,b)=>(parseInt(cl(b[KDL.LAMA]))||0)-(parseInt(cl(a[KDL.LAMA]))||0));
-  $('mg-kdl').innerHTML=open.length?open.slice(0,5).map(r=>`<div class="mg-li"><div><a onclick="scwOpenProj(${jsq(normKode(r[KDL.KODE]))})">${scwEsc(cl(r[KDL.NAMA_PROYEK])||cl(r[KDL.KODE]))}</a><small>${scwEsc(cl(r[KDL.KENDALA]).slice(0,110))}</small><span class="mg-chip w">${scwEsc(cl(r[KDL.KATEGORI])||'Kendala')}</span></div><div class="mg-r">${parseInt(cl(r[KDL.LAMA]))||0} hari</div></div>`).join('')+`<div class="mg-note" style="margin-top:6px">${open.length} kendala belum selesai seluruhnya</div>`:'<div class="scw-empty">Tidak ada kendala aktif ✅</div>';
+  const od=r=>/overdue/i.test(cl(r[KDL.STATUS_TARGET]))?1:0, hi=r=>/tinggi/i.test(cl(r[KDL.DAMPAK]))?1:0;
+  const open=(KENDALA_DATA||[]).filter(kdlAktif).sort((a,b)=>od(b)-od(a)||hi(b)-hi(a)||(parseInt(cl(b[KDL.LAMA]))||0)-(parseInt(cl(a[KDL.LAMA]))||0));
+  $('mg-kdl').innerHTML=open.length?open.slice(0,5).map(r=>`<div class="mg-li"><div><a onclick="scwOpenProj(${jsq(normKode(r[KDL.KODE]))})">${scwEsc(cl(r[KDL.NAMA_PROYEK])||cl(r[KDL.KODE]))}</a><small>${scwEsc(cl(r[KDL.KENDALA]).slice(0,110))}</small><span class="mg-chip w">${scwEsc(cl(r[KDL.KATEGORI])||'Kendala')}</span>${od(r)?'<span class="mg-chip">Lewat target</span>':''}${hi(r)?'<span class="mg-chip">Dampak tinggi</span>':''}</div><div class="mg-r">${parseInt(cl(r[KDL.LAMA]))||0} hari</div></div>`).join('')+`<div class="mg-note" style="margin-top:6px">${open.length} kendala belum selesai seluruhnya</div>`:'<div class="scw-empty">Tidak ada kendala aktif ✅</div>';
   $('mg-note').textContent='Pencapaian = realisasi proyek bertarget yang naik progress + proyek di luar target (kenaikan progress × nilai kontrak, dari log progress). Target tidak tercapai = tanggal target sudah lewat dan progress belum naik. '+(isLive?'':'Bulan arsip memakai target yang disimpan pada saat diarsipkan. ')+'Selesai belum ditagih dan Proyek terlambat hanya ditampilkan untuk bulan berjalan karena memakai kondisi data saat ini.';
 }
 </script>
