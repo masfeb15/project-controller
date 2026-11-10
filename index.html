@@ -4345,7 +4345,7 @@ function tgtPctVal(v){   /* "80%" → 0.8 ; "0.8" → 0.8 ; "80" → 0.8 ; koson
 }
 function tgtCols(hdr){
   const find=(names,prefix)=>{for(let i=0;i<hdr.length;i++){const h=hdr[i]; if(names.includes(h)||(prefix&&h.startsWith(prefix)&&/\d/.test(h))) return i;} return -1;};
-  const c={kode:find(['KODE']),nama:find(['NAMA PROYEK']),wil:find(['WILAYAH']),area:find(['AREA']),sc:find(['SC TEKNIK','PIC TEKNIK']),
+  const c={kode:find(['KODE']),nama:find(['NAMA PROYEK','PROYEK']),wil:find(['WILAYAH']),area:find(['AREA']),sc:find(['SC TEKNIK','PIC TEKNIK','KORWIL TEKNIK','SC']),
     nk:find(['NILAI KONTRAK']),sisa:find(['SISA TAGIHAN']),est:find(['ESTIMASI %','ESTIMASI']),tn:find(['TARGET NOTA']),date:find(['DATE','TGL TARGET']),ket:find(['KETERANGAN']),u:find([],'PROGRESS ')};
   const miss=['kode','est','tn','date'].filter(k=>c[k]<0);
   return miss.length?{err:'Kolom wajib tidak ditemukan di sheet projects: '+miss.map(k=>({kode:'KODE',est:'ESTIMASI %',tn:'TARGET NOTA',date:'DATE'}[k])).join(', ')+'. Judul kolom terbaca: '+hdr.filter(Boolean).slice(0,14).join(' | ')}:c;
