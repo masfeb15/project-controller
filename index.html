@@ -279,6 +279,26 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .pic-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid rgba(38,48,69,.3);cursor:pointer;transition:background .1s}
 .pic-row:hover{background:var(--surf2)}
 .pic-row:last-child{border-bottom:none}
+.pt{width:100%;border-collapse:collapse;font-size:12px}
+.pt th{padding:8px 12px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);background:var(--surf2);border-bottom:1px solid var(--border);white-space:nowrap}
+.pt th:first-child,.pt td:first-child{text-align:left}
+.pt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11.5px;color:var(--text2)}
+.pt td:first-child{font-family:var(--font);font-size:12.5px;font-weight:700;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt tbody tr.pr{cursor:pointer}.pt tbody tr.pr:hover{background:var(--surf2)}
+.pt tr.tot td{background:var(--surf2);font-weight:800;color:var(--text)}
+.pt tr.mute td{color:var(--text3);font-style:italic}.pt tr.mute td:first-child{font-weight:500}
+.pt .z{color:var(--text3);opacity:.5}.pt .c-prog{color:var(--blue)}.pt .c-fin{color:var(--green)}.pt .c-ret{color:var(--amber)}.pt .c-bat{color:var(--red)}
+.pt .vbar{display:block;height:3px;border-radius:2px;background:var(--purple);opacity:.55;margin-top:3px;margin-left:auto}
+.pt-more{padding:9px 14px;text-align:center;font-size:11px;color:var(--blue);cursor:pointer;border-top:1px solid var(--border)}.pt-more:hover{background:var(--surf2)}
+.pt-wrap{overflow-x:auto}
+.mkor-row{cursor:pointer}.mkor-row:hover td{background:var(--surf2)}
+.mkor-caret{display:inline-block;width:12px;color:var(--text3);font-size:10px}
+.mkor-det>td{padding:0!important;background:var(--surf2)}
+.mkor-det .mkor-det-in{padding:10px 14px 14px;overflow-x:auto}
+.mkor-views{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:10px 14px 0}
+.mkor-views button{background:var(--surf2);border:1px solid var(--border);color:var(--text2);border-radius:14px;font-size:11px;padding:4px 11px;cursor:pointer;font-family:var(--font)}
+.mkor-views button.on{border-color:var(--blue);color:var(--blue);font-weight:700}
+.mkor-views .hint{font-size:10.5px;color:var(--text3);margin-left:4px}
 .pic-name{font-size:12px;font-weight:600;color:var(--text);min-width:80px}
 .pic-bar{flex:1;height:6px;background:var(--surf3);border-radius:3px;overflow:hidden}
 .pic-fill{height:100%;border-radius:3px}
@@ -1046,6 +1066,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
       <!-- KPI -->
       <div class="mkor-kpi" id="mkor-kpi"></div>
       <!-- Table -->
+      <div class="mkor-views no-print" id="mkor-views"></div>
       <div class="mkor-table-wrap" id="mkor-print-area">
         <table class="mkor-table" id="mkor-table">
           <thead><tr>
@@ -2619,28 +2640,18 @@ function buildPIC(){
     if(fArea && cl(r[C.AREA])!==fArea) return false;
     return true;
   });
-  const tekMap={}, salesMap={};
-  const statusColors={
-    'PROGRESS':'var(--blue)','FINISH':'var(--green)',
-    'FINISH RETENSI':'var(--amber)','RETENSI':'var(--amber)','BATAL':'var(--red)'
-  };
+  const tekMap={}, salesMap={}, kwMap={};
   dbSrc.forEach(r=>{
-    const t=cl(r[C.PIC_TEK])||'(kosong)';
-    const s=cl(r[C.PIC_SALES])||'(kosong)';
-    const v=num(r[C.NK]); const st=cl(r[C.STATUS]);
-    if(!tekMap[t])   tekMap[t]  ={n:0,v:0,byStatus:{}};
-    if(!salesMap[s]) salesMap[s]={n:0,v:0,byStatus:{}};
-    tekMap[t].n++;tekMap[t].v+=v;tekMap[t].byStatus[st]=(tekMap[t].byStatus[st]||0)+1;
-    salesMap[s].n++;salesMap[s].v+=v;salesMap[s].byStatus[st]=(salesMap[s].byStatus[st]||0)+1;
+    const st=cl(r[C.STATUS]), v=num(r[C.NK]);
+    const add=(m,name)=>{const o=m[name]||(m[name]={n:0,v:0,run:0,PROGRESS:0,FINISH:0,RET:0,BATAL:0}); o.n++; o.v+=v;
+      if(st==='PROGRESS'){o.PROGRESS++;o.run+=v;} else if(st==='FINISH') o.FINISH++; else if(st==='RETENSI'||st==='FINISH RETENSI') o.RET++; else if(st==='BATAL') o.BATAL++;};
+    add(tekMap,cl(r[C.PIC_TEK])||'(kosong)'); add(salesMap,cl(r[C.PIC_SALES])||'(kosong)');
+    const kw=cl(r[C.KORWIL_TEK]); if(kw) add(kwMap,kw);
   });
-
-  const korwilArr = Object.entries(korwilMap).sort((a,b)=>b[1].v-a[1].v);
-  const tekArr    = Object.entries(tekMap).sort((a,b)=>b[1].v-a[1].v).slice(0,20);
-  const salesArr  = Object.entries(salesMap).sort((a,b)=>b[1].v-a[1].v).slice(0,20);
-  const maxK=Math.max(...korwilArr.map(x=>x[1].v),1);
-  const maxT=Math.max(...tekArr.map(x=>x[1].v),1);
-  const maxS=Math.max(...salesArr.map(x=>x[1].v),1);
-
+  Object.keys(kwMap).forEach(k=>{kwMap[k].dpp=korwilMap[k]?korwilMap[k].v:0;});
+  const ranked=m=>Object.entries(m).filter(([n])=>n!=='(kosong)').sort((a,b)=>b[1].run-a[1].run||b[1].v-a[1].v);
+  const korwilArr=ranked(kwMap), tekAll=ranked(tekMap), salesAll=ranked(salesMap);
+  const tekKosong=tekMap['(kosong)'], salesKosong=salesMap['(kosong)'];
   /* Label */
   const lblParts=[];
   if(PIC_STATUS_SEL.size<5) lblParts.push([...PIC_STATUS_SEL].join('+'));
@@ -2651,43 +2662,29 @@ function buildPIC(){
   if(picSub) picSub.textContent=(lblParts.length?lblParts.join(' · '):'Semua proyek & invoice');
   $('sb-pic').textContent=dbSrc.length;
 
-  function picRow(name,d,maxV,grad,type,isInv=false){
-    const pct=(d.v/maxV*100).toFixed(1);
-    const tags=Object.entries(d.byStatus).sort((a,b)=>b[1]-a[1])
-      .map(([st,n])=>`<span style="font-size:9px;padding:1px 5px;border-radius:10px;background:var(--surf3);color:${statusColors[st]||'var(--text3)'};margin-right:2px">${st==='FINISH RETENSI'?'FIN.RET':st}: ${n}</span>`)
-      .join('');
-    const extra = isInv && d.nProyek
-      ? `<div style="font-size:9px;color:var(--text3)">${d.nProyek.size} proyek</div>`:'';
-    return`<div class="pic-row" onclick="filterByPIC(${jsq(type)},${jsq(name)})">
-      <div class="pic-name" title="${name}">${name}</div>
-      <div style="flex:1;display:flex;flex-direction:column;gap:3px">
-        <div class="pic-bar"><div class="pic-fill" style="width:${pct}%;background:${grad}"></div></div>
-        <div style="display:flex;flex-wrap:wrap;gap:2px">${tags}</div>${extra}
-      </div>
-      <div class="pic-val">${fmt(d.v,true)}</div>
-      <div class="pic-count">${isInv?d.n+'inv':d.n+'p'}</div>
-    </div>`;
+  const num0=(n,c)=>n?`<span class="${c}">${n}</span>`:'<span class="z">–</span>';
+  function picTable(icon,title,sub,entries,kosong,type,withDpp,key){
+    const show=(PIC_ALL[key]||key==='kw')?entries:entries.filter(([,d])=>d.PROGRESS>0).slice(0,20);
+    const hidden=entries.length-show.length, maxV=Math.max(...show.map(([,d])=>d.run),1);
+    const row=(n,d,mute)=>`<tr ${mute?'class="mute"':`class="pr" onclick="filterByPIC(${jsq(type)},${jsq(n)})" title="Klik untuk melihat proyeknya di Database"`}><td>${scwEsc(n)}</td>
+      <td>${num0(d.PROGRESS,'c-prog')}</td><td>${num0(d.FINISH,'c-fin')}</td><td>${num0(d.RET,'c-ret')}</td><td>${num0(d.BATAL,'c-bat')}</td><td>${d.n}</td>
+      <td>${fmt(d.v,true)}</td><td>${fmt(d.run,true)}${mute?'':`<span class="vbar" style="width:${Math.max(2,d.run/maxV*80)}px"></span>`}</td>${withDpp?`<td>${fmt(d.dpp||0,true)}</td>`:''}</tr>`;
+    const tot=entries.concat(kosong?[['',kosong]]:[]).reduce((a,[,d])=>({PROGRESS:a.PROGRESS+d.PROGRESS,FINISH:a.FINISH+d.FINISH,RET:a.RET+d.RET,BATAL:a.BATAL+d.BATAL,n:a.n+d.n,v:a.v+d.v,run:a.run+d.run,dpp:a.dpp+(d.dpp||0)}),{PROGRESS:0,FINISH:0,RET:0,BATAL:0,n:0,v:0,run:0,dpp:0});
+    return `<div class="pic-card" style="grid-column:1/-1"><div class="pic-card-hd">${icon} ${title} — ${show.length} orang <span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:8px;text-transform:none;letter-spacing:0">${sub}</span></div>
+      <div class="pt-wrap"><table class="pt"><thead><tr><th>Nama</th><th title="Proyek berstatus PROGRESS">Progress</th><th>Finish</th><th title="RETENSI + FINISH RETENSI">Retensi</th><th>Batal</th><th>Total Proyek</th><th>Nilai Kontrak</th><th title="Nilai kontrak proyek berstatus PROGRESS">Nilai Berjalan</th>${withDpp?'<th title="Total DPP invoice sesuai filter Tahun/Bulan Invoice">DPP Invoice</th>':''}</tr></thead><tbody>
+      ${show.length?show.map(([n,d])=>row(n,d,false)).join(''):`<tr><td colspan="${withDpp?9:8}" style="text-align:center;color:var(--text3);padding:16px">Tidak ada data — pastikan kolom sudah diisi di sheet db</td></tr>`}
+      ${kosong?row('Tanpa nama (kolom kosong)',kosong,true):''}
+      <tr class="tot"><td>TOTAL (semua)</td><td>${tot.PROGRESS}</td><td>${tot.FINISH}</td><td>${tot.RET}</td><td>${tot.BATAL}</td><td>${tot.n}</td><td>${fmt(tot.v,true)}</td><td>${fmt(tot.run,true)}</td>${withDpp?`<td>${fmt(tot.dpp,true)}</td>`:''}</tr></tbody></table></div>
+      ${key!=='kw'&&(hidden>0||PIC_ALL[key])?`<div class="pt-more" onclick="picToggleAll('${key}')">${PIC_ALL[key]?'Ringkas: 20 teratas yang punya proyek PROGRESS':'Tampilkan semua ('+hidden+' lainnya)'}</div>`:''}</div>`;
   }
-
-  $('pic-grid').innerHTML=`
-    <div class="pic-card" style="grid-column:1/-1">
-      <div class="pic-card-hd">🗺️ Korwil Teknik — ${korwilArr.length} orang
-        <span style="font-size:10px;color:var(--text3);font-weight:400;margin-left:8px">(nilai = DPP invoice tertagih${fThnInv?' thn '+fThnInv:''}${fBlnInv?' bln '+fBlnInv:''})</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0">
-        ${korwilArr.length ? korwilArr.map(([n,d])=>picRow(n,d,maxK,'linear-gradient(90deg,var(--purple),#c084fc)','korwil',true)).join('') : '<div style="padding:16px;color:var(--text3);font-size:12px">Tidak ada data — pastikan kolom Korwil Teknik sudah diisi di sheet DB</div>'}
-      </div>
-    </div>
-    <div class="pic-card">
-      <div class="pic-card-hd">👷 PIC Teknik — ${tekArr.length} orang</div>
-      ${tekArr.map(([n,d])=>picRow(n,d,maxT,'linear-gradient(90deg,var(--blue),var(--cyan))','tek')).join('')}
-    </div>
-    <div class="pic-card">
-      <div class="pic-card-hd">💼 PIC Sales — ${salesArr.length} orang</div>
-      ${salesArr.map(([n,d])=>picRow(n,d,maxS,'linear-gradient(90deg,var(--green),#34d399)','sales')).join('')}
-    </div>`;
+  $('pic-grid').innerHTML=
+    picTable('🗺️','Korwil Teknik','nilai = nilai kontrak proyek · DPP invoice mengikuti filter Tahun/Bulan Invoice',korwilArr,null,'korwil',true,'kw')+
+    picTable('👷','SC Teknik','20 teratas menurut nilai proyek yang sedang berjalan',tekAll,tekKosong,'tek',false,'tek')+
+    picTable('💼','PIC Sales','20 teratas menurut nilai proyek yang sedang berjalan',salesAll,salesKosong,'sales',false,'sales');
   try{buildMkorChart();}catch(e){console.warn('mkor:',e);}
 }
+let PIC_ALL={kw:true,tek:false,sales:false};
+function picToggleAll(k){PIC_ALL[k]=!PIC_ALL[k]; buildPIC();}
 function clearPICFilter(){
   // Reset semua status chips ke aktif
   PIC_STATUS_SEL=new Set(['PROGRESS','FINISH','FINISH RETENSI','RETENSI','BATAL']);
@@ -3430,13 +3427,30 @@ function mkorModel(f){
       const p=scwPct(e[LP.PCT_BARU]); if(p>p1) p1=p; if(lo!=null&&t<lo&&p>p0) p0=p;
     });
     p0=Math.min(1,p0); p1=Math.min(1,Math.max(p0,p1));
-    const o=byK[kw]||(byK[kw]={kw,nProyek:0,nk:0,target:0,pencapaian:0,outstanding:0});
-    if(p0<0.9999){o.nProyek++; o.nk+=nk;}          /* proyek yang masih punya pekerjaan di awal periode */
+    const o=byK[kw]||(byK[kw]={kw,nProyek:0,nk:0,target:0,pencapaian:0,outstanding:0,rows:[]});
+    if(p0<0.9999){o.nProyek++; o.nk+=nk;}
+    if(p0<0.9999||p1>p0) o.rows.push({k,nama:pn(r),sc:cl(r[C.PIC_TEK])||'—',st,nk,p0,p1,awal:nk*(1-p0),real:nk*(p1-p0),akhir:nk*(1-p1)});          /* proyek yang masih punya pekerjaan di awal periode */
     o.target+=nk*(1-p0); o.pencapaian+=nk*(p1-p0); o.outstanding+=nk*(1-p1);
   });
   const arr=Object.values(byK).filter(x=>x.nProyek>0||x.pencapaian>0).sort((a,b)=>b.pencapaian-a.pencapaian);
   arr.forEach((x,i)=>{x.rank=i+1; x.pct=x.target>0?x.pencapaian/x.target*100:0; x.sisa=x.outstanding;});
   return arr;
+}
+
+let MKOR_OPEN=new Set(), MKOR_VIEW='all';
+const mkorKeep=r=>MKOR_VIEW==='all'||(MKOR_VIEW==='real'?r.real>0.5:r.real<=0.5);
+function mkorToggle(kw){ if(MKOR_OPEN.has(kw)) MKOR_OPEN.delete(kw); else MKOR_OPEN.add(kw); buildMkorChart(); }
+function mkorSetView(v){ MKOR_VIEW=v; buildMkorChart(); }
+function mkorOpenAll(){ const d=window._MKOR_DATA||[]; if(MKOR_OPEN.size>=d.length) MKOR_OPEN.clear(); else d.forEach(x=>MKOR_OPEN.add(x.kw)); buildMkorChart(); }
+const mkorPct=v=>{const n=Math.round(v*1000)/10; return (n%1?n.toFixed(1):n.toFixed(0))+'%';};
+/* daftar proyek satu Korwil: ditarget (ada outstanding di awal periode) dan terealisasi (progress naik di periode) */
+function mkorDetail(x){
+  const rs=x.rows.filter(mkorKeep).sort((a,b)=>b.real-a.real||b.awal-a.awal||a.k.localeCompare(b.k));
+  if(!rs.length) return '<div class="scw-empty" style="padding:14px">Tidak ada proyek untuk pilihan ini.</div>';
+  const t=rs.reduce((a,r)=>({nk:a.nk+r.nk,awal:a.awal+r.awal,real:a.real+r.real,akhir:a.akhir+r.akhir}),{nk:0,awal:0,real:0,akhir:0});
+  return `<table class="scw-table"><thead><tr><th>Kode</th><th>Proyek</th><th>SC Teknik</th><th>Status</th><th class="r">Nilai Kontrak</th><th class="r">Progress</th><th class="r">Outstanding Awal</th><th class="r">Realisasi</th><th class="r">Outstanding Akhir</th></tr></thead><tbody>`+
+   rs.map(r=>`<tr><td><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.k)}</a></td><td title="${scwEsc(r.nama)}" style="max-width:300px;overflow:hidden;text-overflow:ellipsis"><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.nama)}</a></td><td>${scwEsc(r.sc)}</td><td>${scwEsc(r.st)}</td><td class="r">${scwRp(r.nk)}</td><td class="r">${mkorPct(r.p0)} → ${mkorPct(r.p1)}</td><td class="r">${scwRp(r.awal)}</td><td class="r" style="${r.real>0.5?'color:var(--green);font-weight:700':''}">${scwRp(r.real)}</td><td class="r">${scwRp(r.akhir)}</td></tr>`).join('')+
+   `<tr class="tot"><td colspan="4">TOTAL · ${rs.length} proyek</td><td class="r">${scwRp(t.nk)}</td><td></td><td class="r">${scwRp(t.awal)}</td><td class="r">${scwRp(t.real)}</td><td class="r">${scwRp(t.akhir)}</td></tr></tbody></table>`;
 }
 
 function buildMkorChart(){
@@ -3475,9 +3489,10 @@ function buildMkorChart(){
     const pctClass = x.pct>=80?'mkor-pct-ok':x.pct>=50?'mkor-pct-warn':'mkor-pct-low';
     const rankHtml = i<3 ? `<span class="mkor-rank ${podiumClass[i]}">${i+1}</span>` : `<span class="mkor-rank" style="background:var(--surf2);color:var(--text3)">${i+1}</span>`;
     const podium = i<3 ? `<span class="${podiumClass[i]}" style="font-size:11px;padding:2px 7px;border-radius:10px;font-weight:700">${podiumIcons[i]} Juara ${i+1}</span>` : '—';
-    return`<tr>
+    const open=MKOR_OPEN.has(x.kw);
+    return`<tr class="mkor-row" onclick="mkorToggle(${jsq(x.kw)})" title="Klik untuk melihat proyek ${scwEsc(x.kw)}">
       <td>${rankHtml}</td>
-      <td style="font-weight:700;color:var(--text)">${x.kw}</td>
+      <td style="font-weight:700;color:var(--text)"><span class="mkor-caret">${open?'▾':'▸'}</span>${x.kw}</td>
       <td class="r">${x.nProyek}</td>
       <td class="r">${fmt(x.nk,true)}</td>
       <td class="r">${fmt(x.target,true)}</td>
@@ -3485,7 +3500,7 @@ function buildMkorChart(){
       <td class="r ${pctClass}">${x.pct.toFixed(1)}%</td>
       <td class="r" style="color:var(--red)">${fmt(x.outstanding,true)}</td>
       <td>${podium}</td>
-    </tr>`;
+    </tr>`+(open?`<tr class="mkor-det"><td colspan="9"><div class="mkor-det-in">${mkorDetail(x)}</div></td></tr>`:'');
   }).join('')||'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text3)">Tidak ada data Korwil Teknik untuk filter ini</td></tr>';
   const totNK=korwils.reduce((a,x)=>a+x.nk,0), totN=korwils.reduce((a,x)=>a+x.nProyek,0);
   $('mkor-tbody').innerHTML+=`<tr style="background:var(--surf2);font-weight:800;border-top:2px solid var(--border)">
@@ -3499,6 +3514,10 @@ function buildMkorChart(){
     <td></td>
   </tr>`;
   window._MKOR_DATA = korwils.map(x=>({...x}));
+  const nAll=korwils.reduce((a,x)=>a+x.rows.length,0), nReal=korwils.reduce((a,x)=>a+x.rows.filter(r=>r.real>0.5).length,0);
+  const vb=(v,l)=>`<button type="button" class="${MKOR_VIEW===v?'on':''}" onclick="mkorSetView('${v}')">${l}</button>`;
+  $('mkor-views').innerHTML=vb('all','Semua proyek ditarget ('+nAll+')')+vb('real','Terealisasi ('+nReal+')')+vb('belum','Belum terealisasi ('+(nAll-nReal)+')')+
+    `<button type="button" onclick="mkorOpenAll()">${MKOR_OPEN.size>=korwils.length&&korwils.length?'Tutup semua':'Buka semua'}</button><span class="hint">Ditarget = proyek yang masih punya pekerjaan di awal periode. Klik baris Korwil untuk melihat proyeknya.</span>`;
   $('mkor-chart').innerHTML = generateMkorSVGDark(korwils, periodLabel);
 }
 
@@ -4592,7 +4611,7 @@ function filterByPIC(type,name){
     $('df-q').value=name;
   }
   filterDB();
-  toast('Filter '+(type==='tek'?'PIC Teknik':type==='sales'?'PIC Sales':'Korwil Teknik')+': '+name,'info');
+  toast('Filter '+(type==='tek'?'SC Teknik':type==='sales'?'PIC Sales':'Korwil Teknik')+': '+name,'info');
 }
 
 
