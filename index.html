@@ -728,9 +728,6 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/></svg>
     Cost Control <span class="s-badge" id="sb-costcontrol" style="color:var(--orange)">83</span>
   </div>
-  <div class="s-div"></div>
-  <div class="s-sec">Filter Area</div>
-  <div id="area-nav"></div>
 </aside>
 
 <!-- MAIN -->
@@ -2028,8 +2025,7 @@ function updateBadges(){
 }
 
 function buildSidebar(){
-  const areas=[...new Set(ALL.map(r=>cl(r[C.AREA])).filter(Boolean))].sort();
-  $('area-nav').innerHTML=areas.map(a=>`<div class="s-item" onclick="filterToArea(${jsq(a)})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px"><circle cx="12" cy="12" r="4"/></svg>${a}</div>`).join('');
+  const areas=[...new Set(ALL.map(r=>cl(r[C.AREA])).filter(Boolean))].sort();   /* dipakai dropdown area di tiap halaman */
 
   const tahuns=[...new Set(ALL.map(r=>cl(r[C.TAHUN])).filter(y=>y&&!isNaN(y)))].sort();
   ['pf-area','df-area','if-area'].forEach(id=>{const s=$(id);if(!s)return;while(s.options.length>1)s.remove(1);areas.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;s.appendChild(o);});});
