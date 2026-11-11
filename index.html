@@ -507,8 +507,8 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 /* PDF print */
 @media print{
   /* Sembunyikan semua, tampilkan hanya overlay print */
-  body > *{display:none!important}
-  #mkor-pdf-overlay{display:block!important}
+  body.print-mkor > *{display:none!important}
+  body.print-mkor #mkor-pdf-overlay{display:block!important}
   #mkor-pdf-overlay *{visibility:visible!important}
   /* Reset box model untuk print */
   #mkor-pdf-overlay{
@@ -1034,7 +1034,6 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap" class="no-print">
           <button onclick="mkorExport()" style="background:var(--green-d,rgba(16,185,129,.12));border:1px solid var(--green);border-radius:7px;color:var(--green);font-size:11px;padding:6px 11px;cursor:pointer;font-weight:600" title="Ringkasan Korwil + rincian proyek sesuai periode & filter">📊 Download Excel</button>
-          <button onclick="mkorExport()" style="background:var(--green-d,rgba(16,185,129,.12));border:1px solid var(--green);border-radius:7px;color:var(--green);font-size:11px;padding:6px 11px;cursor:pointer;font-weight:600" title="Ringkasan Korwil + rincian proyek ditarget dan terealisasi">📊 Unduh Excel</button>
           <button onclick="downloadMkorPDF()" style="background:var(--red-d);border:1px solid var(--red);border-radius:7px;color:var(--red);font-size:11px;padding:6px 11px;cursor:pointer;font-weight:600">📄 Download PDF</button>
           <button onclick="buildMkorChart()" style="background:var(--surf2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:11px;padding:6px 11px;cursor:pointer">↺ Refresh</button>
         </div>
@@ -3481,30 +3480,6 @@ function mkorExport(){
   toast('Excel diunduh: '+korwils.length+' Korwil · '+det.length+' proyek','ok');
 }
 
-/* Unduh Excel: ringkasan per Korwil + rincian SEMUA proyek ditarget (tidak terpengaruh tombol saring tampilan) */
-function mkorExport(){
-  const d=window._MKOR_DATA||[];
-  if(!d.length){toast('Belum ada data Korwil untuk diunduh','info');return;}
-  const per=($('mkor-period-label')?.textContent||'').replace(/^Periode:\s*/,'');
-  const ring=d.map(x=>({'Rank':x.rank,'Korwil Teknik':x.kw,'Proyek':x.nProyek,'Nilai Kontrak (Rp)':xRp(x.nk),'Outstanding Awal (Rp)':xRp(x.target),'Realisasi (Rp)':xRp(x.pencapaian),'% Realisasi':Math.round(x.pct*100)/100,'Outstanding Akhir (Rp)':xRp(x.outstanding),'Proyek Terealisasi':x.rows.filter(r=>r.real>0.5).length,'Proyek Belum Terealisasi':x.rows.filter(r=>r.real<=0.5).length}));
-  const T=d.reduce((a,x)=>({n:a.n+x.nProyek,nk:a.nk+x.nk,aw:a.aw+x.target,re:a.re+x.pencapaian,ak:a.ak+x.outstanding,tr:a.tr+x.rows.filter(r=>r.real>0.5).length,tb:a.tb+x.rows.filter(r=>r.real<=0.5).length}),{n:0,nk:0,aw:0,re:0,ak:0,tr:0,tb:0});
-  ring.push({'Rank':'','Korwil Teknik':'TOTAL','Proyek':T.n,'Nilai Kontrak (Rp)':xRp(T.nk),'Outstanding Awal (Rp)':xRp(T.aw),'Realisasi (Rp)':xRp(T.re),'% Realisasi':T.aw>0?Math.round(T.re/T.aw*10000)/100:0,'Outstanding Akhir (Rp)':xRp(T.ak),'Proyek Terealisasi':T.tr,'Proyek Belum Terealisasi':T.tb});
-  const pr=[];
-  d.forEach(x=>x.rows.slice().sort((a,b)=>b.real-a.real||b.awal-a.awal||a.k.localeCompare(b.k)).forEach(r=>pr.push({
-    'Korwil Teknik':x.kw,'Kode':r.k,'Proyek':r.nama,'SC Teknik':r.sc,'Status':r.st,'Nilai Kontrak (Rp)':xRp(r.nk),
-    '% Progress Awal':xPct(r.p0),'% Progress Akhir':xPct(r.p1),'Outstanding Awal (Rp)':xRp(r.awal),'Realisasi (Rp)':xRp(r.real),'Outstanding Akhir (Rp)':xRp(r.akhir),
-    'Ditarget':r.awal>0.5?'Ya':'Tidak','Terealisasi':r.real>0.5?'Ya':'Tidak'})));
-  const info=[{'Keterangan':'Periode / filter','Nilai':per},
-    {'Keterangan':'Outstanding Awal','Nilai':'Σ nilai kontrak × (1 − progress awal periode)'},
-    {'Keterangan':'Realisasi','Nilai':'Σ nilai kontrak × (progress akhir − progress awal), sumber log_progress; DP/UM/retensi tidak dihitung'},
-    {'Keterangan':'Outstanding Akhir','Nilai':'Σ nilai kontrak × (1 − progress akhir periode)'},
-    {'Keterangan':'Ditarget','Nilai':'Proyek yang masih punya pekerjaan di awal periode'},
-    {'Keterangan':'Diunduh','Nilai':new Date().toLocaleString('id-ID')}];
-  const tag=($('mkor-from-thn')?.value||'')+($('mkor-from-bln')?.value||'')+'-'+($('mkor-to-thn')?.value||'')+($('mkor-to-bln')?.value||'');
-  xlsxSave([{name:'Ringkasan Korwil',rows:ring},{name:'Proyek per Korwil',rows:pr},{name:'Keterangan',rows:info}],'Realisasi-Korwil-Teknik'+(tag.length>1?'-'+tag:'')+'.xlsx');
-  toast('Excel diunduh: '+d.length+' korwil · '+pr.length+' proyek','ok');
-}
-
 function buildMkorChart(){
   if(!ALL.length) return;
   initMkorFilter();
@@ -3827,10 +3802,12 @@ function downloadMkorPDF(){
 
   const title = document.title;
   document.title = 'Monitoring Realisasi Korwil Teknik - ' + period;
+  /* aturan cetak "sembunyikan semua kecuali overlay" hanya berlaku selama cetak Korwil (kelas ini), supaya cetak halaman lain tidak kosong */
+  document.body.classList.add('print-mkor');
+  const done=()=>{ window.removeEventListener('afterprint',done); document.body.classList.remove('print-mkor'); document.title=title; overlay.innerHTML=''; };
+  window.addEventListener('afterprint',done);
+  setTimeout(()=>{ if(document.body.classList.contains('print-mkor')) done(); }, 120000);
   window.print();
-  document.title = title;
-  /* Kosongkan overlay setelah print agar tidak tampil di layar */
-  setTimeout(()=>{ overlay.innerHTML=''; }, 500);
 }
 
 /* ══ NAVIGATION ══ */
