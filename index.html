@@ -1021,16 +1021,8 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         <div class="jenis-chip active" data-status="BATAL"     onclick="togglePICStatus('BATAL')"      style="border-color:var(--red);color:var(--red);background:var(--red-d)">BATAL</div>
       </div>
       <select id="pic-area" onchange="buildPIC()"><option value="">Semua Area</option></select>
-      <select id="pic-thn-inv" onchange="buildPIC()"><option value="">Semua Tahun Invoice</option></select>
-      <select id="pic-bln-inv" onchange="buildPIC()">
-        <option value="">Semua Bulan Invoice</option>
-        <option value="Jan">Januari</option><option value="Feb">Februari</option>
-        <option value="Mar">Maret</option><option value="Apr">April</option>
-        <option value="May">Mei</option><option value="Jun">Juni</option>
-        <option value="Jul">Juli</option><option value="Aug">Agustus</option>
-        <option value="Sep">September</option><option value="Oct">Oktober</option>
-        <option value="Nov">November</option><option value="Dec">Desember</option>
-      </select>
+      <select id="pic-korwil" onchange="buildPIC()"><option value="">Semua Korwil Teknik</option></select>
+      <select id="pic-sc" onchange="buildPIC()"><option value="">Semua SC Teknik</option></select>
       <button class="fb-clear" onclick="clearPICFilter()">✕ Reset</button>
     </div>
     <!-- ═══ MONITORING REALISASI KORWIL ═══ -->
@@ -2612,21 +2604,18 @@ function buildPIC(){
     const areas=[...new Set(ALL.map(r=>cl(r[C.AREA])).filter(Boolean))].sort();
     areas.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;picAreaSel.appendChild(o);});
   }
-  const picThnSel=$('pic-thn-inv');
-  if(picThnSel&&picThnSel.options.length<=1){
-    const tahuns=[...new Set(INV.map(r=>cl(r[I.THN])).filter(y=>y&&!isNaN(y)))].sort();
-    tahuns.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;picThnSel.appendChild(o);});
-  }
+  const fillSel=(id,col)=>{const el=$(id); if(el&&el.options.length<=1){[...new Set(ALL.map(r=>cl(r[col])).filter(v=>v&&v!=='(kosong)'))].sort((x,y)=>x.localeCompare(y)).forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;el.appendChild(o);});}};
+  fillSel('pic-korwil',C.KORWIL_TEK); fillSel('pic-sc',C.PIC_TEK);
 
   const fArea   = $('pic-area')?.value||'';
-  const fThnInv = $('pic-thn-inv')?.value||'';
-  const fBlnInv = $('pic-bln-inv')?.value||'';
+  const fKorwil = $('pic-korwil')?.value||'';
+  const fSC     = $('pic-sc')?.value||'';
+  const _pb=mkorBounds({fromBln:$('mkor-from-bln')?.value||'',fromThn:$('mkor-from-thn')?.value||'',toBln:$('mkor-to-bln')?.value||'',toThn:$('mkor-to-thn')?.value||''});
 
   /* ── Korwil: dari invoice DPP, filter area+tahun invoice+bulan invoice ── */
   const korwilMap={};
   INV.filter(r=>{
-    if(fThnInv && cl(r[I.THN])!==fThnInv) return false;
-    if(fBlnInv && cl(r[I.BLN])!==fBlnInv) return false;
+    if(_pb.lo!=null||_pb.hi!=null){const td=scwParseDay(r[I.TGL]); if(td==null||(_pb.lo!=null&&td<_pb.lo)||(_pb.hi!=null&&td>=_pb.hi)) return false;}
     if(fArea   && cl(r[I.AREA]).trim()!==fArea) return false;
     return true;
   }).forEach(inv=>{
@@ -2639,6 +2628,8 @@ function buildPIC(){
     if(PIC_STATUS_SEL.size>0 && !PIC_STATUS_SEL.has(st)) return;
     const k=cl(dbRow[C.KORWIL_TEK]);
     if(!k) return; // skip kosong
+    if(fKorwil&&k!==fKorwil) return;
+    if(fSC&&cl(dbRow[C.PIC_TEK])!==fSC) return;
     const dpp=num(inv[I.DPP]);
     if(!korwilMap[k]) korwilMap[k]={n:0,v:0,nProyek:new Set(),byStatus:{}};
     korwilMap[k].n++;
@@ -2652,6 +2643,8 @@ function buildPIC(){
     const st=cl(r[C.STATUS]);
     if(PIC_STATUS_SEL.size>0 && !PIC_STATUS_SEL.has(st)) return false;
     if(fArea && cl(r[C.AREA])!==fArea) return false;
+    if(fKorwil && cl(r[C.KORWIL_TEK])!==fKorwil) return false;
+    if(fSC && cl(r[C.PIC_TEK])!==fSC) return false;
     return true;
   });
   const tekMap={}, salesMap={}, kwMap={};
@@ -2670,10 +2663,10 @@ function buildPIC(){
   const lblParts=[];
   if(PIC_STATUS_SEL.size<5) lblParts.push([...PIC_STATUS_SEL].join('+'));
   if(fArea) lblParts.push(fArea);
-  if(fThnInv) lblParts.push('Thn Inv '+fThnInv);
-  if(fBlnInv) lblParts.push('Bln Inv '+fBlnInv);
+  if(fKorwil) lblParts.push('Korwil '+fKorwil);
+  if(fSC) lblParts.push('SC '+fSC);
   const picSub=$('pic-sub');
-  if(picSub) picSub.textContent=(lblParts.length?lblParts.join(' · '):'Semua proyek & invoice');
+  if(picSub) picSub.textContent=(lblParts.length?lblParts.join(' · '):'Semua proyek');
   $('sb-pic').textContent=dbSrc.length;
 
   const num0=(n,c)=>n?`<span class="${c}">${n}</span>`:'<span class="z">–</span>';
@@ -2692,7 +2685,7 @@ function buildPIC(){
       ${key!=='kw'&&(hidden>0||PIC_ALL[key])?`<div class="pt-more" onclick="picToggleAll('${key}')">${PIC_ALL[key]?'Ringkas: 20 teratas yang punya proyek PROGRESS':'Tampilkan semua ('+hidden+' lainnya)'}</div>`:''}</div>`;
   }
   $('pic-grid').innerHTML=
-    picTable('🗺️','Korwil Teknik','nilai = nilai kontrak proyek · DPP invoice mengikuti filter Tahun/Bulan Invoice',korwilArr,null,'korwil',true,'kw')+
+    picTable('🗺️','Korwil Teknik','nilai = nilai kontrak proyek · DPP invoice mengikuti periode Dari/S.d di Monitoring Realisasi',korwilArr,null,'korwil',true,'kw')+
     picTable('👷','SC Teknik','20 teratas menurut nilai proyek yang sedang berjalan',tekAll,tekKosong,'tek',false,'tek')+
     picTable('💼','PIC Sales','20 teratas menurut nilai proyek yang sedang berjalan',salesAll,salesKosong,'sales',false,'sales');
   try{buildMkorChart();}catch(e){console.warn('mkor:',e);}
@@ -2703,7 +2696,7 @@ function clearPICFilter(){
   // Reset semua status chips ke aktif
   PIC_STATUS_SEL=new Set(['PROGRESS','FINISH','FINISH RETENSI','RETENSI','BATAL']);
   document.querySelectorAll('[data-status]').forEach(el=>el.classList.add('active'));
-  ['pic-area','pic-thn-inv','pic-bln-inv'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  ['pic-area','pic-korwil','pic-sc'].forEach(id=>{const el=$(id);if(el)el.value='';});
   buildPIC();
 }
 
@@ -3436,6 +3429,8 @@ function mkorModel(f){
     const kw=cl(r[C.KORWIL_TEK]); if(!kw||kw==='(kosong)') return;
     const st=cl(r[C.STATUS]); if(PIC_STATUS_SEL.size>0&&!PIC_STATUS_SEL.has(st)) return;
     if(f.area&&cl(r[C.AREA])!==f.area) return;
+    if(f.korwil&&kw!==f.korwil) return;
+    if(f.sc&&cl(r[C.PIC_TEK])!==f.sc) return;
     const k=normKode(r[C.KODE]), nk=num(r[C.NK]);
     /* tanggal SPI terbit (aturan sama dengan Realisasi SC / Minggu). Proyek yang SPI-nya terbit SETELAH akhir periode belum ada → tidak ikut. */
     let spi=scwParseDay(r[C.BULAN]); if(spi==null) spi=scwParseDay(r[C.TGL_SPK]);
@@ -3516,14 +3511,14 @@ function buildMkorChart(){
   if(!ALL.length) return;
   initMkorFilter();
   const f={fromBln:$('mkor-from-bln')?.value||'',fromThn:$('mkor-from-thn')?.value||'',
-           toBln:$('mkor-to-bln')?.value||'',toThn:$('mkor-to-thn')?.value||'',area:$('pic-area')?.value||''};
+           toBln:$('mkor-to-bln')?.value||'',toThn:$('mkor-to-thn')?.value||'',area:$('pic-area')?.value||'',korwil:$('pic-korwil')?.value||'',sc:$('pic-sc')?.value||''};
   const korwils=mkorModel(f);
 
   /* ── Label periode ── */
   const fLabel = f.fromBln&&f.fromThn ? `${BLN_ID[f.fromBln]||f.fromBln} ${f.fromThn}` : (f.fromThn||f.fromBln||'Awal');
   const tLabel = f.toBln&&f.toThn     ? `${BLN_ID[f.toBln]||f.toBln} ${f.toThn}`       : (f.toThn||f.toBln||'Sekarang');
   const periodLabel = (f.fromBln||f.fromThn||f.toBln||f.toThn) ? `Periode: ${fLabel} — ${tLabel}` : 'Periode: Semua (sampai sekarang)';
-  const pel=$('mkor-period-label'); if(pel) pel.textContent=periodLabel+(f.area?' · Area '+f.area:'')+(PIC_STATUS_SEL.size<5?' · Status '+[...PIC_STATUS_SEL].join('+'):'')+(LOG_PROG.length?'':' · ⚠ log progress belum termuat');
+  const pel=$('mkor-period-label'); if(pel) pel.textContent=periodLabel+(f.area?' · Area '+f.area:'')+(f.korwil?' · Korwil '+f.korwil:'')+(f.sc?' · SC '+f.sc:'')+(PIC_STATUS_SEL.size<5?' · Status '+[...PIC_STATUS_SEL].join('+'):'')+(LOG_PROG.length?'':' · ⚠ log progress belum termuat');
 
   /* ── KPI ── */
   const totalReal=korwils.reduce((a,x)=>a+x.pencapaian,0), totalAwal=korwils.reduce((a,x)=>a+x.awal,0), totalBaru=korwils.reduce((a,x)=>a+x.baru,0), totalAkhir=korwils.reduce((a,x)=>a+x.outstanding,0);
