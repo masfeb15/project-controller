@@ -1083,10 +1083,11 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
             <th>Korwil Teknik</th>
             <th class="r" title="Proyek yang masih punya pekerjaan di awal periode">Proyek</th>
             <th class="r">Nilai Kontrak (Rp)</th>
-            <th class="r" title="Σ nilai kontrak × (1 − progress awal periode)">Outstanding Awal (Rp)</th>
+            <th class="r" title="Σ nilai kontrak × (1 − progress awal periode), proyek yang SPI-nya terbit sebelum periode">Outstanding Awal (Rp)</th>
+            <th class="r" title="Nilai kontrak proyek yang SPI-nya terbit di dalam periode">+ Proyek Baru (Rp)</th>
             <th class="r" title="Σ nilai kontrak × Δ% progress dalam periode (log progress)">Realisasi (Rp)</th>
-            <th class="r" title="Realisasi ÷ Outstanding Awal">%</th>
-            <th class="r" title="Σ nilai kontrak × (1 − progress akhir periode)">Outstanding Akhir (Rp)</th>
+            <th class="r" title="Realisasi ÷ (Outstanding Awal + Proyek Baru)">%</th>
+            <th class="r" title="Outstanding Awal + Proyek Baru − Realisasi">Outstanding Akhir (Rp)</th>
             <th>Status</th>
           </tr></thead>
           <tbody id="mkor-tbody"></tbody>
@@ -3423,9 +3424,11 @@ function mkorBounds(f){
           hi: tt?scwDay(tt,(BLN_ORDER[f.toBln]||12),1):null};
 }
 /* Model per Korwil. Sumber: db (korwil, nilai kontrak, status, area) + log_progress (progress per tanggal).
-   Outstanding awal  = Σ nilai kontrak × (1 − progress per AWAL periode)
+   Outstanding awal  = Σ nilai kontrak × (1 − progress per AWAL periode), hanya proyek yang SPI-nya sudah terbit SEBELUM periode
+   Proyek baru       = Σ nilai kontrak proyek yang SPI-nya terbit DI DALAM periode (SPI setelah akhir periode tidak ikut)
+   Target periode    = Outstanding awal + Proyek baru   (dipakai untuk % dan grafik)
    Realisasi         = Σ nilai kontrak × (progress akhir − progress awal)      ← DP/UM/retensi tidak dihitung (sudah disaring di log)
-   Outstanding akhir = Σ nilai kontrak × (1 − progress per AKHIR periode)  = awal − realisasi
+   Outstanding akhir = Σ nilai kontrak × (1 − progress per AKHIR periode)  = awal + baru − realisasi
    Tanpa periode: awal = seluruh nilai kontrak, akhir = sisa pekerjaan sekarang. Mengikuti chip Status dan filter Area di atasnya. */
 function mkorModel(f){
   const {lo,hi}=mkorBounds(f), byK={}, f100=scwFin100Map();
@@ -3434,13 +3437,18 @@ function mkorModel(f){
     const st=cl(r[C.STATUS]); if(PIC_STATUS_SEL.size>0&&!PIC_STATUS_SEL.has(st)) return;
     if(f.area&&cl(r[C.AREA])!==f.area) return;
     const k=normKode(r[C.KODE]), nk=num(r[C.NK]);
+    /* tanggal SPI terbit (aturan sama dengan Realisasi SC / Minggu). Proyek yang SPI-nya terbit SETELAH akhir periode belum ada → tidak ikut. */
+    let spi=scwParseDay(r[C.BULAN]); if(spi==null) spi=scwParseDay(r[C.TGL_SPK]);
+    if(spi==null){const th=parseInt(cl(r[C.TAHUN])); spi=th>2000?scwDay(th,0,1):null;}
+    if(hi!=null&&spi!=null&&spi>=hi) return;
+    const baru=lo!=null&&spi!=null&&spi>=lo;      /* proyek baru: SPI terbit di dalam periode (bukan bagian dari outstanding awal) */
     let p0=0,p1=0;
     (LP_IDX[k]||[]).forEach(e=>{
       const t=scwParseDay(e[LP.TGL]); if(t==null||(hi!=null&&t>=hi)) return;
       const p=scwPct(e[LP.PCT_BARU]); if(p>p1) p1=p; if(lo!=null&&t<lo&&p>p0) p0=p;
     });
     p0=Math.min(1,p0); p1=Math.min(1,Math.max(p0,p1));
-    const o=byK[kw]||(byK[kw]={kw,nProyek:0,nk:0,target:0,pencapaian:0,outstanding:0,rows:[]});
+    const o=byK[kw]||(byK[kw]={kw,nProyek:0,nBaru:0,nk:0,awal:0,baru:0,target:0,pencapaian:0,outstanding:0,rows:[]});
     /* HUTANG KERJA: sudah ditagih 100% sebelum periode, tetapi pekerjaan belum diakui selesai — BAST jatuh pada/setelah awal periode,
        atau BAST belum ada (status belum selesai). Nilai rupiahnya sudah terealisasi saat penagihan, jadi di sini Rp 0 (tidak dihitung dua kali);
        proyek tetap ditampilkan dan BAST yang jatuh di dalam periode dihitung sebagai "terselesaikan". */
@@ -3450,10 +3458,12 @@ function mkorModel(f){
       if(ba!=null){ if(ba>=lo) hut={d100:f100[k],ba,inP:(hi==null||ba<hi)}; }
       else if(!fin) hut={d100:f100[k],ba:null,inP:false};
     }
-    if(p0<0.9999||hut){o.nProyek++; o.nk+=nk;}     /* proyek yang masih punya pekerjaan di awal periode */
+    if(p0<0.9999||hut){o.nProyek++; o.nk+=nk;}     /* proyek yang masih punya pekerjaan di awal periode (atau baru masuk) */
     if(p0<0.9999||p1>p0||hut) o.rows.push({k,nama:pn(r),sc:cl(r[C.PIC_TEK])||'—',area:cl(r[C.AREA]),st,nk,p0,p1,awal:nk*(1-p0),real:nk*(p1-p0),akhir:nk*(1-p1),
-      hut:!!hut,bastIn:!!(hut&&hut.inP),
-      ket:hut?('Hutang kerja: ditagih 100% '+(hut.d100!=null?scwDayStr(hut.d100):'')+(hut.ba!=null?(' · BAST '+scwDayStr(hut.ba)+(hut.inP?' (dalam periode)':' (setelah periode)')):' · BAST belum ada')):''});
+      hut:!!hut,bastIn:!!(hut&&hut.inP),baru,spi,
+      ket:baru?('Proyek baru · SPI '+(spi!=null?scwDayStr(spi):'')):hut?('Hutang kerja: ditagih 100% '+(hut.d100!=null?scwDayStr(hut.d100):'')+(hut.ba!=null?(' · BAST '+scwDayStr(hut.ba)+(hut.inP?' (dalam periode)':' (setelah periode)')):' · BAST belum ada')):''});
+    if(baru&&(p0<0.9999||p1>p0)) o.nBaru++;
+    if(baru) o.baru+=nk*(1-p0); else o.awal+=nk*(1-p0);
     o.target+=nk*(1-p0); o.pencapaian+=nk*(p1-p0); o.outstanding+=nk*(1-p1);
   });
   const arr=Object.values(byK).filter(x=>x.nProyek>0||x.pencapaian>0).sort((a,b)=>b.pencapaian-a.pencapaian);
@@ -3472,28 +3482,30 @@ const mkorPct=v=>{const n=Math.round(v*1000)/10; return (n%1?n.toFixed(1):n.toFi
 function mkorDetail(x){
   const rs=x.rows.filter(mkorKeep).sort((a,b)=>b.real-a.real||b.awal-a.awal||a.k.localeCompare(b.k));
   if(!rs.length) return '<div class="scw-empty" style="padding:14px">Tidak ada proyek untuk pilihan ini.</div>';
-  const t=rs.reduce((a,r)=>({nk:a.nk+r.nk,awal:a.awal+r.awal,real:a.real+r.real,akhir:a.akhir+r.akhir}),{nk:0,awal:0,real:0,akhir:0});
-  return `<table class="scw-table"><thead><tr><th>Kode</th><th>Proyek</th><th>SC Teknik</th><th>Status</th><th class="r">Nilai Kontrak</th><th class="r">Progress</th><th class="r">Outstanding Awal</th><th class="r">Realisasi</th><th class="r">Outstanding Akhir</th><th>Keterangan</th></tr></thead><tbody>`+
-   rs.map(r=>`<tr><td><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.k)}</a></td><td title="${scwEsc(r.nama)}" style="max-width:300px;overflow:hidden;text-overflow:ellipsis"><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.nama)}</a></td><td>${scwEsc(r.sc)}</td><td>${scwEsc(r.st)}</td><td class="r">${scwRp(r.nk)}</td><td class="r">${mkorPct(r.p0)} → ${mkorPct(r.p1)}</td><td class="r">${scwRp(r.awal)}</td><td class="r" style="${r.real>0.5?'color:var(--green);font-weight:700':''}">${scwRp(r.real)}</td><td class="r">${scwRp(r.akhir)}</td><td style="font-size:11px;color:${r.hut?'var(--amber)':'var(--text3)'};white-space:nowrap">${scwEsc(r.ket||'')}</td></tr>`).join('')+
-   `<tr class="tot"><td colspan="4">TOTAL · ${rs.length} proyek</td><td class="r">${scwRp(t.nk)}</td><td></td><td class="r">${scwRp(t.awal)}</td><td class="r">${scwRp(t.real)}</td><td class="r">${scwRp(t.akhir)}</td><td></td></tr></tbody></table>`;
+  const t=rs.reduce((a,r)=>({nk:a.nk+r.nk,awal:a.awal+(r.baru?0:r.awal),baru:a.baru+(r.baru?r.awal:0),real:a.real+r.real,akhir:a.akhir+r.akhir}),{nk:0,awal:0,baru:0,real:0,akhir:0});
+  return `<table class="scw-table"><thead><tr><th>Kode</th><th>Proyek</th><th>SC Teknik</th><th>Status</th><th class="r">Nilai Kontrak</th><th class="r">Progress</th><th class="r">Outstanding Awal</th><th class="r">Proyek Baru</th><th class="r">Realisasi</th><th class="r">Outstanding Akhir</th><th>Keterangan</th></tr></thead><tbody>`+
+   rs.map(r=>`<tr><td><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.k)}</a></td><td title="${scwEsc(r.nama)}" style="max-width:300px;overflow:hidden;text-overflow:ellipsis"><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.nama)}</a></td><td>${scwEsc(r.sc)}</td><td>${scwEsc(r.st)}</td><td class="r">${scwRp(r.nk)}</td><td class="r">${mkorPct(r.p0)} → ${mkorPct(r.p1)}</td><td class="r">${scwRp(r.baru?0:r.awal)}</td><td class="r">${scwRp(r.baru?r.awal:0)}</td><td class="r" style="${r.real>0.5?'color:var(--green);font-weight:700':''}">${scwRp(r.real)}</td><td class="r">${scwRp(r.akhir)}</td><td style="font-size:11px;color:${r.hut?'var(--amber)':r.baru?'var(--cyan)':'var(--text3)'};white-space:nowrap">${scwEsc(r.ket||'')}</td></tr>`).join('')+
+   `<tr class="tot"><td colspan="4">TOTAL · ${rs.length} proyek</td><td class="r">${scwRp(t.nk)}</td><td></td><td class="r">${scwRp(t.awal)}</td><td class="r">${scwRp(t.baru)}</td><td class="r">${scwRp(t.real)}</td><td class="r">${scwRp(t.akhir)}</td><td></td></tr></tbody></table>`;
 }
 
 /* Monitoring Korwil → Excel: Ringkasan · Rincian Proyek (semua proyek ditarget, sesuai periode & filter) · Info filter */
 function mkorExport(){
   const korwils=window._MKOR_DATA||[];
   if(!korwils.length){toast('Belum ada data Korwil untuk diunduh','info');return;}
-  const ring=korwils.map(x=>({'Rank':x.rank,'Korwil Teknik':x.kw,'Proyek':x.nProyek,'Nilai Kontrak (Rp)':xRp(x.nk),'Outstanding Awal (Rp)':xRp(x.target),'Realisasi (Rp)':xRp(x.pencapaian),'% Realisasi':Math.round(x.pct*10)/10,'Outstanding Akhir (Rp)':xRp(x.outstanding)}));
-  ring.push({'Rank':'','Korwil Teknik':'TOTAL','Proyek':korwils.reduce((a,x)=>a+x.nProyek,0),'Nilai Kontrak (Rp)':xRp(korwils.reduce((a,x)=>a+x.nk,0)),'Outstanding Awal (Rp)':xRp(korwils.reduce((a,x)=>a+x.target,0)),'Realisasi (Rp)':xRp(korwils.reduce((a,x)=>a+x.pencapaian,0)),'% Realisasi':'','Outstanding Akhir (Rp)':xRp(korwils.reduce((a,x)=>a+x.outstanding,0))});
+  const ring=korwils.map(x=>({'Rank':x.rank,'Korwil Teknik':x.kw,'Proyek':x.nProyek,'Nilai Kontrak (Rp)':xRp(x.nk),'Outstanding Awal (Rp)':xRp(x.awal),'Proyek Baru - SPI dalam periode (Rp)':xRp(x.baru),'Target Periode (Rp)':xRp(x.target),'Realisasi (Rp)':xRp(x.pencapaian),'% Realisasi (thd Target Periode)':Math.round(x.pct*10)/10,'Outstanding Akhir (Rp)':xRp(x.outstanding)}));
+  ring.push({'Rank':'','Korwil Teknik':'TOTAL','Proyek':korwils.reduce((a,x)=>a+x.nProyek,0),'Nilai Kontrak (Rp)':xRp(korwils.reduce((a,x)=>a+x.nk,0)),'Outstanding Awal (Rp)':xRp(korwils.reduce((a,x)=>a+x.awal,0)),'Proyek Baru - SPI dalam periode (Rp)':xRp(korwils.reduce((a,x)=>a+x.baru,0)),'Target Periode (Rp)':xRp(korwils.reduce((a,x)=>a+x.target,0)),'Realisasi (Rp)':xRp(korwils.reduce((a,x)=>a+x.pencapaian,0)),'% Realisasi (thd Target Periode)':(function(){const t=korwils.reduce((a,x)=>a+x.target,0),r=korwils.reduce((a,x)=>a+x.pencapaian,0);return t>0?Math.round(r/t*1000)/10:'';})(),'Outstanding Akhir (Rp)':xRp(korwils.reduce((a,x)=>a+x.outstanding,0))});
   const det=[];
   korwils.forEach(x=>x.rows.slice().sort((a,b)=>b.real-a.real||b.awal-a.awal||a.k.localeCompare(b.k)).forEach(r=>det.push({
     'Korwil Teknik':x.kw,'Kode':r.k,'Proyek':r.nama,'SC Teknik':r.sc,'Area':r.area,'Status':r.st,'Nilai Kontrak (Rp)':xRp(r.nk),
-    'Progress Awal (%)':xPct(r.p0),'Progress Akhir (%)':xPct(r.p1),'Outstanding Awal (Rp)':xRp(r.awal),'Realisasi (Rp)':xRp(r.real),'Outstanding Akhir (Rp)':xRp(r.akhir),
+    'Progress Awal (%)':xPct(r.p0),'Progress Akhir (%)':xPct(r.p1),'Tanggal SPI':r.spi!=null?scwDayStr(r.spi):'','Outstanding Awal (Rp)':xRp(r.baru?0:r.awal),'Proyek Baru - SPI dalam periode (Rp)':xRp(r.baru?r.awal:0),'Realisasi (Rp)':xRp(r.real),'Outstanding Akhir (Rp)':xRp(r.akhir),
     'Ditarget':(r.awal>0.5||r.hut)?'Ya':'Tidak','Terealisasi':r.real>0.5?'Ya':(r.bastIn?'Ya (BAST dalam periode)':'Belum'),'Hutang Kerja (ditagih 100%, BAST belum diakui)':r.hut?'Ya':'','Keterangan':r.ket||''})));
   const label=($('mkor-period-label')?.textContent||'').trim();
   const info=[{'Keterangan':'Periode / filter','Isi':label},
-    {'Keterangan':'Outstanding Awal','Isi':'Σ nilai kontrak × (1 − progress awal periode)'},
+    {'Keterangan':'Outstanding Awal','Isi':'Σ nilai kontrak × (1 − progress awal periode), hanya proyek yang SPI-nya terbit sebelum periode'},
+    {'Keterangan':'Proyek Baru','Isi':'Nilai kontrak proyek yang SPI-nya terbit di dalam periode. SPI setelah akhir periode tidak ikut dihitung'},
+    {'Keterangan':'Target Periode','Isi':'Outstanding Awal + Proyek Baru (dasar untuk %)'},
     {'Keterangan':'Realisasi','Isi':'Σ nilai kontrak × (progress akhir − progress awal) dari log_progress; DP/UM/retensi tidak dihitung'},
-    {'Keterangan':'Outstanding Akhir','Isi':'Σ nilai kontrak × (1 − progress akhir periode) = Awal − Realisasi'},
+    {'Keterangan':'Outstanding Akhir','Isi':'Σ nilai kontrak × (1 − progress akhir periode) = Target Periode − Realisasi'},
     {'Keterangan':'Ditarget','Isi':'Proyek yang masih punya pekerjaan di awal periode'},
     {'Keterangan':'Diunduh','Isi':new Date().toLocaleString('id-ID')}];
   xlsxSave([{name:'Ringkasan Korwil',rows:ring},{name:'Rincian Proyek',rows:det},{name:'Info',rows:info}],'Monitoring-Korwil-Teknik-'+new Date().toISOString().slice(0,10)+'.xlsx');
@@ -3514,16 +3526,16 @@ function buildMkorChart(){
   const pel=$('mkor-period-label'); if(pel) pel.textContent=periodLabel+(f.area?' · Area '+f.area:'')+(PIC_STATUS_SEL.size<5?' · Status '+[...PIC_STATUS_SEL].join('+'):'')+(LOG_PROG.length?'':' · ⚠ log progress belum termuat');
 
   /* ── KPI ── */
-  const totalReal=korwils.reduce((a,x)=>a+x.pencapaian,0), totalAwal=korwils.reduce((a,x)=>a+x.target,0), totalAkhir=korwils.reduce((a,x)=>a+x.outstanding,0);
+  const totalReal=korwils.reduce((a,x)=>a+x.pencapaian,0), totalAwal=korwils.reduce((a,x)=>a+x.awal,0), totalBaru=korwils.reduce((a,x)=>a+x.baru,0), totalAkhir=korwils.reduce((a,x)=>a+x.outstanding,0);
   const avgReal=korwils.length?totalReal/korwils.length:0;
   const top=korwils[0]; const topPct=top?top.pct:0;
   $('mkor-kpi').innerHTML=[
     {l:'Total Realisasi',          v:fmt(totalReal,true),  s:'Δ% progress × nilai kontrak', c:'var(--purple)'},
     {l:'Rata-rata Realisasi',      v:fmt(avgReal,true),    s:'Per korwil teknik', c:'var(--cyan)'},
-    {l:'🏆 Top Performer',         v:top?top.kw:'—',        s:`${topPct.toFixed(1)}% dari outstanding awal`, c:'var(--amber)'},
+    {l:'🏆 Top Performer',         v:top?top.kw:'—',        s:`${topPct.toFixed(1)}% dari target periode`, c:'var(--amber)'},
     {l:'👥 Jumlah Korwil Teknik',  v:korwils.length+' orang', s:'Memiliki proyek di periode', c:'var(--green)'},
-    {l:'Outstanding Awal',         v:fmt(totalAwal,true),  s:'sisa pekerjaan di awal periode', c:'var(--text3)'},
-    {l:'Outstanding Akhir',        v:fmt(totalAkhir,true), s:'awal − realisasi', c:'var(--red)'},
+    {l:'Outstanding Awal',         v:fmt(totalAwal,true),  s:'+ proyek baru (SPI di periode) '+fmt(totalBaru,true), c:'var(--text3)'},
+    {l:'Outstanding Akhir',        v:fmt(totalAkhir,true), s:'awal + baru − realisasi', c:'var(--red)'},
   ].map(s=>`<div class="mkor-kpi-card" style="border-top:3px solid ${kcB(s.c)}">
     <div class="mkor-kpi-l">${s.l}</div>
     <div class="mkor-kpi-v" style="color:${kcT(s.c)}">${s.v}</div>
@@ -3542,21 +3554,23 @@ function buildMkorChart(){
       <td style="font-weight:700;color:var(--text)"><span class="mkor-caret">${open?'▾':'▸'}</span>${x.kw}</td>
       <td class="r">${x.nProyek}</td>
       <td class="r">${fmt(x.nk,true)}</td>
-      <td class="r">${fmt(x.target,true)}</td>
+      <td class="r">${fmt(x.awal,true)}</td>
+      <td class="r">${fmt(x.baru,true)}</td>
       <td class="r" style="color:var(--purple);font-weight:700">${fmt(x.pencapaian,true)}</td>
       <td class="r ${pctClass}">${x.pct.toFixed(1)}%</td>
       <td class="r" style="color:var(--red)">${fmt(x.outstanding,true)}</td>
       <td>${podium}</td>
-    </tr>`+(open?`<tr class="mkor-det"><td colspan="9"><div class="mkor-det-in">${mkorDetail(x)}</div></td></tr>`:'');
-  }).join('')||'<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text3)">Tidak ada data Korwil Teknik untuk filter ini</td></tr>';
+    </tr>`+(open?`<tr class="mkor-det"><td colspan="10"><div class="mkor-det-in">${mkorDetail(x)}</div></td></tr>`:'');
+  }).join('')||'<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text3)">Tidak ada data Korwil Teknik untuk filter ini</td></tr>';
   const totNK=korwils.reduce((a,x)=>a+x.nk,0), totN=korwils.reduce((a,x)=>a+x.nProyek,0);
   $('mkor-tbody').innerHTML+=`<tr style="background:var(--surf2);font-weight:800;border-top:2px solid var(--border)">
     <td colspan="2" style="font-weight:800;color:var(--text)">TOTAL</td>
     <td class="r">${totN}</td>
     <td class="r">${fmt(totNK,true)}</td>
     <td class="r">${fmt(totalAwal,true)}</td>
+    <td class="r">${fmt(totalBaru,true)}</td>
     <td class="r" style="color:var(--purple)">${fmt(totalReal,true)}</td>
-    <td class="r">${totalAwal>0?(totalReal/totalAwal*100).toFixed(1)+'%':'—'}</td>
+    <td class="r">${(totalAwal+totalBaru)>0?(totalReal/(totalAwal+totalBaru)*100).toFixed(1)+'%':'—'}</td>
     <td class="r" style="color:var(--red)">${fmt(totalAkhir,true)}</td>
     <td></td>
   </tr>`;
@@ -3654,7 +3668,7 @@ function generateMkorSVGDark(korwils, periodLabel){
   /* legend */
   const lY=H-14, lX=LPAD;
   s+=`<rect x="${lX}" y="${lY-10}" width="14" height="8" fill="${C_PURPLE}" rx="2"/>`;
-  s+=`<text x="${lX+18}" y="${lY}" font-family="Arial" font-size="9" fill="${C_TEXT3}">Outstanding awal</text>`;
+  s+=`<text x="${lX+18}" y="${lY}" font-family="Arial" font-size="9" fill="${C_TEXT3}">Target periode</text>`;
   s+=`<rect x="${lX+110}" y="${lY-10}" width="14" height="8" fill="${C_GREEN}" rx="2"/>`;
   s+=`<text x="${lX+128}" y="${lY}" font-family="Arial" font-size="9" fill="${C_TEXT3}">Realisasi</text>`;
 
@@ -3754,7 +3768,7 @@ function downloadMkorPDF(){
   const period  = $('mkor-period-label')?.textContent||'Periode: Semua';
   const korwils = window._MKOR_DATA;
   const totalP  = korwils.reduce((a,x)=>a+x.pencapaian,0);
-  const totalT  = korwils.reduce((a,x)=>a+x.target,0);
+  const totalT  = korwils.reduce((a,x)=>a+x.awal,0), totalB = korwils.reduce((a,x)=>a+x.baru,0);
   const totalO  = korwils.reduce((a,x)=>a+x.outstanding,0);
   const totalNK = korwils.reduce((a,x)=>a+x.nk,0), totalN = korwils.reduce((a,x)=>a+x.nProyek,0);
   const avgP    = korwils.length ? totalP/korwils.length : 0;
@@ -3773,9 +3787,9 @@ function downloadMkorPDF(){
     <div class="mpdf-kpi">
       <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">Total Realisasi</div><div class="mpdf-kpi-v">${fmt(totalP,true)}</div><div class="mpdf-kpi-s">Δ% progress × nilai kontrak</div></div>
       <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">Rata-rata Realisasi</div><div class="mpdf-kpi-v">${fmt(avgP,true)}</div><div class="mpdf-kpi-s">Per korwil teknik</div></div>
-      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">🏆 Top Performer</div><div class="mpdf-kpi-v">${top?.kw||'—'}</div><div class="mpdf-kpi-s">${top?(top.pct.toFixed(1)+'% dari outstanding awal'):'—'}</div></div>
-      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">Outstanding Awal</div><div class="mpdf-kpi-v">${fmt(totalT,true)}</div><div class="mpdf-kpi-s">sisa pekerjaan awal periode</div></div>
-      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">Outstanding Akhir</div><div class="mpdf-kpi-v" style="color:#dc2626">${fmt(totalO,true)}</div><div class="mpdf-kpi-s">awal − realisasi</div></div>
+      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">🏆 Top Performer</div><div class="mpdf-kpi-v">${top?.kw||'—'}</div><div class="mpdf-kpi-s">${top?(top.pct.toFixed(1)+'% dari target periode'):'—'}</div></div>
+      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">Outstanding Awal</div><div class="mpdf-kpi-v">${fmt(totalT,true)}</div><div class="mpdf-kpi-s">+ proyek baru (SPI di periode) ${fmt(totalB,true)}</div></div>
+      <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">Outstanding Akhir</div><div class="mpdf-kpi-v" style="color:#dc2626">${fmt(totalO,true)}</div><div class="mpdf-kpi-s">awal + baru − realisasi</div></div>
       <div class="mpdf-kpi-card"><div class="mpdf-kpi-l">👥 Jumlah Korwil Teknik</div><div class="mpdf-kpi-v">${korwils.length} orang</div><div class="mpdf-kpi-s">Memiliki data</div></div>
     </div>
     <div class="mpdf-table-wrap">
@@ -3783,7 +3797,7 @@ function downloadMkorPDF(){
         <thead><tr>
           <th>Rank</th><th>Korwil Teknik</th>
           <th class="r">Proyek</th><th class="r">Nilai Kontrak (Rp)</th>
-          <th class="r">Outstanding Awal (Rp)</th><th class="r">Realisasi (Rp)</th>
+          <th class="r">Outstanding Awal (Rp)</th><th class="r">+ Proyek Baru (Rp)</th><th class="r">Realisasi (Rp)</th>
           <th class="r">%</th><th class="r">Outstanding Akhir (Rp)</th><th>Status</th>
         </tr></thead>
         <tbody>
@@ -3796,7 +3810,8 @@ function downloadMkorPDF(){
               <td style="font-weight:700">${x.kw}</td>
               <td class="r">${x.nProyek}</td>
               <td class="r">${fmt(x.nk,true)}</td>
-              <td class="r">${fmt(x.target,true)}</td>
+              <td class="r">${fmt(x.awal,true)}</td>
+              <td class="r">${fmt(x.baru,true)}</td>
               <td class="r" style="color:#7c3aed;font-weight:700">${fmt(x.pencapaian,true)}</td>
               <td class="r ${pctCls}">${x.pct.toFixed(1)}%</td>
               <td class="r" style="color:#dc2626">${fmt(x.outstanding,true)}</td>
@@ -3808,8 +3823,9 @@ function downloadMkorPDF(){
             <td class="r">${totalN}</td>
             <td class="r">${fmt(totalNK,true)}</td>
             <td class="r">${fmt(totalT,true)}</td>
+            <td class="r">${fmt(totalB,true)}</td>
             <td class="r" style="color:#7c3aed;font-weight:800">${fmt(totalP,true)}</td>
-            <td class="r">${totalT>0?(totalP/totalT*100).toFixed(1)+'%':'—'}</td>
+            <td class="r">${(totalT+totalB)>0?(totalP/(totalT+totalB)*100).toFixed(1)+'%':'—'}</td>
             <td class="r" style="color:#dc2626">${fmt(totalO,true)}</td>
             <td></td>
           </tr>
