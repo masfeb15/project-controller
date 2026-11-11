@@ -3420,7 +3420,7 @@ function mkorBounds(f){
    Outstanding akhir = Σ nilai kontrak × (1 − progress per AKHIR periode)  = awal − realisasi
    Tanpa periode: awal = seluruh nilai kontrak, akhir = sisa pekerjaan sekarang. Mengikuti chip Status dan filter Area di atasnya. */
 function mkorModel(f){
-  const {lo,hi}=mkorBounds(f), byK={};
+  const {lo,hi}=mkorBounds(f), byK={}, f100=scwFin100Map();
   ALL.forEach(r=>{
     const kw=cl(r[C.KORWIL_TEK]); if(!kw||kw==='(kosong)') return;
     const st=cl(r[C.STATUS]); if(PIC_STATUS_SEL.size>0&&!PIC_STATUS_SEL.has(st)) return;
@@ -3433,8 +3433,19 @@ function mkorModel(f){
     });
     p0=Math.min(1,p0); p1=Math.min(1,Math.max(p0,p1));
     const o=byK[kw]||(byK[kw]={kw,nProyek:0,nk:0,target:0,pencapaian:0,outstanding:0,rows:[]});
-    if(p0<0.9999){o.nProyek++; o.nk+=nk;}
-    if(p0<0.9999||p1>p0) o.rows.push({k,nama:pn(r),sc:cl(r[C.PIC_TEK])||'—',area:cl(r[C.AREA]),st,nk,p0,p1,awal:nk*(1-p0),real:nk*(p1-p0),akhir:nk*(1-p1)});          /* proyek yang masih punya pekerjaan di awal periode */
+    /* HUTANG KERJA: sudah ditagih 100% sebelum periode, tetapi pekerjaan belum diakui selesai — BAST jatuh pada/setelah awal periode,
+       atau BAST belum ada (status belum selesai). Nilai rupiahnya sudah terealisasi saat penagihan, jadi di sini Rp 0 (tidak dihitung dua kali);
+       proyek tetap ditampilkan dan BAST yang jatuh di dalam periode dihitung sebagai "terselesaikan". */
+    let hut=null;
+    if(lo!=null&&p0>=0.9999&&st!=='BATAL'){
+      const fin=SCW_FIN.has(st.toUpperCase()), ba=fin?scwParseDay(r[C.TGL_BA]):null;
+      if(ba!=null){ if(ba>=lo) hut={d100:f100[k],ba,inP:(hi==null||ba<hi)}; }
+      else if(!fin) hut={d100:f100[k],ba:null,inP:false};
+    }
+    if(p0<0.9999||hut){o.nProyek++; o.nk+=nk;}     /* proyek yang masih punya pekerjaan di awal periode */
+    if(p0<0.9999||p1>p0||hut) o.rows.push({k,nama:pn(r),sc:cl(r[C.PIC_TEK])||'—',area:cl(r[C.AREA]),st,nk,p0,p1,awal:nk*(1-p0),real:nk*(p1-p0),akhir:nk*(1-p1),
+      hut:!!hut,bastIn:!!(hut&&hut.inP),
+      ket:hut?('Hutang kerja: ditagih 100% '+(hut.d100!=null?scwDayStr(hut.d100):'')+(hut.ba!=null?(' · BAST '+scwDayStr(hut.ba)+(hut.inP?' (dalam periode)':' (setelah periode)')):' · BAST belum ada')):''});
     o.target+=nk*(1-p0); o.pencapaian+=nk*(p1-p0); o.outstanding+=nk*(1-p1);
   });
   const arr=Object.values(byK).filter(x=>x.nProyek>0||x.pencapaian>0).sort((a,b)=>b.pencapaian-a.pencapaian);
@@ -3443,7 +3454,8 @@ function mkorModel(f){
 }
 
 let MKOR_OPEN=new Set(), MKOR_VIEW='all';
-const mkorKeep=r=>MKOR_VIEW==='all'||(MKOR_VIEW==='real'?r.real>0.5:r.real<=0.5);
+const mkorReal=r=>r.real>0.5||r.bastIn;
+const mkorKeep=r=>MKOR_VIEW==='all'||(MKOR_VIEW==='real'?mkorReal(r):!mkorReal(r));
 function mkorToggle(kw){ if(MKOR_OPEN.has(kw)) MKOR_OPEN.delete(kw); else MKOR_OPEN.add(kw); buildMkorChart(); }
 function mkorSetView(v){ MKOR_VIEW=v; buildMkorChart(); }
 function mkorOpenAll(){ const d=window._MKOR_DATA||[]; if(MKOR_OPEN.size>=d.length) MKOR_OPEN.clear(); else d.forEach(x=>MKOR_OPEN.add(x.kw)); buildMkorChart(); }
@@ -3453,9 +3465,9 @@ function mkorDetail(x){
   const rs=x.rows.filter(mkorKeep).sort((a,b)=>b.real-a.real||b.awal-a.awal||a.k.localeCompare(b.k));
   if(!rs.length) return '<div class="scw-empty" style="padding:14px">Tidak ada proyek untuk pilihan ini.</div>';
   const t=rs.reduce((a,r)=>({nk:a.nk+r.nk,awal:a.awal+r.awal,real:a.real+r.real,akhir:a.akhir+r.akhir}),{nk:0,awal:0,real:0,akhir:0});
-  return `<table class="scw-table"><thead><tr><th>Kode</th><th>Proyek</th><th>SC Teknik</th><th>Status</th><th class="r">Nilai Kontrak</th><th class="r">Progress</th><th class="r">Outstanding Awal</th><th class="r">Realisasi</th><th class="r">Outstanding Akhir</th></tr></thead><tbody>`+
-   rs.map(r=>`<tr><td><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.k)}</a></td><td title="${scwEsc(r.nama)}" style="max-width:300px;overflow:hidden;text-overflow:ellipsis"><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.nama)}</a></td><td>${scwEsc(r.sc)}</td><td>${scwEsc(r.st)}</td><td class="r">${scwRp(r.nk)}</td><td class="r">${mkorPct(r.p0)} → ${mkorPct(r.p1)}</td><td class="r">${scwRp(r.awal)}</td><td class="r" style="${r.real>0.5?'color:var(--green);font-weight:700':''}">${scwRp(r.real)}</td><td class="r">${scwRp(r.akhir)}</td></tr>`).join('')+
-   `<tr class="tot"><td colspan="4">TOTAL · ${rs.length} proyek</td><td class="r">${scwRp(t.nk)}</td><td></td><td class="r">${scwRp(t.awal)}</td><td class="r">${scwRp(t.real)}</td><td class="r">${scwRp(t.akhir)}</td></tr></tbody></table>`;
+  return `<table class="scw-table"><thead><tr><th>Kode</th><th>Proyek</th><th>SC Teknik</th><th>Status</th><th class="r">Nilai Kontrak</th><th class="r">Progress</th><th class="r">Outstanding Awal</th><th class="r">Realisasi</th><th class="r">Outstanding Akhir</th><th>Keterangan</th></tr></thead><tbody>`+
+   rs.map(r=>`<tr><td><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.k)}</a></td><td title="${scwEsc(r.nama)}" style="max-width:300px;overflow:hidden;text-overflow:ellipsis"><a href="#" class="scw-lnk" onclick="scwOpenProj(${jsq(r.k)});return false">${scwEsc(r.nama)}</a></td><td>${scwEsc(r.sc)}</td><td>${scwEsc(r.st)}</td><td class="r">${scwRp(r.nk)}</td><td class="r">${mkorPct(r.p0)} → ${mkorPct(r.p1)}</td><td class="r">${scwRp(r.awal)}</td><td class="r" style="${r.real>0.5?'color:var(--green);font-weight:700':''}">${scwRp(r.real)}</td><td class="r">${scwRp(r.akhir)}</td><td style="font-size:11px;color:${r.hut?'var(--amber)':'var(--text3)'};white-space:nowrap">${scwEsc(r.ket||'')}</td></tr>`).join('')+
+   `<tr class="tot"><td colspan="4">TOTAL · ${rs.length} proyek</td><td class="r">${scwRp(t.nk)}</td><td></td><td class="r">${scwRp(t.awal)}</td><td class="r">${scwRp(t.real)}</td><td class="r">${scwRp(t.akhir)}</td><td></td></tr></tbody></table>`;
 }
 
 /* Monitoring Korwil → Excel: Ringkasan · Rincian Proyek (semua proyek ditarget, sesuai periode & filter) · Info filter */
@@ -3468,7 +3480,7 @@ function mkorExport(){
   korwils.forEach(x=>x.rows.slice().sort((a,b)=>b.real-a.real||b.awal-a.awal||a.k.localeCompare(b.k)).forEach(r=>det.push({
     'Korwil Teknik':x.kw,'Kode':r.k,'Proyek':r.nama,'SC Teknik':r.sc,'Area':r.area,'Status':r.st,'Nilai Kontrak (Rp)':xRp(r.nk),
     'Progress Awal (%)':xPct(r.p0),'Progress Akhir (%)':xPct(r.p1),'Outstanding Awal (Rp)':xRp(r.awal),'Realisasi (Rp)':xRp(r.real),'Outstanding Akhir (Rp)':xRp(r.akhir),
-    'Ditarget':r.awal>0.5?'Ya':'Tidak','Terealisasi':r.real>0.5?'Ya':'Belum'})));
+    'Ditarget':(r.awal>0.5||r.hut)?'Ya':'Tidak','Terealisasi':r.real>0.5?'Ya':(r.bastIn?'Ya (BAST dalam periode)':'Belum'),'Hutang Kerja (ditagih 100%, BAST belum diakui)':r.hut?'Ya':'','Keterangan':r.ket||''})));
   const label=($('mkor-period-label')?.textContent||'').trim();
   const info=[{'Keterangan':'Periode / filter','Isi':label},
     {'Keterangan':'Outstanding Awal','Isi':'Σ nilai kontrak × (1 − progress awal periode)'},
@@ -3541,7 +3553,7 @@ function buildMkorChart(){
     <td></td>
   </tr>`;
   window._MKOR_DATA = korwils.map(x=>({...x}));
-  const nAll=korwils.reduce((a,x)=>a+x.rows.length,0), nReal=korwils.reduce((a,x)=>a+x.rows.filter(r=>r.real>0.5).length,0);
+  const nAll=korwils.reduce((a,x)=>a+x.rows.length,0), nReal=korwils.reduce((a,x)=>a+x.rows.filter(mkorReal).length,0);
   const vb=(v,l)=>`<button type="button" class="${MKOR_VIEW===v?'on':''}" onclick="mkorSetView('${v}')">${l}</button>`;
   $('mkor-views').innerHTML=vb('all','Semua proyek ditarget ('+nAll+')')+vb('real','Terealisasi ('+nReal+')')+vb('belum','Belum terealisasi ('+(nAll-nReal)+')')+
     `<button type="button" onclick="mkorOpenAll()">${MKOR_OPEN.size>=korwils.length&&korwils.length?'Tutup semua':'Buka semua'}</button><span class="hint">Ditarget = proyek yang masih punya pekerjaan di awal periode. Klik baris Korwil untuk melihat proyeknya.</span>`;
