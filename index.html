@@ -224,7 +224,26 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .ef-input:focus,.ef-select:focus,.ef-textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-g)}
 .ef-textarea{resize:vertical;min-height:70px}
 .ef-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ef-actions{display:flex;gap:8px;margin-top:4px}
+.msel{position:relative;display:inline-block}
+.msel-b{background:var(--surf2);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px 26px 6px 10px;cursor:pointer;min-width:130px;max-width:230px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;height:32px}
+.msel-b::after{content:'▾';position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--text3)}
+.msel-b.on{border-color:var(--blue);color:var(--blue)}
+.msel-p{position:absolute;left:0;top:36px;z-index:60;background:var(--surf);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:210px;max-height:340px;overflow:auto;padding:6px}
+.msel-p[hidden]{display:none}
+.msel-act{display:flex;justify-content:space-between;padding:4px 8px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;font-size:11px}
+.msel-act a{color:var(--blue);text-decoration:none;font-weight:600}
+.msel-l label{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:12px;color:var(--text);cursor:pointer}
+.msel-l label:hover{background:var(--surf2)}
+.msel-l input{accent-color:var(--blue);width:15px;height:15px}
+.ef-sec{font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--border)}
+.ef-sec:first-child{border-top:0;margin-top:0}
+.ef-err{background:var(--red-d);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:10px}
+.ef-who{font-size:12px;color:var(--text3);margin-bottom:8px}.ef-who a{color:var(--blue)}
+.ef-note{font-size:11px;color:var(--text3);margin-bottom:10px}
+.ef-g2{grid-template-columns:1fr 1fr}
+@media(max-width:560px){.ef-g2{grid-template-columns:1fr}.ef-g2 .ef-row{grid-column:auto!important}}
+#modal-edit .modal{overflow-y:auto}
+.ef-actions{display:flex;gap:8px;margin-top:12px}
 .ef-btn{flex:1;padding:10px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);border:1px solid;transition:all .2s}
 .ef-btn.save{background:var(--blue);border-color:var(--blue);color:#fff}
 .ef-btn.save:hover{background:#2563eb}
@@ -1111,6 +1130,8 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         </button>
         <div class="scw-dd-panel" id="scw-dd-panel" hidden></div>
       </div>
+      <span class="scw-lbl">Area</span>
+      <div class="msel" id="scw-area" data-all="Semua Area"><button type="button" class="msel-b" onclick="msToggle('scw-area',event)" aria-label="Area">Semua Area</button><div class="msel-p" hidden></div></div>
       <label class="scw-chk"><input type="checkbox" id="scw-zero" checked onchange="buildScWeek()"> Tampilkan SC realisasi 0</label>
       <button type="button" class="scw-dl" onclick="scwExport()" title="Ringkasan SC, rincian proyek per minggu, dan rincian nota">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
@@ -1170,9 +1191,9 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     </div>
     <div class="scw-warn" id="tgt-warn" role="status" hidden></div>
     <div class="scw-bar">
-      <select id="tgt-wil" onchange="buildTarget()" aria-label="Wilayah"><option value="">Semua Wilayah</option></select>
-      <select id="tgt-area" onchange="buildTarget()" aria-label="Area"><option value="">Semua Area</option></select>
-      <select id="tgt-sc" onchange="buildTarget()" aria-label="SC Teknik"><option value="">Semua SC Teknik</option></select>
+      <div class="msel" id="tgt-wil" data-all="Semua Wilayah"><button type="button" class="msel-b" onclick="msToggle('tgt-wil',event)" aria-label="Wilayah">Semua Wilayah</button><div class="msel-p" hidden></div></div>
+      <div class="msel" id="tgt-area" data-all="Semua Area"><button type="button" class="msel-b" onclick="msToggle('tgt-area',event)" aria-label="Area">Semua Area</button><div class="msel-p" hidden></div></div>
+      <div class="msel" id="tgt-sc" data-all="Semua SC Teknik"><button type="button" class="msel-b" onclick="msToggle('tgt-sc',event)" aria-label="SC Teknik">Semua SC Teknik</button><div class="msel-p" hidden></div></div>
       <select id="tgt-stat" onchange="buildTarget()" aria-label="Status"><option value="">Semua Status</option></select>
       <select id="tgt-scope" onchange="buildTarget()" aria-label="Tampilkan">
         <option value="td">Bertarget + di luar proyeksi</option>
@@ -1822,6 +1843,7 @@ async function loadData(manual=false){
     ldP(30,'Memproses data proyek…');
     ALL=parseCSV(t1).slice(1).filter(r=>r.length>5&&cl(r[C.PROYEK]));
     srcSet('db',true,ALL.length);
+    try{applyEditOverlay();}catch(e){}
 
     ldP(40,'Mengambil invoice…');
     try{const r2=await fetchSheet(URL_INV, 3, 2000);if(r2.ok){const t2=await r2.text();INV=parseCSV(t2).slice(1).filter(r=>r.length>5&&cl(r[I.INV]));invOk=true;srcSet('inv',true,INV.length);}else srcSet('inv',false,null,'HTTP '+r2.status);}catch(e){console.warn('INV gagal:',e);srcSet('inv',false,null,e.message);}
@@ -2754,7 +2776,7 @@ function openModal(src,idx){
 
   $('m-title').textContent=pn(r);
   $('m-sub').textContent=kodeStr+' · '+cl(r[C.SPI])+' · Tahun '+cl(r[C.TAHUN])+' · '+cl(r[C.AREA]);
-  $('m-edit-btn').style.display=cl(r[C.STATUS])==='PROGRESS'?'block':'none';
+  $('m-edit-btn').style.display=(EDIT_URL||cl(r[C.STATUS])==='PROGRESS')?'block':'none';
   $('m-body').innerHTML=`
     <div class="m-tabs">
       <div class="m-tab active" onclick="swTab(0)">Detail</div>
@@ -2946,6 +2968,7 @@ function openModalInv(idx){
 
 /* ══ EDIT MODAL ══ */
 function openEdit(){
+  if(EDIT_URL) return openEditLive();
   const r=CURRENT_ROW;if(!r)return;
   $('edit-sub').textContent=pn(r);
   $('edit-form').innerHTML=`
@@ -2994,6 +3017,128 @@ function applyEdit(){
   window.open(SHEET_EDIT_URL,'_blank');
   toast('Google Sheets dibuka — paste data di baris yang sesuai lalu klik Sync','info');
   $('modal-edit').classList.remove('open');
+}
+
+/* ══ EDIT LANGSUNG KE SHEET "list" (lewat Apps Script web app edit_list.gs) ══ */
+const EDIT_URL = '';   /* ← tempel URL web app (…/exec) di sini setelah deploy edit_list.gs. Kosong = mode lama (buka Google Sheets) */
+let EDIT_SESS=null, EDIT_OVERLAY={};
+try{const s=sessionStorage.getItem('edSess'); if(s) EDIT_SESS=JSON.parse(s);}catch(e){}
+const EDIT_FIELDS=[
+  {g:'Proyek'},
+  {k:'PROYEK',h:'NAMA PROYEK',l:'Nama Proyek',t:'t',w:2},
+  {k:'PEKERJAAN',h:'PEKERJAAN',l:'Pekerjaan / Catatan',t:'t',ta:1,w:2},
+  {k:'SPI',h:'NO. SPI',l:'No. SPI',t:'t'},{k:'JENIS',h:'JENIS',l:'Jenis',t:'t'},
+  {k:'WILAYAH',h:'WILAYAH',l:'Wilayah',t:'t'},{k:'AREA',h:'AREA',l:'Area',t:'t'},
+  {k:'REKAN',h:'REKAN KERJA',l:'Rekan Kerja',t:'t'},{k:'RELASI',h:'NAMA RELASI',l:'Nama Relasi',t:'t'},
+  {k:'DOK',h:'DOK SPK/ TERM PAYMENT',l:'Dok SPK / Term Payment',t:'t',ta:1,w:2},
+  {g:'Status & Nilai'},
+  {k:'STATUS',h:'STATUS',l:'Status',t:'s'},{k:'PROGRESS',h:'% PROGRESS',l:'% Progress (0–100)',t:'p'},
+  {k:'NK',h:'NILAI KONTRAK',l:'Nilai Kontrak',t:'n'},{k:'NILAI_SPI',h:'NILAI SPI(dengan relasi )',l:'Nilai SPI',t:'n'},
+  {k:'HPP',h:'HPP',l:'HPP',t:'n'},{k:'RETENSI',h:'NILAI RETENSI',l:'Nilai Retensi',t:'n'},
+  {g:'Tanggal'},
+  {k:'BULAN',h:'BULAN SPI',l:'Tanggal SPI',t:'d'},{k:'TAHUN',h:'TAHUN SPI',l:'Tahun SPI',t:'n'},
+  {k:'TGL_SPK',h:'TGL SPK',l:'Tgl SPK',t:'d'},{k:'START',h:'START',l:'Start',t:'d'},
+  {k:'END',h:'END',l:'End',t:'d'},{k:'TGL_BA',h:'TGL BA/ BAST',l:'Tgl BA / BAST',t:'d'},
+  {k:'TGL_RET',h:'Tgl RETENSI',l:'Tgl Retensi',t:'d'},
+  {g:'Penanggung jawab'},
+  {k:'PIC_SALES',h:'PIC SALES',l:'PIC Sales',t:'t'},{k:'PIC_TEK',h:'PIC TEKNIK',l:'SC Teknik',t:'t'},
+  {k:'KORWIL_TEK',h:'KORWIL TEKNIK',l:'Korwil Teknik',t:'t'},{k:'NO_PO',h:'NO. PO / SPK (relasi ke sandana)',l:'No. PO / SPK',t:'t'},
+  {k:'NO_SO',h:'NO. SO',l:'No. SO',t:'t'}
+];
+function edIso(v){const d=scwParseDay(v); if(d==null) return ''; return new Date(d*86400000).toISOString().slice(0,10);}
+function edInit(f,r){
+  const raw=r[C[f.k]];
+  if(f.t==='d') return edIso(raw);
+  if(f.t==='p'){const n=num(raw); return raw===''||raw==null?'':String(Math.round(n*10000)/100);}
+  if(f.t==='n'){const s=cl(raw); return s===''?'':String(num(raw));}
+  return cl(raw);
+}
+function openEditLive(){
+  const r=CURRENT_ROW; if(!r) return;
+  $('edit-sub').textContent=pn(r);
+  const box=$('modal-edit').querySelector('.modal'); box.classList.add('wide');
+  const nt=$('modal-edit').querySelector('.edit-notice'); if(nt) nt.style.display='none';
+  if(!EDIT_SESS){ edLoginView(); } else { edFormView(); }
+  $('modal-edit').classList.add('open');
+}
+function edLoginView(msg){
+  $('edit-form').innerHTML=`<div class="edit-notice" style="background:var(--blue-d);border-color:var(--blue);color:var(--text2)">🔐 Edit hanya untuk pengguna ber-role <b>ADMIN</b> atau <b>EDITOR</b>. Masuk dengan email dan PIN yang diberikan admin.</div>
+    ${msg?`<div class="ef-err">${scwEsc(msg)}</div>`:''}
+    <div class="ef-row"><div class="ef-label">Email</div><input class="ef-input" id="ed-email" type="email" autocomplete="username" inputmode="email"></div>
+    <div class="ef-row"><div class="ef-label">PIN</div><input class="ef-input" id="ed-pin" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')edLogin()"></div>
+    <div class="ef-actions"><button class="ef-btn cancel" onclick="closeEdit()">Batal</button><button class="ef-btn save" id="ed-login-btn" onclick="edLogin()">Masuk</button></div>`;
+}
+async function edPost(body){
+  const res=await fetch(EDIT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+  return res.json();
+}
+async function edLogin(){
+  const email=$('ed-email').value.trim(), pin=$('ed-pin').value; if(!email||!pin){edLoginView('Isi email dan PIN');return;}
+  const b=$('ed-login-btn'); b.disabled=true; b.textContent='Memeriksa…';
+  try{
+    const j=await edPost({action:'login',email,pin});
+    if(!j.ok){edLoginView(j.error||'Gagal masuk');return;}
+    EDIT_SESS={email:j.email,pin,role:j.role};
+    try{sessionStorage.setItem('edSess',JSON.stringify(EDIT_SESS));}catch(e){}
+    edFormView();
+  }catch(e){edLoginView('Tidak bisa menghubungi server edit: '+e.message);}
+}
+function edLogout(){EDIT_SESS=null;try{sessionStorage.removeItem('edSess');}catch(e){} edLoginView();}
+function edFormView(msg){
+  const r=CURRENT_ROW; if(!r) return;
+  const STS=['PROGRESS','FINISH','FINISH RETENSI','RETENSI','BATAL'];
+  let html=`<div class="ef-who">Masuk sebagai <b>${scwEsc(EDIT_SESS.email)}</b> · ${scwEsc(EDIT_SESS.role)} · <a href="javascript:edLogout()">Keluar</a></div>${msg?`<div class="ef-err">${scwEsc(msg)}</div>`:''}<div class="ef-note">Kolom berumus (durasi, delay, tertagih, audit, dll.) tidak bisa diedit. Hanya kolom yang Anda ubah yang dikirim. Kode proyek <b>${scwEsc(cl(r[C.KODE]))}</b>.</div><div class="ef-grid ef-g2">`;
+  EDIT_FIELDS.forEach(f=>{
+    if(f.g){html+=`</div><div class="ef-sec">${f.g}</div><div class="ef-grid ef-g2">`;return;}
+    const v=edInit(f,r), id='ef-'+f.k, span=f.w===2?' style="grid-column:1/-1"':'';
+    let inp;
+    if(f.t==='s') inp=`<select class="ef-select" id="${id}">${STS.map(s=>`<option ${v.toUpperCase()===s?'selected':''}>${s}</option>`).join('')}${STS.includes(v.toUpperCase())?'':`<option selected>${scwEsc(v)}</option>`}</select>`;
+    else if(f.ta) inp=`<textarea class="ef-textarea" id="${id}">${scwEsc(v)}</textarea>`;
+    else if(f.t==='d') inp=`<input class="ef-input" id="${id}" type="date" value="${v}">`;
+    else if(f.t==='n'||f.t==='p') inp=`<input class="ef-input" id="${id}" type="number" step="any" inputmode="decimal" value="${v}">`;
+    else inp=`<input class="ef-input" id="${id}" value="${scwEsc(v)}">`;
+    html+=`<div class="ef-row"${span}><div class="ef-label">${f.l}</div>${inp}</div>`;
+  });
+  html+=`</div><div class="ef-actions"><button class="ef-btn cancel" onclick="closeEdit()">Batal</button><button class="ef-btn save" id="ed-save-btn" onclick="edSave()">Simpan ke Sheet</button></div>`;
+  $('edit-form').innerHTML=html;
+}
+async function edSave(){
+  const r=CURRENT_ROW; if(!r||!EDIT_SESS) return;
+  const changes={}, expected={}, newVals={};
+  for(const f of EDIT_FIELDS){
+    if(f.g) continue;
+    const el=$('ef-'+f.k); if(!el) continue;
+    const a=edInit(f,r); let b=(el.value||'').trim();
+    if(f.t==='s') b=b.toUpperCase();
+    if(String(a).trim()===b) continue;
+    let send=b;
+    if(f.t==='p'&&b!==''){const x=parseFloat(b); if(isNaN(x)||x<0||x>150){edFormView('% Progress harus 0–100');return;} send=String(Math.round(x*100)/10000);}
+    if(f.t==='n'&&b!==''&&isNaN(Number(b))){edFormView(f.l+' harus angka');return;}
+    changes[f.h]=send; newVals[f.k]=send; if(f.t==='t'||f.t==='s') expected[f.h]=a;
+  }
+  if(!Object.keys(changes).length){toast('Tidak ada perubahan','info');return;}
+  if(changes['STATUS']==='BATAL'&&!confirm('Ubah status proyek menjadi BATAL?')) return;
+  const btn=$('ed-save-btn'); btn.disabled=true; btn.textContent='Menyimpan…';
+  try{
+    const j=await edPost({action:'save',email:EDIT_SESS.email,pin:EDIT_SESS.pin,kode:cl(r[C.KODE]),changes,expected});
+    if(!j.ok){ if(/PIN|Email|akun/i.test(j.error||'')){EDIT_SESS=null;try{sessionStorage.removeItem('edSess');}catch(e){} edLoginView(j.error);} else edFormView(j.error||'Gagal menyimpan'); return; }
+    const kk=normKode(r[C.KODE]); EDIT_OVERLAY[kk]=EDIT_OVERLAY[kk]||{};
+    Object.entries(newVals).forEach(([k,v])=>{r[C[k]]=v; EDIT_OVERLAY[kk][C[k]]={v,t:Date.now()};});
+    closeEdit(); closeModal();
+    try{buildAll();}catch(e){console.error(e);}
+    toast('Tersimpan ke sheet list ('+j.saved+' kolom). db ikut diperbarui otomatis.','ok');
+    try{openModal('kode',kk);}catch(e){}
+  }catch(e){edFormView('Tidak bisa menghubungi server edit: '+e.message);}
+}
+/* Google meng-cache ekspor CSV beberapa menit → tampilkan hasil edit lokal sampai data segar */
+function applyEditOverlay(){
+  const now=Date.now(), idx={};
+  ALL.forEach(r=>{idx[normKode(r[C.KODE])]=r;});
+  Object.keys(EDIT_OVERLAY).forEach(k=>{
+    const row=idx[k], o=EDIT_OVERLAY[k];
+    Object.keys(o).forEach(c=>{ if(now-o[c].t>15*60000) delete o[c]; else if(row) row[c]=o[c].v; });
+    if(!Object.keys(o).length) delete EDIT_OVERLAY[k];
+  });
 }
 
 /* ══ EXPORT EXCEL ══ */
@@ -4059,7 +4204,7 @@ function scwResetMaster(){
 function scwBuildModel(){
   const y=+$('scw-thn').value, m=+$('scw-bln').value;
   const weeks=scwWeeks(y,m), sel=weeks.filter(w=>SCW_SEL.has(w.n));
-  const showZero=$('scw-zero').checked;
+  const showZero=$('scw-zero').checked, areaSel=msGet('scw-area'), inArea=a=>!areaSel.size||areaSel.has(cl(a).toUpperCase());
   const M={y,m,weeks,sel,rows:[],totals:null,unmapped:0,srcLabel:'Log Progress (Δ% progress × nilai kontrak)'};
   if(!sel.length) return M;
   const master=scwMaster(), mKey={}; master.forEach(m=>mKey[m.key]=m);
@@ -4088,6 +4233,7 @@ function scwBuildModel(){
     let done=fin100[k]!=null?fin100[k]:null;
     if(ba!=null&&(done==null||ba<done)) done=ba;
     if(done==null&&SCW_FIN.has(st)) done=-1e9;   /* status selesai tanpa BAST & tanpa 100% di log: dianggap sudah lama selesai, tidak dihitung */
+    if(!inArea(r[C.AREA])) return;
     projs.push({k,sc,spi,done,fin:SCW_FIN.has(st),area:cl(r[C.AREA]).toUpperCase(),nama:pn(r)});
   });
 
@@ -4130,6 +4276,7 @@ function scwBuildModel(){
   }
   ents.forEach(([k,t,v,ref])=>{
     if(!k||t==null||!v||t<ms||t>lastTo) return;
+    if(areaSel.size&&!(kodeRow[k]&&inArea(kodeRow[k][C.AREA]))) return;
     const sc=kodeSC[k];
     if(!sc){M.unmapped+=v;return;}
     const o=get(sc); o.cumul+=v;
@@ -4140,7 +4287,7 @@ function scwBuildModel(){
     }
   });
 
-  master.forEach(m=>{const o=get(m.name); o.master=true; if(m.area) o.fixedArea=m.area;});   /* SC di daftar master selalu ada */
+  if(!areaSel.size) master.forEach(m=>{const o=get(m.name); o.master=true; if(m.area) o.fixedArea=m.area;});   /* dengan filter area, hanya SC yang punya proyek/realisasi di area itu */   /* SC di daftar master selalu ada */
   const rows=Object.values(S).filter(o=>{
     if(o.master&&showZero) return true;
     const hasP=sel.some(w=>(o.wk[w.n]||{}).proyek>0);
@@ -4160,12 +4307,13 @@ function scwBuildModel(){
 }
 
 function scwPeriodText(M){
-  return M.sel.length?M.sel.map(w=>'W'+w.n+' ('+w.label+')').join(' · '):'—';
+  const ar=msGet('scw-area'); return (M.sel.length?M.sel.map(w=>'W'+w.n+' ('+w.label+')').join(' · '):'—')+(ar.size?' · Area: '+[...ar].join(', '):'');
 }
 
 function buildScWeek(){
   if(!ALL.length) return;
   initScWeek();
+  if(!MS_VALS['scw-area']) msFill('scw-area',[...new Set(ALL.map(r=>cl(r[C.AREA]).toUpperCase()).filter(Boolean))].sort());
   const M=SCW_MODEL=scwBuildModel(), sel=M.sel;
   const wEl=$('scw-warn'); if(M.warn){wEl.textContent='⚠️ '+M.warn;wEl.hidden=false;}else wEl.hidden=true;
   $('scw-sub').textContent=SCW_MONTHS[M.m]+' '+M.y+' · '+(sel.length?scwPeriodText(M):'pilih minimal 1 minggu');
@@ -4521,23 +4669,47 @@ function tgtAgg(rows){
 }
 const tgtBadge=s=>`<span class="tgt-b ${TGT_STATUS_CLS[s]||'nil'}" title="${scwEsc(TGT_STATUS_LBL[s]||s)}">${scwEsc(s==='-'?'—':s)}</span>`;
 function tgtFiltered(M,noScope){
-  const g=id=>($(id)||{}).value||'', wil=g('tgt-wil'), area=g('tgt-area'), sc=g('tgt-sc'), st=g('tgt-stat'), scope=noScope?'all':(g('tgt-scope')||'td'), q=g('tgt-q').trim().toLowerCase();
+  const g=id=>($(id)||{}).value||'', wil=msGet('tgt-wil'), area=msGet('tgt-area'), sc=msGet('tgt-sc'), st=g('tgt-stat'), scope=noScope?'all':(g('tgt-scope')||'td'), q=g('tgt-q').trim().toLowerCase();
   return M.rows.filter(r=>{
     if(scope==='t'&&!r.isT) return false;
     if(scope==='td'&&!(r.isT||r.status.startsWith('TERCAPAI DILUAR'))) return false;
-    if(wil&&r.wil!==wil) return false; if(area&&r.area!==area) return false; if(sc&&r.sc!==sc) return false; if(st&&r.status!==st) return false;
+    if(wil.size&&!wil.has(r.wil)) return false; if(area.size&&!area.has(r.area)) return false; if(sc.size&&!sc.has(r.sc)) return false; if(st&&r.status!==st) return false;
     if(TGT_WK.size&&!TGT_WK.has(r.week)) return false;
     if(q&&!(r.nama.toLowerCase().includes(q)||r.k.includes(q))) return false;
     return true;
   });
 }
+/* ══ DROPDOWN CENTANG (multi-pilih) ══ */
+const MS_SEL={}, MS_VALS={}, MS_CB={'scw-area':()=>buildScWeek()};
+const msGo=id=>{(MS_CB[id]||(()=>buildTarget(true)))();};
+function msGet(id){return MS_SEL[id]||(MS_SEL[id]=new Set());}
+function msLabel(id){
+  const el=$(id), S=msGet(id), all=el.dataset.all, b=el.querySelector('.msel-b'), n=S.size;
+  b.textContent=n===0?all:(n<=2?[...S].join(', '):n+' dipilih'); b.classList.toggle('on',n>0); b.title=n?[...S].join(', '):'';
+}
+function msFill(id,vals,keepFn){
+  MS_VALS[id]=vals; const S=msGet(id); [...S].forEach(v=>{if(!vals.includes(v)) S.delete(v);});
+  const p=$(id).querySelector('.msel-p');
+  p.innerHTML=`<div class="msel-act"><a href="javascript:msAll('${id}')">Pilih semua</a><a href="javascript:msClear('${id}')">Kosongkan</a></div><div class="msel-l">`+
+    vals.map((v,i)=>`<label><input type="checkbox" ${S.has(v)?'checked':''} onchange="msPick('${id}',${i},this.checked)"><span>${scwEsc(v)}</span></label>`).join('')+'</div>';
+  msLabel(id);
+}
+function msPick(id,i,on){const S=msGet(id), v=MS_VALS[id][i]; if(on) S.add(v); else S.delete(v); msLabel(id); msGo(id);}
+function msAll(id){MS_SEL[id]=new Set(MS_VALS[id]||[]); msFill(id,MS_VALS[id]||[]); msGo(id);}
+function msClear(id){MS_SEL[id]=new Set(); msFill(id,MS_VALS[id]||[]); msGo(id);}
+function msToggle(id,e){
+  e.stopPropagation(); const p=$(id).querySelector('.msel-p'), open=p.hidden;
+  document.querySelectorAll('.msel-p').forEach(x=>x.hidden=true); p.hidden=!open;
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.msel')) document.querySelectorAll('.msel-p').forEach(x=>x.hidden=true);});
+
 function tgtFillSelect(id,vals,all){
   const el=$(id), cur=el.value; el.innerHTML=`<option value="">${all}</option>`+vals.map(v=>`<option value="${scwEsc(v)}">${scwEsc(v)}</option>`).join(''); if(vals.includes(cur)) el.value=cur;
 }
 function tgtView(v){TGT_VIEW=v; document.querySelectorAll('#tgt-tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); buildTarget(true);}
 function tgtToggleWk(n){ if(TGT_WK.has(n)) TGT_WK.delete(n); else TGT_WK.add(n); buildTarget(true); }
 function tgtSort(k){ TGT_SORT=TGT_SORT.k===k?{k,d:-TGT_SORT.d}:{k,d:(k==='td'||k==='sc'||k==='nama')?1:-1}; buildTarget(true); }
-function tgtPickSC(sc){ $('tgt-sc').value=sc; tgtView('proyek'); }
+function tgtPickSC(sc){ MS_SEL['tgt-sc']=new Set([sc]); msFill('tgt-sc',MS_VALS['tgt-sc']||[sc]); tgtView('proyek'); }
 function tgtPickStatus(s){ $('tgt-stat').value=$('tgt-stat').value===s?'':s; buildTarget(true); }
 
 function buildTarget(keepOpts){
@@ -4548,9 +4720,9 @@ function buildTarget(keepOpts){
   if(M.err){ wEl.textContent='⚠️ '+M.err; wEl.hidden=false; $('tgt-kpi').innerHTML=''; $('tgt-sts').innerHTML=''; $('tgt-scroll').innerHTML='<div class="scw-empty">Data target belum tersedia.</div>'; $('tgt-note').textContent=''; $('tgt-sub').textContent='Target teknik dari sheet projects'; return; }
   wEl.textContent=M.warn?'⚠️ '+M.warn:''; wEl.hidden=!M.warn;
   if(!keepOpts){
-    tgtFillSelect('tgt-wil',[...new Set(M.rows.map(r=>r.wil))].sort(),'Semua Wilayah');
-    tgtFillSelect('tgt-area',[...new Set(M.rows.map(r=>r.area))].sort(),'Semua Area');
-    tgtFillSelect('tgt-sc',[...new Set(M.rows.map(r=>r.sc))].sort(),'Semua SC Teknik');
+    msFill('tgt-wil',[...new Set(M.rows.map(r=>r.wil))].sort(),'Semua Wilayah');
+    msFill('tgt-area',[...new Set(M.rows.map(r=>r.area))].sort(),'Semua Area');
+    msFill('tgt-sc',[...new Set(M.rows.map(r=>r.sc))].sort(),'Semua SC Teknik');
     const sel=$('tgt-stat'), cur=sel.value; sel.innerHTML='<option value="">Semua Status</option>'+TGT_STATUSES.map(s=>`<option value="${scwEsc(s)}">${scwEsc(s==='-'?'— (belum jatuh tempo)':s)}</option>`).join(''); sel.value=cur;
   }
   $('tgt-wk').innerHTML=[1,2,3,4,5].map(n=>`<button type="button" class="${TGT_WK.has(n)?'on':''}" onclick="tgtToggleWk(${n})" title="${['tgl 1–8','tgl 9–15','tgl 16–22','tgl 23–30','tgl 31'][n-1]}">W${n}</button>`).join('');
@@ -4653,7 +4825,7 @@ function tgtDownloadImage(){
   const M=TGT_MODEL; const tbl=document.querySelector('#tgt-scroll table');
   if(!M||M.err||!tbl){toast('Tidak ada tabel untuk diunduh','err');return;}
   const G=tgtGrid(tbl), VN={proyek:'Per Proyek',sc:'Per SC Teknik',wil:'Realisasi per Wilayah / Area',wk:'Per Week'}[TGT_VIEW];
-  const fl=[]; const sv=id=>($(id)||{}).value||''; ['tgt-wil','tgt-area','tgt-sc','tgt-stat'].forEach(id=>{if(sv(id)) fl.push(sv(id));});
+  const fl=[]; const sv=id=>($(id)||{}).value||''; ['tgt-wil','tgt-area','tgt-sc'].forEach(id=>{const S=msGet(id); if(S.size) fl.push([...S].join(', '));}); if(sv('tgt-stat')) fl.push(sv('tgt-stat'));
   if(TGT_WK.size) fl.push([...TGT_WK].sort().map(n=>'W'+n).join(', ')); if(sv('tgt-q').trim()) fl.push('"'+sv('tgt-q').trim()+'"');
   const now=new Date(), upd=String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0');
   const title='LAPORAN TARGET TEKNIK — '+SCW_MONTHS[M.m].toUpperCase()+' '+M.y, sub=VN+(fl.length?' · Filter: '+fl.join(' · '):' · Semua data');
