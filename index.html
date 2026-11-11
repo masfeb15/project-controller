@@ -551,6 +551,14 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
   .mpdf-legend span{display:flex;align-items:center;gap:4px}
   .mpdf-legend-dot{width:10px;height:4px;border-radius:2px;display:inline-block}
   .mpdf-table-wrap,.mpdf-kpi{page-break-inside:avoid}
+  /* teks tabel selalu gelap (sebelumnya mewarisi warna tema gelap → pucat di kertas putih) */
+  #mkor-pdf-overlay .mpdf-table td{color:#1f2937}
+  #mkor-pdf-overlay .mpdf-table td.mpdf-pct-ok{color:#059669}
+  #mkor-pdf-overlay .mpdf-table td.mpdf-pct-warn{color:#d97706}
+  #mkor-pdf-overlay .mpdf-table td.mpdf-pct-low{color:#dc2626}
+  #mkor-pdf-overlay .mpdf-table td{padding:5px 6px}
+  #mkor-pdf-overlay .mpdf-chart svg{width:100%!important;height:auto!important;display:block}
+  #mkor-pdf-overlay .mpdf-chart{page-break-inside:avoid}
 }
 @page{margin:10mm;size:A4 landscape}
 
@@ -3816,7 +3824,11 @@ function downloadMkorPDF(){
   document.title = 'Monitoring Realisasi Korwil Teknik - ' + period;
   /* aturan cetak "sembunyikan semua kecuali overlay" hanya berlaku selama cetak Korwil (kelas ini), supaya cetak halaman lain tidak kosong */
   document.body.classList.add('print-mkor');
-  const done=()=>{ window.removeEventListener('afterprint',done); document.body.classList.remove('print-mkor'); document.title=title; overlay.innerHTML=''; };
+  /* kertas: A4 potret, satu halaman. Bila korwil sangat banyak, isi diperkecil (zoom) agar tetap muat */
+  const pg=document.createElement('style'); pg.id='mkor-page-style'; pg.textContent='@page{size:A4 portrait;margin:8mm}'; document.head.appendChild(pg);
+  const estMm=22+36+(korwils.length+2)*8.2+(165+korwils.length*42)/900*194*0.98;
+  overlay.style.zoom=estMm>278?Math.max(0.5,278/estMm).toFixed(3):'';
+  const done=()=>{ window.removeEventListener('afterprint',done); document.body.classList.remove('print-mkor'); pg.remove(); overlay.style.zoom=''; document.title=title; overlay.innerHTML=''; };
   window.addEventListener('afterprint',done);
   setTimeout(()=>{ if(document.body.classList.contains('print-mkor')) done(); }, 120000);
   window.print();
