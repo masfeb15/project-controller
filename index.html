@@ -3020,7 +3020,7 @@ function applyEdit(){
 }
 
 /* ══ EDIT LANGSUNG KE SHEET "list" (lewat Apps Script web app edit_list.gs) ══ */
-const EDIT_URL = '';   /* ← tempel URL web app (…/exec) di sini setelah deploy edit_list.gs. Kosong = mode lama (buka Google Sheets) */
+const EDIT_URL = 'https://script.google.com/macros/s/AKfycbzn3cjz8GBrgaH8nOs8WYwgqpCW-zEWNUkv8CA83rJrCz3X0FHCXOCgRtc7HmuXqHO2/exec';   /* ← tempel URL web app (…/exec) di sini setelah deploy edit_list.gs. Kosong = mode lama (buka Google Sheets) */
 let EDIT_SESS=null, EDIT_OVERLAY={};
 try{const s=sessionStorage.getItem('edSess'); if(s) EDIT_SESS=JSON.parse(s);}catch(e){}
 const EDIT_FIELDS=[
