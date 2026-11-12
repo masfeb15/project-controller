@@ -3020,7 +3020,7 @@ function applyEdit(){
 }
 
 /* ══ EDIT LANGSUNG KE SHEET "list" (lewat Apps Script web app edit_list.gs) ══ */
-const EDIT_URL = 'https://script.google.com/macros/s/AKfycbzn3cjz8GBrgaH8nOs8WYwgqpCW-zEWNUkv8CA83rJrCz3X0FHCXOCgRtc7HmuXqHO2/exec';   /* ← tempel URL web app (…/exec) di sini setelah deploy edit_list.gs. Kosong = mode lama (buka Google Sheets) */
+const EDIT_URL = '';   /* ← tempel URL web app (…/exec) di sini setelah deploy edit_list.gs. Kosong = mode lama (buka Google Sheets) */
 let EDIT_SESS=null, EDIT_OVERLAY={};
 try{const s=sessionStorage.getItem('edSess'); if(s) EDIT_SESS=JSON.parse(s);}catch(e){}
 const EDIT_FIELDS=[
@@ -3045,6 +3045,7 @@ const EDIT_FIELDS=[
   {k:'KORWIL_TEK',h:'KORWIL TEKNIK',l:'Korwil Teknik',t:'t'},{k:'NO_PO',h:'NO. PO / SPK (relasi ke sandana)',l:'No. PO / SPK',t:'t'},
   {k:'NO_SO',h:'NO. SO',l:'No. SO',t:'t'}
 ];
+function edRowKey(r){const k=normKode(r[C.KODE]); return k||('SPI:'+cl(r[C.SPI])+'|'+cl(r[C.TAHUN])+'|'+cl(r[C.PROYEK]).toUpperCase());}
 function edIso(v){const d=scwParseDay(v); if(d==null) return ''; return new Date(d*86400000).toISOString().slice(0,10);}
 function edInit(f,r){
   const raw=r[C[f.k]];
@@ -3087,7 +3088,7 @@ function edLogout(){EDIT_SESS=null;try{sessionStorage.removeItem('edSess');}catc
 function edFormView(msg){
   const r=CURRENT_ROW; if(!r) return;
   const STS=['PROGRESS','FINISH','FINISH RETENSI','RETENSI','BATAL'];
-  let html=`<div class="ef-who">Masuk sebagai <b>${scwEsc(EDIT_SESS.email)}</b> · ${scwEsc(EDIT_SESS.role)} · <a href="javascript:edLogout()">Keluar</a></div>${msg?`<div class="ef-err">${scwEsc(msg)}</div>`:''}<div class="ef-note">Kolom berumus (durasi, delay, tertagih, audit, dll.) tidak bisa diedit. Hanya kolom yang Anda ubah yang dikirim. Kode proyek <b>${scwEsc(cl(r[C.KODE]))}</b>.</div><div class="ef-grid ef-g2">`;
+  let html=`<div class="ef-who">Masuk sebagai <b>${scwEsc(EDIT_SESS.email)}</b> · ${scwEsc(EDIT_SESS.role)} · <a href="javascript:edLogout()">Keluar</a></div>${msg?`<div class="ef-err">${scwEsc(msg)}</div>`:''}<div class="ef-note">Kolom berumus (durasi, delay, tertagih, audit, dll.) tidak bisa diedit. Hanya kolom yang Anda ubah yang dikirim. ${cl(r[C.KODE])?'Kode proyek <b>'+scwEsc(cl(r[C.KODE]))+'</b>.':'Proyek belum punya KODE — dicari lewat No. SPI + nama proyek.'}</div><div class="ef-grid ef-g2">`;
   EDIT_FIELDS.forEach(f=>{
     if(f.g){html+=`</div><div class="ef-sec">${f.g}</div><div class="ef-grid ef-g2">`;return;}
     const v=edInit(f,r), id='ef-'+f.k, span=f.w===2?' style="grid-column:1/-1"':'';
@@ -3101,6 +3102,7 @@ function edFormView(msg){
   });
   html+=`</div><div class="ef-actions"><button class="ef-btn cancel" onclick="closeEdit()">Batal</button><button class="ef-btn save" id="ed-save-btn" onclick="edSave()">Simpan ke Sheet</button></div>`;
   $('edit-form').innerHTML=html;
+  if(msg){const bx=$('modal-edit').querySelector('.modal'); if(bx) bx.scrollTop=0; toast(msg,'err');}
 }
 async function edSave(){
   const r=CURRENT_ROW; if(!r||!EDIT_SESS) return;
@@ -3120,20 +3122,20 @@ async function edSave(){
   if(changes['STATUS']==='BATAL'&&!confirm('Ubah status proyek menjadi BATAL?')) return;
   const btn=$('ed-save-btn'); btn.disabled=true; btn.textContent='Menyimpan…';
   try{
-    const j=await edPost({action:'save',email:EDIT_SESS.email,pin:EDIT_SESS.pin,kode:cl(r[C.KODE]),changes,expected});
+    const j=await edPost({action:'save',email:EDIT_SESS.email,pin:EDIT_SESS.pin,kode:cl(r[C.KODE]),spi:cl(r[C.SPI]),tahun:cl(r[C.TAHUN]),nama:cl(r[C.PROYEK]),changes,expected});
     if(!j.ok){ if(/PIN|Email|akun/i.test(j.error||'')){EDIT_SESS=null;try{sessionStorage.removeItem('edSess');}catch(e){} edLoginView(j.error);} else edFormView(j.error||'Gagal menyimpan'); return; }
-    const kk=normKode(r[C.KODE]); EDIT_OVERLAY[kk]=EDIT_OVERLAY[kk]||{};
+    const kk=edRowKey(r); EDIT_OVERLAY[kk]=EDIT_OVERLAY[kk]||{};
     Object.entries(newVals).forEach(([k,v])=>{r[C[k]]=v; EDIT_OVERLAY[kk][C[k]]={v,t:Date.now()};});
     closeEdit(); closeModal();
     try{buildAll();}catch(e){console.error(e);}
     toast('Tersimpan ke sheet list ('+j.saved+' kolom). db ikut diperbarui otomatis.','ok');
-    try{openModal('kode',kk);}catch(e){}
+    if(normKode(r[C.KODE])) try{openModal('kode',normKode(r[C.KODE]));}catch(e){}
   }catch(e){edFormView('Tidak bisa menghubungi server edit: '+e.message);}
 }
 /* Google meng-cache ekspor CSV beberapa menit → tampilkan hasil edit lokal sampai data segar */
 function applyEditOverlay(){
   const now=Date.now(), idx={};
-  ALL.forEach(r=>{idx[normKode(r[C.KODE])]=r;});
+  ALL.forEach(r=>{idx[edRowKey(r)]=r;});
   Object.keys(EDIT_OVERLAY).forEach(k=>{
     const row=idx[k], o=EDIT_OVERLAY[k];
     Object.keys(o).forEach(c=>{ if(now-o[c].t>15*60000) delete o[c]; else if(row) row[c]=o[c].v; });
