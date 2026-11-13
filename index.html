@@ -3592,6 +3592,9 @@ function mkorModel(f){
       const p=scwPct(e[LP.PCT_BARU]); if(p>p1) p1=p; if(lo!=null&&t<lo&&p>p0) p0=p;
     });
     p0=Math.min(1,p0); p1=Math.min(1,Math.max(p0,p1));
+    /* Proyek berstatus selesai dengan BAST sebelum awal periode = sudah tuntas sebelum periode, walau log_progress tidak pernah mencatat 100%
+       (mis. invoice tercatat 0%→0%). Bukan outstanding periode ini. */
+    if(lo!=null&&p0<0.9999&&SCW_FIN.has(st.toUpperCase())){const baF=scwParseDay(r[C.TGL_BA]); if(baF!=null&&baF<lo){p0=1;p1=1;}}
     if(f.src==='lama'&&baru) return; if(f.src==='baru'&&!baru) return;
     const o=byK[kw]||(byK[kw]={kw,nProyek:0,nBaru:0,nk:0,awal:0,baru:0,target:0,pencapaian:0,outstanding:0,rows:[]});
     /* HUTANG KERJA: sudah ditagih 100% sebelum periode, tetapi pekerjaan belum diakui selesai — BAST jatuh pada/setelah awal periode,
