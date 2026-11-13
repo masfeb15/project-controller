@@ -1042,6 +1042,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
       <select id="pic-area" onchange="buildPIC()"><option value="">Semua Area</option></select>
       <select id="pic-korwil" onchange="buildPIC()"><option value="">Semua Korwil Teknik</option></select>
       <select id="pic-sc" onchange="buildPIC()"><option value="">Semua SC Teknik</option></select>
+      <select id="pic-src" onchange="buildPIC()" title="Pisahkan proyek outstanding lama dari proyek baru (SPI terbit di periode) pada blok Monitoring Realisasi"><option value="">Outstanding + Proyek Baru</option><option value="lama">Outstanding lama saja (SPI sebelum periode)</option><option value="baru">Proyek baru saja (SPI dalam periode)</option></select>
       <button class="fb-clear" onclick="clearPICFilter()">✕ Reset</button>
     </div>
     <!-- ═══ MONITORING REALISASI KORWIL ═══ -->
@@ -2719,7 +2720,7 @@ function clearPICFilter(){
   // Reset semua status chips ke aktif
   PIC_STATUS_SEL=new Set(['PROGRESS','FINISH','FINISH RETENSI','RETENSI','BATAL']);
   document.querySelectorAll('[data-status]').forEach(el=>el.classList.add('active'));
-  ['pic-area','pic-korwil','pic-sc'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  ['pic-area','pic-korwil','pic-sc','pic-src'].forEach(id=>{const el=$(id);if(el)el.value='';});
   buildPIC();
 }
 
@@ -3591,6 +3592,7 @@ function mkorModel(f){
       const p=scwPct(e[LP.PCT_BARU]); if(p>p1) p1=p; if(lo!=null&&t<lo&&p>p0) p0=p;
     });
     p0=Math.min(1,p0); p1=Math.min(1,Math.max(p0,p1));
+    if(f.src==='lama'&&baru) return; if(f.src==='baru'&&!baru) return;
     const o=byK[kw]||(byK[kw]={kw,nProyek:0,nBaru:0,nk:0,awal:0,baru:0,target:0,pencapaian:0,outstanding:0,rows:[]});
     /* HUTANG KERJA: sudah ditagih 100% sebelum periode, tetapi pekerjaan belum diakui selesai — BAST jatuh pada/setelah awal periode,
        atau BAST belum ada (status belum selesai). Nilai rupiahnya sudah terealisasi saat penagihan, jadi di sini Rp 0 (tidak dihitung dua kali);
@@ -3639,7 +3641,7 @@ function scPctExport(){
   let y=$('mkor-from-thn')?.value, fb=$('mkor-from-bln')?.value, tb=$('mkor-to-bln')?.value, ty=$('mkor-to-thn')?.value;
   if(!(y&&fb&&tb&&ty&&y===ty&&BLN_ORDER[fb]<=BLN_ORDER[tb])){ y='2026'; fb='Jan'; tb='Oct'; }
   const months=MON.filter(m=>BLN_ORDER[m]>=BLN_ORDER[fb]&&BLN_ORDER[m]<=BLN_ORDER[tb]);
-  const base={area:$('pic-area')?.value||'',korwil:$('pic-korwil')?.value||'',sc:$('pic-sc')?.value||''};
+  const base={area:$('pic-area')?.value||'',korwil:$('pic-korwil')?.value||'',sc:$('pic-sc')?.value||'',src:$('pic-src')?.value||''};
   const agg=(model)=>{const m=new Map(); model.forEach(kw=>kw.rows.forEach(r=>{const k=r.sc||'—'; const o=m.get(k)||{kw:new Map(),n:0,t:0,r:0}; o.kw.set(kw.kw,(o.kw.get(kw.kw)||0)+1); o.n++; o.t+=r.awal; o.r+=r.real; m.set(k,o);})); return m;};
   const per=months.map(mo=>agg(mkorModel({...base,fromBln:mo,fromThn:y,toBln:mo,toThn:y})));
   const cum=agg(mkorModel({...base,fromBln:fb,fromThn:y,toBln:tb,toThn:y}));
@@ -3700,14 +3702,14 @@ function buildMkorChart(){
   if(!ALL.length) return;
   initMkorFilter();
   const f={fromBln:$('mkor-from-bln')?.value||'',fromThn:$('mkor-from-thn')?.value||'',
-           toBln:$('mkor-to-bln')?.value||'',toThn:$('mkor-to-thn')?.value||'',area:$('pic-area')?.value||'',korwil:$('pic-korwil')?.value||'',sc:$('pic-sc')?.value||''};
+           toBln:$('mkor-to-bln')?.value||'',toThn:$('mkor-to-thn')?.value||'',area:$('pic-area')?.value||'',korwil:$('pic-korwil')?.value||'',sc:$('pic-sc')?.value||'',src:$('pic-src')?.value||''};
   const korwils=mkorModel(f);
 
   /* ── Label periode ── */
   const fLabel = f.fromBln&&f.fromThn ? `${BLN_ID[f.fromBln]||f.fromBln} ${f.fromThn}` : (f.fromThn||f.fromBln||'Awal');
   const tLabel = f.toBln&&f.toThn     ? `${BLN_ID[f.toBln]||f.toBln} ${f.toThn}`       : (f.toThn||f.toBln||'Sekarang');
   const periodLabel = (f.fromBln||f.fromThn||f.toBln||f.toThn) ? `Periode: ${fLabel} — ${tLabel}` : 'Periode: Semua (sampai sekarang)';
-  const pel=$('mkor-period-label'); if(pel) pel.textContent=periodLabel+(f.area?' · Area '+f.area:'')+(f.korwil?' · Korwil '+f.korwil:'')+(f.sc?' · SC '+f.sc:'')+(PIC_STATUS_SEL.size<5?' · Status '+[...PIC_STATUS_SEL].join('+'):'')+(LOG_PROG.length?'':' · ⚠ log progress belum termuat');
+  const pel=$('mkor-period-label'); if(pel) pel.textContent=periodLabel+(f.area?' · Area '+f.area:'')+(f.korwil?' · Korwil '+f.korwil:'')+(f.sc?' · SC '+f.sc:'')+(f.src==='lama'?' · Outstanding lama saja':f.src==='baru'?' · Proyek baru saja':'')+(PIC_STATUS_SEL.size<5?' · Status '+[...PIC_STATUS_SEL].join('+'):'')+(LOG_PROG.length?'':' · ⚠ log progress belum termuat');
 
   /* ── KPI ── */
   const totalReal=korwils.reduce((a,x)=>a+x.pencapaian,0), totalAwal=korwils.reduce((a,x)=>a+x.awal,0), totalBaru=korwils.reduce((a,x)=>a+x.baru,0), totalAkhir=korwils.reduce((a,x)=>a+x.outstanding,0);
