@@ -1052,6 +1052,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
           <div class="mkor-period" id="mkor-period-label">Periode: Semua</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap" class="no-print">
+          <button onclick="scPctExport()" style="background:var(--blue-d);border:1px solid var(--blue);border-radius:7px;color:var(--blue);font-size:11px;padding:6px 11px;cursor:pointer;font-weight:600" title="% pencapaian, realisasi dan target tiap SC Teknik per bulan (mengikuti periode Dari/S.d; default Jan–Okt 2026)">📅 % Progress SC per Bulan</button>
           <button onclick="mkorExport()" style="background:var(--green-d,rgba(16,185,129,.12));border:1px solid var(--green);border-radius:7px;color:var(--green);font-size:11px;padding:6px 11px;cursor:pointer;font-weight:600" title="Ringkasan Korwil + rincian proyek sesuai periode & filter">📊 Download Excel</button>
           <button onclick="downloadMkorPDF()" style="background:var(--red-d);border:1px solid var(--red);border-radius:7px;color:var(--red);font-size:11px;padding:6px 11px;cursor:pointer;font-weight:600">📄 Download PDF</button>
           <button onclick="buildMkorChart()" style="background:var(--surf2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:11px;padding:6px 11px;cursor:pointer">↺ Refresh</button>
@@ -3631,6 +3632,47 @@ function mkorDetail(x){
 }
 
 /* Monitoring Korwil → Excel: Ringkasan · Rincian Proyek (semua proyek ditarget, sesuai periode & filter) · Info filter */
+/* ══ % PROGRESS PER SC TEKNIK PER BULAN (Excel) ══ */
+function scPctExport(){
+  if(!ALL.length){toast('Data belum dimuat','info');return;}
+  const MON=Object.keys(BLN_ORDER);
+  let y=$('mkor-from-thn')?.value, fb=$('mkor-from-bln')?.value, tb=$('mkor-to-bln')?.value, ty=$('mkor-to-thn')?.value;
+  if(!(y&&fb&&tb&&ty&&y===ty&&BLN_ORDER[fb]<=BLN_ORDER[tb])){ y='2026'; fb='Jan'; tb='Oct'; }
+  const months=MON.filter(m=>BLN_ORDER[m]>=BLN_ORDER[fb]&&BLN_ORDER[m]<=BLN_ORDER[tb]);
+  const base={area:$('pic-area')?.value||'',korwil:$('pic-korwil')?.value||'',sc:$('pic-sc')?.value||''};
+  const agg=(model)=>{const m=new Map(); model.forEach(kw=>kw.rows.forEach(r=>{const k=r.sc||'—'; const o=m.get(k)||{kw:new Map(),n:0,t:0,r:0}; o.kw.set(kw.kw,(o.kw.get(kw.kw)||0)+1); o.n++; o.t+=r.awal; o.r+=r.real; m.set(k,o);})); return m;};
+  const per=months.map(mo=>agg(mkorModel({...base,fromBln:mo,fromThn:y,toBln:mo,toThn:y})));
+  const cum=agg(mkorModel({...base,fromBln:fb,fromThn:y,toBln:tb,toThn:y}));
+  const scs=new Set([...cum.keys()]); per.forEach(m=>m.forEach((v,k)=>scs.add(k)));
+  const kwOf=k=>{const best=[];[cum,...per].forEach(m=>{const o=m.get(k); if(o) o.kw.forEach((n,w)=>best.push([w,n]));}); const c=new Map(); best.forEach(([w,n])=>c.set(w,(c.get(w)||0)+n)); return [...c.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,2).join(' / ');};
+  const list=[...scs].sort((a,b)=>((cum.get(b)||{r:0}).r-(cum.get(a)||{r:0}).r)||a.localeCompare(b));
+  const pct=(o)=>o&&o.t>0.5?xPct(o.r/o.t):'';
+  const lbl=m=>(BLN_ID[m]||m)+' '+y;
+  const pRows=[],rRows=[],tRows=[]; let tot={cr:0,ct:0}, totM=months.map(()=>({r:0,t:0}));
+  list.forEach(sc=>{
+    const kw=kwOf(sc), a={'SC Teknik':sc,'Korwil Teknik':kw}, b={...a}, c={...a};
+    months.forEach((mo,i)=>{const o=per[i].get(sc); a[lbl(mo)]=pct(o); b[lbl(mo)]=o?xRp(o.r):0; c[lbl(mo)]=o?xRp(o.t):0; if(o){totM[i].r+=o.r; totM[i].t+=o.t;}});
+    const co=cum.get(sc); const nm='Kumulatif '+(BLN_ID[fb]||fb)+'–'+(BLN_ID[tb]||tb);
+    a[nm]=pct(co); b[nm]=co?xRp(co.r):0; c[nm]=co?xRp(co.t):0; if(co){tot.cr+=co.r;tot.ct+=co.t;}
+    pRows.push(a); rRows.push(b); tRows.push(c);
+  });
+  const nm='Kumulatif '+(BLN_ID[fb]||fb)+'–'+(BLN_ID[tb]||tb);
+  const tp={'SC Teknik':'TOTAL','Korwil Teknik':''}, tr={...tp}, tt={...tp};
+  months.forEach((mo,i)=>{tp[lbl(mo)]=totM[i].t>0.5?xPct(totM[i].r/totM[i].t):''; tr[lbl(mo)]=xRp(totM[i].r); tt[lbl(mo)]=xRp(totM[i].t);});
+  tp[nm]=tot.ct>0.5?xPct(tot.cr/tot.ct):''; tr[nm]=xRp(tot.cr); tt[nm]=xRp(tot.ct);
+  pRows.push(tp); rRows.push(tr); tRows.push(tt);
+  const label=($('mkor-period-label')?.textContent||'');
+  const info=[{'Keterangan':'Periode','Isi':lbl(fb)+' s/d '+lbl(tb)+' (tiap bulan dihitung sendiri-sendiri)'},
+    {'Keterangan':'Filter aktif','Isi':[base.area&&'Area '+base.area,base.korwil&&'Korwil '+base.korwil,base.sc&&'SC '+base.sc,PIC_STATUS_SEL.size<5&&'Status '+[...PIC_STATUS_SEL].join('+')].filter(Boolean).join(' · ')||'Semua'},
+    {'Keterangan':'% Progress','Isi':'Realisasi ÷ Target bulan itu × 100. Kolom Kumulatif = realisasi seluruh periode ÷ target periode (outstanding awal periode + proyek baru)'},
+    {'Keterangan':'Target bulan','Isi':'Σ nilai kontrak × (1 − progress awal bulan) untuk proyek yang SPI-nya terbit sebelum bulan itu, ditambah nilai kontrak proyek yang SPI-nya terbit di bulan itu'},
+    {'Keterangan':'Realisasi','Isi':'Σ nilai kontrak × kenaikan progress dari log_progress; DP/UM/retensi tidak dihitung'},
+    {'Keterangan':'Catatan','Isi':'Kosong pada kolom % = SC tidak punya target di bulan itu'},
+    {'Keterangan':'Diunduh','Isi':new Date().toLocaleString('id-ID')}];
+  xlsxSave([{name:'% Progress per SC',rows:pRows},{name:'Realisasi (Rp)',rows:rRows},{name:'Target (Rp)',rows:tRows},{name:'Info',rows:info}],'Progress-SC-Teknik-per-Bulan-'+y+'-'+fb+'-'+tb+'.xlsx');
+  toast('Excel diunduh: '+list.length+' SC Teknik × '+months.length+' bulan','ok');
+}
+
 function mkorExport(){
   const korwils=window._MKOR_DATA||[];
   if(!korwils.length){toast('Belum ada data Korwil untuk diunduh','info');return;}
