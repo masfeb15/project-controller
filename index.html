@@ -235,6 +235,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .msel-l label{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:12px;color:var(--text);cursor:pointer}
 .msel-l label:hover{background:var(--surf2)}
 .msel-l input{accent-color:var(--blue);width:15px;height:15px}
+.filter-bar .msel-l input{flex:none;min-width:0;width:15px;height:15px;padding:0;margin:0;background:none;border:0}
 .ef-sec{font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--border)}
 .ef-sec:first-child{border-top:0;margin-top:0}
 .ef-err{background:var(--red-d);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:10px}
@@ -873,14 +874,15 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         <option value="RETENSI">Retensi</option>
         <option value="BATAL">Batal</option>
       </select>
-      <select id="df-area" onchange="filterDB()"><option value="">Semua Area</option></select>
+      <div class="msel" id="df-area" data-all="Semua Area"><button type="button" class="msel-b" onclick="msToggle('df-area',event)" aria-label="Area">Semua Area</button><div class="msel-p" hidden></div></div>
       <select id="df-tahun" onchange="filterDB()"><option value="">Semua Tahun</option></select>
       <select id="df-wil" onchange="filterDB()">
         <option value="">Semua Wilayah</option>
         <option value="BARAT">Barat</option>
         <option value="TIMUR">Timur</option>
       </select>
-      <select id="df-jenis" title="Filter Jenis 2" onchange="filterDB()"><option value="">Semua Jenis</option></select>
+      <div class="msel" id="df-jenis" data-all="Semua Jenis"><button type="button" class="msel-b" onclick="msToggle('df-jenis',event)" aria-label="Jenis">Semua Jenis</button><div class="msel-p" hidden></div></div>
+      <div class="msel" id="df-korwil" data-all="Semua Korwil Teknik"><button type="button" class="msel-b" onclick="msToggle('df-korwil',event)" aria-label="Korwil Teknik">Semua Korwil Teknik</button><div class="msel-p" hidden></div></div>
       <!-- Outstanding per tanggal -->
       <div style="display:flex;align-items:center;gap:6px;background:var(--amber-d);border:1px solid var(--amber);border-radius:8px;padding:4px 10px;flex-shrink:0">
         <span style="font-size:10px;font-weight:700;color:var(--amber);white-space:nowrap">📅 Outstanding per:</span>
@@ -2080,14 +2082,16 @@ function buildSidebar(){
   const areas=[...new Set(ALL.map(r=>cl(r[C.AREA])).filter(Boolean))].sort();   /* dipakai dropdown area di tiap halaman */
 
   const tahuns=[...new Set(ALL.map(r=>cl(r[C.TAHUN])).filter(y=>y&&!isNaN(y)))].sort();
-  ['pf-area','df-area','if-area'].forEach(id=>{const s=$(id);if(!s)return;while(s.options.length>1)s.remove(1);areas.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;s.appendChild(o);});});
+  ['pf-area','if-area'].forEach(id=>{const s=$(id);if(!s)return;while(s.options.length>1)s.remove(1);areas.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;s.appendChild(o);});});
   ['pf-tahun','df-tahun'].forEach(id=>{const s=$(id);if(!s)return;while(s.options.length>1)s.remove(1);tahuns.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;s.appendChild(o);});});
   // Populate df-os-thn (outstanding per tahun) - range lebih lebar
   const osThnSel=$('df-os-thn');
   if(osThnSel){while(osThnSel.options.length>1)osThnSel.remove(1);
     [...tahuns,...tahuns.map(y=>String(parseInt(y)+1))].filter((v,i,a)=>a.indexOf(v)===i).sort().forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;osThnSel.appendChild(o);});}
   const jenis=[...new Set(ALL.map(r=>cl(r[C.JENIS2])).filter(Boolean))].sort();
-  ['pf-jenis','df-jenis'].forEach(id=>{const s=$(id);if(!s)return;while(s.options.length>1)s.remove(1);jenis.forEach(j=>{const o=document.createElement('option');o.value=j;o.textContent=j;s.appendChild(o);});});
+  ['pf-jenis'].forEach(id=>{const s=$(id);if(!s)return;while(s.options.length>1)s.remove(1);jenis.forEach(j=>{const o=document.createElement('option');o.value=j;o.textContent=j;s.appendChild(o);});});
+  msFill('df-area',areas); msFill('df-jenis',jenis);
+  msFill('df-korwil',[...new Set(ALL.map(r=>cl(r[C.KORWIL_TEK])).filter(v=>v&&v!=='(kosong)'))].sort((x,y)=>x.localeCompare(y)));
   const iyears=[...new Set(INV.map(r=>cl(r[I.THN])).filter(y=>y&&!isNaN(y)&&y!=='0'))].sort();
   const iy=$('if-year');if(iy){while(iy.options.length>1)iy.remove(1);iyears.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;iy.appendChild(o);});}
   // Populate jenis chips untuk invoice (kolom N)
@@ -2367,8 +2371,8 @@ function osCells(r){const o=window.OS_INFO&&window.OS_INFO[normKode(r[C.KODE])];
 
 function filterDB(){
   const q=(document.getElementById('df-q').value||'').toLowerCase();
-  const status=$('df-status').value, area=$('df-area').value;
-  const tahun=$('df-tahun').value, wil=$('df-wil').value, jenis=$('df-jenis').value;
+  const status=$('df-status').value, area=msGet('df-area'), korwil=msGet('df-korwil');
+  const tahun=$('df-tahun').value, wil=$('df-wil').value, jenis=msGet('df-jenis');
   const osBln=parseInt($('df-os-bln')?.value)||0;
   const osThn=parseInt($('df-os-thn')?.value)||0;
   /* Outstanding per tanggal: acuan = TANGGAL 1 bulan terpilih (mis. Jan 2026 → per 1 Jan 2026).
@@ -2386,10 +2390,11 @@ function filterDB(){
   DB_F=ALL.filter(r=>{
     if(q&&!cl(r[C.PROYEK]).toLowerCase().includes(q)&&!cl(r[C.KODE]).toLowerCase().includes(q)&&!cl(r[C.SPI]).toLowerCase().includes(q)&&!cl(r[C.PIC_TEK]).toLowerCase().includes(q)&&!cl(r[C.PIC_SALES]).toLowerCase().includes(q)&&!cl(r[C.NO_SO]).toLowerCase().includes(q))return false;
     if(status&&cl(r[C.STATUS])!==status)return false;
-    if(area&&cl(r[C.AREA])!==area)return false;
+    if(area.size&&!area.has(cl(r[C.AREA])))return false;
     if(tahun&&cl(r[C.TAHUN])!==tahun)return false;
     if(wil&&cl(r[C.WILAYAH])!==wil)return false;
-    if(jenis&&cl(r[C.JENIS2])!==jenis)return false;
+    if(jenis.size&&!jenis.has(cl(r[C.JENIS2])))return false;
+    if(korwil.size&&!korwil.has(cl(r[C.KORWIL_TEK])))return false;
     /* ── Filter Outstanding per tanggal ── */
     if(osCut!=null){
       const st=cl(r[C.STATUS]).toUpperCase(); if(st==='BATAL') return false;
@@ -2424,7 +2429,7 @@ function filterDB(){
   if(DB_SORT.col)sortDBArr();
   DB_PAGE=1;renderDB();
 }
-function clearDB(){document.querySelectorAll('#db-table th[data-os]').forEach(t=>t.textContent=t.dataset.os);if($('th-prog'))$('th-prog').textContent='Progress';if($('df-os-hide'))$('df-os-hide').checked=false;window.OS_INFO=null;if($('db-table'))$('db-table').classList.remove('os-on');if($('os-hint'))$('os-hint').textContent='';['df-q','df-status','df-area','df-tahun','df-wil','df-jenis','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});DB_F=[...ALL];DB_PAGE=1;renderDB();}
+function clearDB(){document.querySelectorAll('#db-table th[data-os]').forEach(t=>t.textContent=t.dataset.os);if($('th-prog'))$('th-prog').textContent='Progress';if($('df-os-hide'))$('df-os-hide').checked=false;window.OS_INFO=null;if($('db-table'))$('db-table').classList.remove('os-on');if($('os-hint'))$('os-hint').textContent='';['df-q','df-status','df-tahun','df-wil','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});['df-area','df-jenis','df-korwil'].forEach(id=>{MS_SEL[id]=new Set();msFill(id,MS_VALS[id]||[]);});DB_F=[...ALL];DB_PAGE=1;renderDB();}
 function sortDB(col){document.querySelectorAll('thead th').forEach(t=>t.classList.remove('s-asc','s-desc'));if(DB_SORT.col===col)DB_SORT.dir*=-1;else{DB_SORT.col=col;DB_SORT.dir=1;}sortDBArr();DB_PAGE=1;renderDB();}
 function sortDBArr(){const nums=['NK','TERTAGIH','SISA','PCT_TAGIH','PCT_ANGGARAN','PCT_DP','PROGRESS','DELAY'];DB_F.sort((a,b)=>{const ci=C[DB_SORT.col];if(ci===undefined)return 0;const av=nums.includes(DB_SORT.col)?num(a[ci]):cl(a[ci]);const bv=nums.includes(DB_SORT.col)?num(b[ci]):cl(b[ci]);return typeof av==='number'?(av-bv)*DB_SORT.dir:av.localeCompare(bv)*DB_SORT.dir;});}
 function renderDB(){
@@ -3146,29 +3151,31 @@ function applyEditOverlay(){
 }
 
 /* ══ EXPORT EXCEL ══ */
+const xN2=v=>{const n=Number(v);return isFinite(n)?Math.round(n*100)/100:0;};                    /* nominal: desimal asli, 2 digit */
+const xP2=v=>{const t=(v==null?'':String(v)).trim(), n=num(t); return Math.round((t.indexOf('%')>=0?n:n*100)*100)/100;};   /* persen: 30.18 (bukan 3018) */
 function exportXLS(src){
   let headers=[], data=[], sheetName='Data';
   if(src==='db'){
     sheetName='Database Proyek';
-    headers=['Proyek','Kode','SPI','Tahun','Area','Wilayah','Jenis','Status','Progress (%)','Delay (hari)','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','Nilai Retensi','PIC Teknik','PIC Sales'];
-    data=DB_F.map(r=>[cl(r[C.PROYEK]),cl(r[C.KODE]),cl(r[C.SPI]),cl(r[C.TAHUN]),cl(r[C.AREA]),cl(r[C.WILAYAH]),cl(r[C.JENIS2])||cl(r[C.JENIS]),cl(r[C.STATUS]),parseFloat((num(r[C.PROGRESS])*100).toFixed(2)),parseInt(r[C.DELAY])||0,cl(r[C.DOK]),Math.round(num(r[C.NK])),Math.round(num(r[C.HPP])),Math.round(num(r[C.TERTAGIH])),Math.round(num(r[C.SISA])),parseFloat((num(r[C.PCT_TAGIH])*100).toFixed(2)),Math.round(num(r[C.RETENSI])),cl(r[C.PIC_TEK]),cl(r[C.PIC_SALES])]);
-    if(window.OS_INFO){headers=headers.concat(['Realisasi Teknik s/d tgl','Tertagih Invoice s/d tgl','Selisih (belum ditagih)','Tgl selesai tidak diketahui']);headers[7]='Status per tgl';headers[8]='Progress per tgl (%)';headers[9]='Delay per tgl (hari)';headers[13]='Tertagih per tgl';headers[14]='Sisa Tagihan per tgl';headers[15]='% Tertagih per tgl';data=data.map((row,i)=>{const o=window.OS_INFO[normKode(DB_F[i][C.KODE])];if(o){row[7]=o.status;row[8]=o.pct==null?'':parseFloat((o.pct*100).toFixed(2));row[9]=o.delay==null?'':o.delay;row[13]=Math.round(o.tag);row[14]=Math.round(Math.max(0,row[11]-o.tag));row[15]=o.pctTag==null?'':parseFloat((o.pctTag*100).toFixed(2));}return row;}).map((row,i)=>row.concat(osCells(DB_F[i]),[(window.OS_INFO[normKode(DB_F[i][C.KODE])]||{}).unknown?'YA':'']));}
+    headers=['Proyek','Kode','SPI','Tahun','Area','Wilayah','Jenis','Status','Progress (%)','Delay (hari)','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','Nilai Retensi','PIC Teknik','PIC Sales','Korwil Teknik'];
+    data=DB_F.map(r=>[cl(r[C.PROYEK]),cl(r[C.KODE]),cl(r[C.SPI]),cl(r[C.TAHUN]),cl(r[C.AREA]),cl(r[C.WILAYAH]),cl(r[C.JENIS2])||cl(r[C.JENIS]),cl(r[C.STATUS]),xP2(r[C.PROGRESS]),parseInt(r[C.DELAY])||0,cl(r[C.DOK]),xN2(num(r[C.NK])),xN2(num(r[C.HPP])),xN2(num(r[C.TERTAGIH])),xN2(num(r[C.SISA])),xP2(r[C.PCT_TAGIH]),xN2(num(r[C.RETENSI])),cl(r[C.PIC_TEK]),cl(r[C.PIC_SALES]),cl(r[C.KORWIL_TEK])]);
+    if(window.OS_INFO){headers=headers.concat(['Realisasi Teknik s/d tgl','Tertagih Invoice s/d tgl','Selisih (belum ditagih)','Tgl selesai tidak diketahui']);headers[7]='Status per tgl';headers[8]='Progress per tgl (%)';headers[9]='Delay per tgl (hari)';headers[13]='Tertagih per tgl';headers[14]='Sisa Tagihan per tgl';headers[15]='% Tertagih per tgl';data=data.map((row,i)=>{const o=window.OS_INFO[normKode(DB_F[i][C.KODE])];if(o){row[7]=o.status;row[8]=o.pct==null?'':parseFloat((o.pct*100).toFixed(2));row[9]=o.delay==null?'':o.delay;row[13]=xN2(o.tag);row[14]=xN2(Math.max(0,row[11]-o.tag));row[15]=o.pctTag==null?'':parseFloat((o.pctTag*100).toFixed(2));}return row;}).map((row,i)=>row.concat(osCells(DB_F[i]).map(v=>v===''?v:xN2(v)),[(window.OS_INFO[normKode(DB_F[i][C.KODE])]||{}).unknown?'YA':'']));}
   }else if(src==='prog'){
     sheetName='Proyek Berjalan';
-    headers=['Proyek','Kode','SPI','Tahun','Area','Jenis','Progress (%)','Delay (hari)','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','% DP','% Pemakaian Angg','PIC Teknik','PIC Sales'];
-    data=PG_F.map(r=>[cl(r[C.PROYEK]),cl(r[C.KODE]),cl(r[C.SPI]),cl(r[C.TAHUN]),cl(r[C.AREA]),cl(r[C.JENIS2])||cl(r[C.JENIS]),parseFloat((num(r[C.PROGRESS])*100).toFixed(2)),parseInt(r[C.DELAY])||0,cl(r[C.DOK]),Math.round(num(r[C.NK])),Math.round(num(r[C.HPP])),Math.round(num(r[C.TERTAGIH])),Math.round(num(r[C.SISA])),parseFloat((num(r[C.PCT_TAGIH])*100).toFixed(2)),parseFloat((num(r[C.PCT_DP])*100).toFixed(2)),parseFloat((num(r[C.PCT_ANGGARAN])*100).toFixed(2)),cl(r[C.PIC_TEK]),cl(r[C.PIC_SALES])]);
+    headers=['Proyek','Kode','SPI','Tahun','Area','Jenis','Progress (%)','Delay (hari)','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','% DP','% Pemakaian Angg','PIC Teknik','PIC Sales','Korwil Teknik'];
+    data=PG_F.map(r=>[cl(r[C.PROYEK]),cl(r[C.KODE]),cl(r[C.SPI]),cl(r[C.TAHUN]),cl(r[C.AREA]),cl(r[C.JENIS2])||cl(r[C.JENIS]),xP2(r[C.PROGRESS]),parseInt(r[C.DELAY])||0,cl(r[C.DOK]),xN2(num(r[C.NK])),xN2(num(r[C.HPP])),xN2(num(r[C.TERTAGIH])),xN2(num(r[C.SISA])),xP2(r[C.PCT_TAGIH]),xP2(r[C.PCT_DP]),xP2(r[C.PCT_ANGGARAN]),cl(r[C.PIC_TEK]),cl(r[C.PIC_SALES]),cl(r[C.KORWIL_TEK])]);
   }else if(src==='inv'){
     sheetName='Invoice';
     headers=['No Invoice','Tanggal','Nama Proyek','SPI','Kode','Area','Wilayah','Tipe','Jenis','Nilai DPP','Status BAST'];
-    data=INV_F.map(r=>[cl(r[I.INV]),cl(r[I.TGL]).substring(0,10),cl(r[I.NAMA_PROYEK]),cl(r[I.SPI]),cl(r[I.AC_CODE]),cl(r[I.AREA]).trim(),cl(r[I.WILAYAH]),cl(r[I.TIPE]),cl(r[I.JENIS]),Math.round(num(r[I.DPP])),cl(r[I.STATUS_BAST])]);
+    data=INV_F.map(r=>[cl(r[I.INV]),cl(r[I.TGL]).substring(0,10),cl(r[I.NAMA_PROYEK]),cl(r[I.SPI]),cl(r[I.AC_CODE]),cl(r[I.AREA]).trim(),cl(r[I.WILAYAH]),cl(r[I.TIPE]),cl(r[I.JENIS]),xN2(num(r[I.DPP])),cl(r[I.STATUS_BAST])]);
   }else if(src==='tagihan'){
     sheetName='Laporan Tagihan';
     headers=['No Invoice','Tanggal','Bulan','Tahun Invoice','Nama Proyek','Tahun SPI','SPI','Kode','Area','Wilayah','Jenis','Tipe','Nilai DPP','Status BAST'];
-    data=TAG_F.map(r=>[cl(r[I.INV]),cl(r[I.TGL]).substring(0,10),cl(r[I.BLN]),cl(r[I.THN]),cl(r[I.NAMA_PROYEK]),cl(r[I.TAHUN]),cl(r[I.SPI]),cl(r[I.AC_CODE]),cl(r[I.AREA]).trim(),cl(r[I.WILAYAH]),normJenis(r[I.JENIS]),cl(r[I.TIPE]),Math.round(num(r[I.DPP])),cl(r[I.STATUS_BAST])]);
+    data=TAG_F.map(r=>[cl(r[I.INV]),cl(r[I.TGL]).substring(0,10),cl(r[I.BLN]),cl(r[I.THN]),cl(r[I.NAMA_PROYEK]),cl(r[I.TAHUN]),cl(r[I.SPI]),cl(r[I.AC_CODE]),cl(r[I.AREA]).trim(),cl(r[I.WILAYAH]),normJenis(r[I.JENIS]),cl(r[I.TIPE]),xN2(num(r[I.DPP])),cl(r[I.STATUS_BAST])]);
   }else if(src==='cc'){
     sheetName='Cost Control';
     headers=['Proyek','Kode','SPI','Tahun','Area','Jenis','Status','Progress (%)','Trend','Nilai Kontrak','HPP','Realisasi Biaya','Selisih Anggaran','% Pemakaian Anggaran','Delay (hari)','N Transaksi','BB Debit','BB Kredit'];
-    data=CC_F.map(r=>[r.proyek,r.kode,r.spi,String(r.thn||'').replace('.0',''),r.area,r.jenis,r.status,parseFloat((r.progress>1?r.progress:r.progress*100).toFixed(2)),r.arrow,Math.round(r.nk),Math.round(r.hpp),Math.round(r.realisasi),Math.round(r.selisih),parseFloat(r.pct_angg.toFixed(2)),r.delay,r.n_trans,Math.round(r.bb_debit),Math.round(r.bb_kredit)]);
+    data=CC_F.map(r=>[r.proyek,r.kode,r.spi,String(r.thn||'').replace('.0',''),r.area,r.jenis,r.status,parseFloat((r.progress>1?r.progress:r.progress*100).toFixed(2)),r.arrow,xN2(r.nk),xN2(r.hpp),xN2(r.realisasi),xN2(r.selisih),parseFloat(r.pct_angg.toFixed(2)),r.delay,r.n_trans,Math.round(r.bb_debit),Math.round(r.bb_kredit)]);
   }
 
   if(!window.XLSX){
@@ -3186,6 +3193,14 @@ function exportXLS(src){
     return { wch: Math.min(Math.max(maxLen+2, 10), 40) };
   });
   ws['!cols'] = colWidths;
+
+  /* Format sel: persen 2 desimal (0.00), nominal 2 desimal (#,##0.00) — angka asli, bukan teks */
+  const PCT_H=h=>/\(%\)|^%|^% |%$/.test(h)||/^% /.test(h);
+  const NOM_H=h=>/^(Nilai|HPP|Tertagih|Sisa Tagihan|Realisasi|Selisih|BB |Nilai DPP)/i.test(h)&&!/hari|%/i.test(h);
+  headers.forEach((h,ci)=>{
+    const z=PCT_H(h)?'0.00':NOM_H(h)?'#,##0.00':null; if(!z) return;
+    for(let ri=1;ri<=data.length;ri++){const ref=XLSX.utils.encode_cell({r:ri,c:ci}); const c=ws[ref]; if(c&&c.t==='n') c.z=z;}
+  });
 
   /* Buat workbook dan simpan sebagai .xlsx asli */
   const wb = XLSX.utils.book_new();
@@ -4729,7 +4744,7 @@ function tgtFiltered(M,noScope){
   });
 }
 /* ══ DROPDOWN CENTANG (multi-pilih) ══ */
-const MS_SEL={}, MS_VALS={}, MS_CB={'scw-area':()=>buildScWeek()};
+const MS_SEL={}, MS_VALS={}, MS_CB={'scw-area':()=>buildScWeek(),'df-area':()=>filterDB(),'df-jenis':()=>filterDB(),'df-korwil':()=>filterDB()};
 const msGo=id=>{(MS_CB[id]||(()=>buildTarget(true)))();};
 function msGet(id){return MS_SEL[id]||(MS_SEL[id]=new Set());}
 function msLabel(id){
@@ -4936,7 +4951,7 @@ function goPage(page,el){
   if(page==='target') buildTarget();
   if(page==='mgmt' && ALL.length) buildMgmt();
 }
-function filterToArea(a){goPage('database',$('si-database'));$('df-area').value=a;filterDB();}
+function filterToArea(a){goPage('database',$('si-database'));MS_SEL['df-area']=new Set([a]);msFill('df-area',MS_VALS['df-area']||[a]);filterDB();}
 function filterToStatus(s){goPage('database',$('si-database'));$('df-status').value=s;filterDB();}
 function filterByPIC(type,name){
   goPage('database',$('si-database'));
