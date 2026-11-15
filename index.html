@@ -531,15 +531,44 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 @media(max-width:1250px){#page-mgmt .mg-kpi{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){#page-mgmt .mg-kpi{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .mg-bar{margin-bottom:12px}
-.mgt-wrap{overflow-x:auto}
-.mgt{border-collapse:collapse;width:100%;min-width:1080px;font-size:12px;color:#111;background:#fff}
-.mgt th,.mgt td{border:1px solid #8a8f98;padding:5px 7px;color:#111}
-.mgt th{font-weight:800;text-align:center;line-height:1.25}
+.mgt-wrap{container-type:inline-size;overflow-x:auto}
+.mgt{border-collapse:collapse;width:100%;table-layout:fixed;font-size:clamp(7px,.9cqw,12px);color:#111;background:#fff}
+@media(max-width:900px){.mgt{min-width:860px}}
+.mgt th,.mgt td{border:1px solid #8a8f98;padding:4px 3px;color:#111;overflow-wrap:anywhere}
+.mgt th{font-weight:800;text-align:center;line-height:1.2;font-size:.82em;overflow-wrap:normal;padding-left:1px;padding-right:1px}.mgt th[colspan]{font-size:1em}
 .mgt-w,.mgt-b,.mgt-bs{background:#cfe0f7}.mgt-g,.mgt-gs{background:#92d050}
-.mgt td.c,.mgt td.p{text-align:center}.mgt td.rp{text-align:right;font-variant-numeric:tabular-nums}.mgt td.mgt-l{text-align:left;font-weight:600;white-space:nowrap}
+.mgt td.c,.mgt td.p{text-align:center}.mgt td.rp{text-align:right;font-variant-numeric:tabular-nums}.mgt td.mgt-l{text-align:left;font-weight:600}.mgt td.mgt-l.mgt-click{cursor:pointer}.mgt td.mgt-l.mgt-click:hover{text-decoration:underline;color:#1d4ed8}
 .mgt-band td{font-weight:800;text-align:center!important;padding:4px 7px}
 .mgt-b0,.mgt-b0 td{background:#ffff00!important}.mgt-b1,.mgt-b1 td{background:#ffa500!important}.mgt-b2,.mgt-b2 td{background:#d9ead3!important}.mgt-b3,.mgt-b3 td{background:#ddebf7!important}
 .mgt-tot td,.mgt-nas td{font-weight:800}.mgt-nas td{background:#dce6f1}
+
+/* Rincian proyek + analisa */
+.mg-sec{margin-top:12px}
+.mgd-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.mgd-bar input,.mgd-bar select{background:var(--surf);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px 9px;outline:none;max-width:170px}
+.mgd-bar input{width:210px;max-width:100%}
+.mgd-wrap{container-type:inline-size;max-height:520px;overflow:auto;border:1px solid var(--border);border-radius:8px}
+.mgd{width:100%;table-layout:fixed;border-collapse:collapse;font-size:clamp(8px,.95cqw,11.5px);color:var(--text2)}
+@media(max-width:900px){.mgd{min-width:900px}}
+.mgd th{position:sticky;top:0;z-index:2;background:var(--surf);border-bottom:2px solid var(--border);padding:6px 5px;text-align:left;font-size:.92em;font-weight:800;color:var(--text);cursor:pointer;white-space:normal;line-height:1.2}
+.mgd td{padding:4px 5px;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mgd tbody tr{cursor:pointer}.mgd tbody tr:hover td{background:var(--blue-g)}
+.mgd th.r,.mgd td.r{text-align:right;font-variant-numeric:tabular-nums}
+.mgd td.mgd-g.c{color:var(--blue);font-weight:700}.mgd td.mgd-g.p{color:var(--amber);font-weight:700}.mgd td.mgd-ok{color:var(--green);font-weight:700}
+.mgd tfoot td{position:sticky;bottom:0;background:var(--surf);font-weight:800;color:var(--text);border-top:2px solid var(--border);border-bottom:0}
+.mga-list{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.mga-list li{display:flex;gap:10px;font-size:13px;line-height:1.55;color:var(--text2)}
+.mga-list li:before{content:'';flex:none;width:8px;height:8px;border-radius:50%;margin-top:7px;background:var(--blue)}
+.mga-list li.ok:before{background:var(--green)}.mga-list li.warn:before{background:var(--amber)}.mga-list li.bad:before{background:var(--red)}
+.mga-list b{color:var(--text)}
+.mga-lg{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--text3);margin:0 0 6px}.mga-lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.mga-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.mga-grid .span2{grid-row:span 2}
+@media(max-width:900px){.mga-grid{grid-template-columns:minmax(0,1fr)}.mga-grid .span2{grid-row:auto}}
+.mga-t{width:100%;border-collapse:collapse;font-size:12px}.mga-t tr{cursor:pointer}.mga-t tr:hover td{background:var(--blue-g)}
+.mga-t td{padding:5px 6px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+.mga-t td:last-child{text-align:right;font-family:var(--mono);color:var(--text);white-space:nowrap}
+.mga-t a{color:var(--text);font-weight:600}.mga-t small{display:block;color:var(--text3);font-size:10.5px}
 @media print{
   body.print-mgmt > *{display:none!important}
   body.print-mgmt #mgmt-pdf-overlay{display:block!important;position:static;width:100%;margin:0;padding:0;background:#fff;color:#111;font-family:Arial,sans-serif}
@@ -553,6 +582,14 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
   #mgmt-pdf-overlay .mgt th,#mgmt-pdf-overlay .mgt td{padding:2px 3px;border-color:#444}
   #mgmt-pdf-overlay .mgt td.mgt-l{white-space:normal}
   #mgmt-pdf-overlay .mgt th:first-child,#mgmt-pdf-overlay .mgt td:first-child{width:9%}
+  #mgmt-pdf-overlay .mgp-pg2{break-before:page;page-break-before:always}
+  #mgmt-pdf-overlay .mgp-bul{margin:0 0 6px;padding-left:14px;font-size:8px;line-height:1.35;columns:2;column-gap:16px;color:#222}
+  #mgmt-pdf-overlay .mgp-bul li{break-inside:avoid;margin-bottom:3px}
+  #mgmt-pdf-overlay .mgp-g{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px;align-items:start}
+  #mgmt-pdf-overlay .mgp-ch{font-size:9px;font-weight:800;color:#1f3b73;margin-bottom:2px}
+  #mgmt-pdf-overlay .mga-lg{font-size:7px;margin:0 0 2px;color:#555}
+  #mgmt-pdf-overlay .mgp-tl{width:100%;border-collapse:collapse;font-size:7px}#mgmt-pdf-overlay .mgp-tl td{border-bottom:1px solid #ddd;padding:1.5px 3px;vertical-align:top}#mgmt-pdf-overlay .mgp-tl td:last-child{text-align:right;white-space:nowrap;font-weight:700}#mgmt-pdf-overlay .mgp-tl i{color:#777;font-size:6.5px;font-style:normal}
+  #mgmt-pdf-overlay svg{max-height:80mm}#mgmt-pdf-overlay .mgp-tl td{color:#111}
   #mgmt-pdf-overlay .mgp-n{font-size:7px;color:#555;margin-top:5px;line-height:1.35}
 }
 /* PDF print */
@@ -1220,6 +1257,27 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     <div class="mg-kpi" id="mg-kpi"></div>
     <div class="mg-card" style="padding:12px"><div class="mgt-wrap" id="mg-tbl"></div></div>
     <div class="mg-note" id="mg-note"></div>
+    <div class="mg-card mg-sec" id="mg-det-card">
+      <div class="mg-h">Rincian Proyek <span class="mg-hs" id="mgd-sub"></span></div>
+      <div class="mgd-bar">
+        <input id="mgd-q" type="search" placeholder="Cari kode / proyek / SC…" oninput="mgdF()">
+        <select id="mgd-grp" onchange="mgdF()"><option value="">Semua kelompok</option><option value="c">Carry over</option><option value="p">Proyek periode</option></select>
+        <select id="mgd-rl" onchange="mgdF()"><option value="">Semua realisasi</option><option value="y">Sudah bergerak</option><option value="n">Belum bergerak</option></select>
+        <select id="mgd-area" onchange="mgdF()"><option value="">Semua area</option></select>
+        <select id="mgd-kw" onchange="mgdF()"><option value="">Semua korwil</option></select>
+        <button type="button" class="scw-dl" onclick="mgdClear()">Reset</button>
+      </div>
+      <div class="mgd-wrap"><table class="mgd" id="mgd-tbl"></table></div>
+      <div id="mgd-more" style="margin-top:8px"></div>
+    </div>
+    <div class="mg-card mg-sec"><div class="mg-h">Analisa <span class="mg-hs" id="mga-sub"></span></div><ul class="mga-list" id="mga-list"></ul></div>
+    <div class="mga-grid">
+      <div class="mg-card span2"><div class="mg-h">Capaian per area <span class="mg-hs">realisasi ÷ (outstanding carry over + nilai proyek periode), urut dari tertinggi</span></div><div id="mga-cA"></div></div>
+      <div class="mg-card"><div class="mg-h">Realisasi per bulan <span class="mg-hs">garis putus-putus = rata-rata bulanan</span></div><div id="mga-cB"></div></div>
+      <div class="mg-card"><div class="mg-h">Capaian per wilayah <span class="mg-hs">tinggi kolom = basis (realisasi + sisa)</span></div><div id="mga-cC"></div></div>
+      <div class="mg-card"><div class="mg-h">10 proyek realisasi terbesar</div><div id="mga-top1"></div></div>
+      <div class="mg-card"><div class="mg-h">10 proyek outstanding terbesar yang belum bergerak <span class="mg-hs">perlu ditindaklanjuti</span></div><div id="mga-top2"></div></div>
+    </div>
   </div>
   <div class="page" id="page-target">
     <div class="sec-hd">
@@ -5584,6 +5642,7 @@ function mgBuild(f){
   rows.forEach(r=>{
     const a0=(r.area||'').toUpperCase().trim()||'(TANPA AREA)', std=!!MG_AREA_W[a0], w=MG_AREA_W[a0]||(r.wil||'LAINNYA');
     if(!std) OTH.add(a0);
+    r.ag=std?a0:'LAINNYA'; r.wl=w;
     const key=std?a0:'LAINNYA|'+w;   /* area di luar 14 area baku digabung per wilayah agar tabel tetap rapi; total tidak berubah */
     const o=A[key]||(A[key]={area:std?a0:'LAINNYA',wil:w,d:MG_Z()}), d=o.d;
     if(r.baru){d.pn++; d.pv+=r.awal; d.rpv+=r.real; if(mkorReal(r)) d.rpn++;}
@@ -5623,13 +5682,14 @@ function mgRows(M){
 }
 const mgN=n=>Math.round(n).toLocaleString('id-ID'), mgP=x=>(x*100).toFixed(2).replace('.',',')+'%';
 const MG_BAND=['mgt-b0','mgt-b1','mgt-b2','mgt-b3'];
-function mgTableHTML(M){
+function mgTableHTML(M,click){
   const L=M.lbl, G=[[L.carry,'b'],[L.prj,'b'],[L.rcarry,'g'],[L.rprj,'g']];
-  let h=`<table class="mgt"><thead><tr><th rowspan="2" class="mgt-w">WILAYAH</th>${G.map(([t,c])=>`<th colspan="4" class="mgt-${c}">${scwEsc(t)}</th>`).join('')}</tr><tr>${G.map(([,c])=>['JUMLAH','(RP)','% JUMLAH','% RP'].map(x=>`<th class="mgt-${c}s">${x}</th>`).join('')).join('')}</tr></thead><tbody>`;
+  let h=`<table class="mgt"><colgroup><col style="width:8%">${[1,2,3,4].map(()=>'<col style="width:4.2%"><col style="width:9%"><col style="width:4.9%"><col style="width:4.9%">').join('')}</colgroup><thead><tr><th rowspan="2" class="mgt-w">WILAYAH</th>${G.map(([t,c])=>`<th colspan="4" class="mgt-${c}">${scwEsc(t)}</th>`).join('')}</tr><tr>${G.map(([,c])=>['JUMLAH','(RP)','% JUMLAH','% RP'].map(x=>`<th class="mgt-${c}s">${x}</th>`).join('')).join('')}</tr></thead><tbody>`;
   mgRows(M).forEach(r=>{
     if(r.t==='band'){h+=`<tr class="mgt-band ${MG_BAND[Math.min(r.wi,3)]}"><td colspan="17">${scwEsc(r.label)}</td></tr>`;return;}
     const cls=r.t==='area'?'':(r.t==='nas'?'mgt-nas':'mgt-tot '+MG_BAND[Math.min(r.wi,3)]);
-    h+=`<tr class="${cls}"><td class="mgt-l">${scwEsc(r.label)}</td>`+r.v.map((x,i)=>{const k=i%4; return `<td class="${k===1?'rp':k===0?'c':'p'}">${k<2?(k===0?mgN(x):mgN(x)):mgP(x)}</td>`;}).join('')+'</tr>';
+    const lc=(click&&r.t==='area')?` mgt-click" title="Klik untuk lihat rincian proyek area ini" onclick="mgPickArea(${jsq(r.label)})`:'';
+    h+=`<tr class="${cls}"><td class="mgt-l${lc}">${scwEsc(r.label)}</td>`+r.v.map((x,i)=>{const k=i%4; return `<td class="${k===1?'rp':k===0?'c':'p'}">${k<2?mgN(x):mgP(x)}</td>`;}).join('')+'</tr>';
   });
   return h+'</tbody></table>';
 }
@@ -5653,13 +5713,172 @@ function buildMgmt(){
   const mons=Object.keys(BLN_ORDER).map(m=>[m,SCW_MONTHS[BLN_ORDER[m]-1]]);
   sel('mg-from-bln',mons,'Jan'); sel('mg-from-thn',yrs,String(ly)); sel('mg-to-bln',mons,lm); sel('mg-to-thn',yrs,String(ly));
   const f=mgF();
-  if(BLN_ORDER[f.fromBln]>BLN_ORDER[f.toBln]&&f.fromThn===f.toThn){ $('mg-warn').textContent='⚠️ Periode "Dari" lebih akhir daripada "S.d".'; $('mg-warn').hidden=false; $('mg-kpi').innerHTML=''; $('mg-tbl').innerHTML=''; MG_M=null; return; }
+  if(BLN_ORDER[f.fromBln]>BLN_ORDER[f.toBln]&&f.fromThn===f.toThn){ $('mg-warn').textContent='⚠️ Periode "Dari" lebih akhir daripada "S.d".'; $('mg-warn').hidden=false; $('mg-kpi').innerHTML=''; $('mg-tbl').innerHTML=''; MG_M=null; MG_AN=null; return; }
   $('mg-warn').hidden=true;
   const M=MG_M=mgBuild(f); if(!M) return;
+  MG_LL=ll;
   $('mg-sub').textContent='Periode '+M.lbl.per+' · realisasi dari log progress s/d '+(ll!=null?scwDayStr(ll):'—')+' · aturan sama dengan Ringkasan PIC';
   $('mg-kpi').innerHTML=mgKpiHTML(M);
-  $('mg-tbl').innerHTML=mgTableHTML(M);
+  $('mg-tbl').innerHTML=mgTableHTML(M,true);
   $('mg-note').innerHTML=(M.others.length?`<b>LAINNYA</b> = proyek dengan area di luar 14 area baku (${scwEsc(M.others.join(', '))}); sebaiknya dirapikan di sheet list. `:'')+`<b>Cara membaca.</b> <b>Carry over</b>: proyek yang SPI-nya terbit sebelum awal periode dan pekerjaannya belum tuntas pada awal periode; Rp = sisa pekerjaan (nilai kontrak × (1 − progress awal periode)), termasuk proyek yang sudah ditagih 100% tetapi BAST belum diakui (Rp 0). <b>Proyek periode</b>: SPI terbit di dalam periode; Rp = nilai kontrak. <b>Realisasi</b>: nilai kontrak × kenaikan progress menurut Berita Acara Progress Teknik (log progress) di dalam periode; Jumlah = proyek yang progress-nya naik atau BAST-nya diakui di periode. Pada baris area, % = porsi terhadap total wilayah; pada baris TOTAL kolom Realisasi, % = rasio realisasi terhadap kolom carry over / proyek periode.`;
+  MG_MON=mgMonthly(f); MG_AN=mgAnalyze(M,MG_MON); mgdFill(); mgdRender(); mgaRender();
+}
+/* ══ Ringkasan Manajemen — rincian proyek, analisa & grafik ══ */
+const mgS=x=>{const a=Math.abs(x);return a>=1e9?(x/1e9).toFixed(1).replace('.',',')+' M':a>=1e6?(x/1e6).toFixed(0)+' Jt':String(Math.round(x));};
+const MG_PAL_WEB={t1:'var(--text)',t2:'var(--text2)',t3:'var(--text3)',grid:'rgba(128,128,128,.28)',track:'rgba(128,128,128,.25)',c:'var(--blue)',p:'var(--amber)'};
+const MG_PAL_PRN={t1:'#111',t2:'#333',t3:'#666',grid:'#cfcfcf',track:'#d6d6d6',c:'#2563eb',p:'#f59e0b'};
+let MG_MON=[], MG_AN=null, MG_LL=null;
+const MGD={q:'',grp:'',rl:'',area:'',kw:'',sort:'real',dir:-1,lim:150};
+const MGD_COLS=[['k','KODE'],['nama','PROYEK'],['area','AREA'],['kw','KORWIL'],['sc','SC TEKNIK'],['st','STATUS'],['baru','KELOMPOK'],['spi','SPI'],['nk','NILAI KONTRAK'],['p0','PROG. AWAL'],['p1','PROG. AKHIR'],['awal','OUTSTANDING AWAL'],['real','REALISASI'],['akhir','SISA']];
+const MGD_W=[6,16,6.5,7,7,5.5,5.5,5.5,8,4.5,4.5,8,8,8], MGD_R=['nk','awal','real','akhir'];
+function mgdRows(){
+  const M=MG_M; if(!M) return [];
+  const q=MGD.q.trim().toLowerCase();
+  const a=M.rows.filter(r=>{
+    if(MGD.grp==='c'&&r.baru) return false; if(MGD.grp==='p'&&!r.baru) return false;
+    if(MGD.rl==='y'&&!mkorReal(r)) return false; if(MGD.rl==='n'&&mkorReal(r)) return false;
+    if(MGD.area&&r.ag!==MGD.area) return false; if(MGD.kw&&r.kw!==MGD.kw) return false;
+    if(q&&!(String(r.k)+' '+r.nama+' '+r.sc+' '+r.kw+' '+r.area).toLowerCase().includes(q)) return false;
+    return true;});
+  const k=MGD.sort, d=MGD.dir;
+  a.sort((x,y)=>{const u=x[k],v=y[k]; if(typeof u==='string'||typeof v==='string') return d*String(u==null?'':u).localeCompare(String(v==null?'':v),'id'); return d*((u==null?-1:+u)-(v==null?-1:+v));});
+  return a;
+}
+function mgdFill(){
+  const M=MG_M; if(!M) return;
+  const fill=(id,vals,all)=>{const e=$(id); if(!e) return; const cur=e.value; e.innerHTML=`<option value="">${all}</option>`+vals.map(v=>`<option value="${scwEsc(v)}">${scwEsc(v)}</option>`).join(''); e.value=vals.includes(cur)?cur:''; return e.value;};
+  const ags=[...new Set(M.rows.map(r=>r.ag))].sort((x,y)=>{const i=MG_AREA_ORD.indexOf(x),j=MG_AREA_ORD.indexOf(y);return (i<0?999:i)-(j<0?999:j)||x.localeCompare(y);});
+  MGD.area=fill('mgd-area',ags,'Semua area')||'';
+  MGD.kw=fill('mgd-kw',[...new Set(M.rows.map(r=>r.kw))].sort(),'Semua korwil')||'';
+}
+function mgdF(){
+  MGD.q=$('mgd-q').value; MGD.grp=$('mgd-grp').value; MGD.rl=$('mgd-rl').value; MGD.area=$('mgd-area').value; MGD.kw=$('mgd-kw').value; MGD.lim=150; mgdRender();
+}
+function mgdClear(){ $('mgd-q').value=''; $('mgd-grp').value=''; $('mgd-rl').value=''; $('mgd-area').value=''; $('mgd-kw').value=''; mgdF(); }
+function mgdSort(k){ if(MGD.sort===k) MGD.dir=-MGD.dir; else {MGD.sort=k; MGD.dir=(['k','nama','area','kw','sc','st'].includes(k))?1:-1;} MGD.lim=150; mgdRender(); }
+function mgdMore(){ MGD.lim+=250; mgdRender(); }
+function mgPickArea(a){
+  if(!MG_M) return; MGD.area=a; MGD.grp=''; MGD.rl=''; MGD.q=''; MGD.kw=''; MGD.lim=150;
+  ['mgd-q','mgd-grp','mgd-rl','mgd-kw'].forEach(i=>{$(i).value='';}); $('mgd-area').value=a; mgdRender();
+  $('mg-det-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function mgdRender(){
+  const M=MG_M, t=$('mgd-tbl'); if(!M||!t) return;
+  const a=mgdRows(), sh=a.slice(0,MGD.lim), S={nk:0,awal:0,real:0,akhir:0};
+  a.forEach(r=>{S.nk+=r.nk;S.awal+=r.awal;S.real+=r.real;S.akhir+=r.akhir;});
+  const ar=k=>MGD.sort===k?(MGD.dir<0?' ▼':' ▲'):'', pc=x=>(x*100).toFixed(1).replace('.',',')+'%';
+  let h='<colgroup>'+MGD_W.map(w=>`<col style="width:${w}%">`).join('')+'</colgroup><thead><tr>'+MGD_COLS.map(([k,l])=>`<th onclick="mgdSort('${k}')" class="${MGD_R.includes(k)?'r':''}">${l}${ar(k)}</th>`).join('')+'</tr></thead><tbody>';
+  sh.forEach(r=>{
+    h+=`<tr onclick="scwOpenProj(${jsq(r.k)})"><td title="${scwEsc(r.k)}">${scwEsc(r.k)}</td><td title="${scwEsc(r.nama)}">${scwEsc(r.nama)}</td><td title="${scwEsc(r.area||'')}">${scwEsc(r.area||'')}</td><td title="${scwEsc(r.kw)}">${scwEsc(r.kw)}</td><td title="${scwEsc(r.sc||'')}">${scwEsc(r.sc||'')}</td><td>${scwEsc(r.st||'')}</td><td class="mgd-g ${r.baru?'p':'c'}">${r.baru?'Periode':'Carry over'}</td><td>${r.spi!=null?scwDayStr(r.spi):''}</td>`+
+      `<td class="r">${mgN(r.nk)}</td><td class="r">${pc(r.p0)}</td><td class="r">${pc(r.p1)}</td><td class="r">${mgN(r.awal)}</td><td class="r ${mkorReal(r)?'mgd-ok':''}">${mgN(r.real)}</td><td class="r">${mgN(r.akhir)}</td></tr>`;
+  });
+  if(!sh.length) h+='<tr><td colspan="14" style="text-align:center;padding:18px;color:var(--text3)">Tidak ada proyek yang cocok dengan filter.</td></tr>';
+  h+=`</tbody><tfoot><tr><td colspan="8">TOTAL ${a.length} proyek</td><td class="r">${mgN(S.nk)}</td><td></td><td></td><td class="r">${mgN(S.awal)}</td><td class="r">${mgN(S.real)}</td><td class="r">${mgN(S.akhir)}</td></tr></tfoot>`;
+  t.innerHTML=h;
+  $('mgd-sub').textContent=a.length+' dari '+M.rows.length+' proyek · realisasi '+fmt(S.real,true)+(MGD.area?' · area '+MGD.area:'');
+  $('mgd-more').innerHTML=a.length>MGD.lim?`<button type="button" class="scw-dl" onclick="mgdMore()">Tampilkan ${Math.min(250,a.length-MGD.lim)} lagi (sisa ${a.length-MGD.lim})</button>`:'';
+}
+/* realisasi per bulan (selisih kumulatif dari awal periode → total pasti sama dengan tabel) */
+function mgMonthly(f){
+  const out=[], keys=Object.keys(BLN_ORDER); let y=+f.fromThn, mi=BLN_ORDER[f.fromBln]; const ye=+f.toThn, me=BLN_ORDER[f.toBln]; let pc=0,pp=0,n=0;
+  while((y<ye||(y===ye&&mi<=me))&&n<36){
+    const key=keys.find(k=>BLN_ORDER[k]===mi);
+    let c=0,p=0; mkorModel({...f,toBln:key,toThn:String(y),all:true}).forEach(k=>k.rows.forEach(r=>{ if(r.baru) p+=r.real; else c+=r.real; }));
+    out.push({y,m:mi,lbl:SCW_MONTHS[mi-1].slice(0,3)+" '"+String(y).slice(-2),c:c-pc,p:p-pp}); pc=c; pp=p; mi++; if(mi>12){mi=1;y++;} n++;
+  }
+  return out;
+}
+function mgAnalyze(M,mon){
+  const k=M.kpi, L=M.lbl, T=[], P=mgDiv;
+  const areas=[]; M.wils.forEach(w=>w.areas.forEach(a=>{const d=a.d; areas.push({area:a.area,wil:w.wil,base:d.cv+d.pv,real:d.rcv+d.rpv,rc:d.rcv,rp:d.rpv,n:d.cn+d.pn,rn:d.rcn+d.rpn});}));
+  areas.forEach(a=>{a.pct=P(a.real,a.base);a.sisa=Math.max(0,a.base-a.real);});
+  const wils=M.wils.map(w=>{const d=w.tot,base=d.cv+d.pv,real=d.rcv+d.rpv;return {wil:w.wil,base,real,rc:d.rcv,rp:d.rpv,pct:P(real,base),sisa:Math.max(0,base-real)};});
+  const pc=P(k.rv,k.tv), pcc=P(k.rcv,k.cv), pcp=P(k.rpv,k.pv), sisa=Math.max(0,k.tv-k.rv), cls=x=>x>=.5?'ok':x>=.25?'warn':'bad';
+  T.push({c:cls(pc),h:`<b>Capaian keseluruhan ${mgP(pc)}.</b> Realisasi ${fmt(k.rv,true)} dari basis ${fmt(k.tv,true)} (carry over ${fmt(k.cv,true)} + proyek periode ${fmt(k.pv,true)}); sisa pekerjaan ${fmt(sisa,true)}. ${k.rn} dari ${k.tn} proyek (${mgP(P(k.rn,k.tn))}) sudah bergerak di periode ${scwEsc(L.per)}.`});
+  if(k.rv>0){ const sc=k.rcv/k.rv, lead=sc>=.5?'carry over':'proyek periode';
+    T.push({c:'info',h:`<b>Komposisi realisasi.</b> ${mgP(Math.max(sc,1-sc))} realisasi berasal dari ${lead} (${sc>=.5?fmt(k.rcv,true):fmt(k.rpv,true)}). Carry over baru terealisasi ${mgP(pcc)} dari outstanding awalnya, sedangkan proyek periode ${mgP(pcp)} dari nilai kontraknya${Math.abs(pcp-pcc)>=.05?` — ${pcp>pcc?'proyek baru bergerak lebih cepat daripada carry over':'carry over bergerak lebih cepat daripada proyek baru'} (selisih ${((Math.abs(pcp-pcc))*100).toFixed(1).replace('.',',')} poin)`:''}.`}); }
+  if(wils.length>1){ const s=wils.slice().sort((x,y)=>y.pct-x.pct), g=(s[0].pct-s[s.length-1].pct)*100;
+    T.push({c:g>=10?'warn':'info',h:`<b>Per wilayah.</b> ${wils.map(w=>`${scwEsc(w.wil)} ${mgP(w.pct)} (${fmt(w.real,true)} dari ${fmt(w.base,true)})`).join('; ')}. Tertinggi ${scwEsc(s[0].wil)}, terendah ${scwEsc(s[s.length-1].wil)} — selisih ${g.toFixed(1).replace('.',',')} poin.`}); }
+  const el=areas.filter(a=>a.base>=k.tv*.02).sort((x,y)=>y.pct-x.pct);
+  if(el.length>=4){ const top=el.slice(0,3), low=el.slice(-3).reverse(), f=a=>`${scwEsc(a.area)} (${mgP(a.pct)})`;
+    T.push({c:'info',h:`<b>Area.</b> Capaian tertinggi: ${top.map(f).join(', ')}. Terendah: ${low.map(f).join(', ')} — area ini perlu perhatian karena realisasinya jauh di bawah rata-rata nasional ${mgP(pc)}.`}); }
+  const big=areas.slice().sort((x,y)=>y.sisa-x.sisa).slice(0,3);
+  if(sisa>0&&big.length) T.push({c:'info',h:`<b>Sisa pekerjaan terbesar</b> ada di ${big.map(a=>`${scwEsc(a.area)} (${fmt(a.sisa,true)}, ${mgP(P(a.sisa,sisa))})`).join(', ')}; ketiganya menampung ${mgP(P(big.reduce((s,a)=>s+a.sisa,0),sisa))} dari seluruh sisa.`});
+  const nc=M.rows.filter(r=>!r.baru&&!mkorReal(r)&&r.awal>0.5), np=M.rows.filter(r=>r.baru&&!mkorReal(r)&&r.awal>0.5);
+  const sum=(a,f)=>a.reduce((s,r)=>s+r[f],0);
+  T.push({c:(nc.length+np.length)>(k.cn+k.pn)*.5?'bad':'warn',h:`<b>Belum bergerak.</b> ${nc.length} dari ${k.cn} proyek carry over (${mgP(P(nc.length,k.cn))}, outstanding ${fmt(sum(nc,'awal'),true)}) dan ${np.length} dari ${k.pn} proyek periode (${mgP(P(np.length,k.pn))}, nilai ${fmt(sum(np,'awal'),true)}) belum mencatat kenaikan progress di periode ini.`});
+  if(mon.length){
+    const tot=mon.map(m=>m.c+m.p), avg=k.rv/mon.length, imax=tot.indexOf(Math.max(...tot)), imin=tot.indexOf(Math.min(...tot));
+    let h=`<b>Tren bulanan.</b> Rata-rata realisasi ${fmt(avg,true)}/bulan. Tertinggi ${mon[imax].lbl} (${fmt(tot[imax],true)})`+(mon.length>1?`, terendah ${mon[imin].lbl} (${fmt(tot[imin],true)})`:'')+'.';
+    const last=mon[mon.length-1], lt=tot[tot.length-1];
+    if(MG_LL!=null){const d=new Date(MG_LL*86400000); if(d.getUTCFullYear()===last.y&&d.getUTCMonth()+1===last.m&&d.getUTCDate()<28) h+=` Bulan ${last.lbl} baru terisi s/d ${d.getUTCDate()} (${fmt(lt,true)}), jadi belum penuh.`;}
+    const left=(+M.f.toThn===last.y)?12-BLN_ORDER[M.f.toBln]:0;
+    if(sisa>0&&avg>0){ const need=left>0?sisa/left:0, mths=sisa/avg;
+      h+=` Dengan laju rata-rata itu, sisa ${fmt(sisa,true)} setara ±${mths.toFixed(1).replace('.',',')} bulan`+(left>0?`; tersisa ${left} bulan sampai Desember, sehingga butuh ±${fmt(need,true)}/bulan (${(need/avg).toFixed(1).replace('.',',')}× laju sekarang) bila seluruh sisa ingin tuntas tahun ini (perkiraan kasar).`:'.'); }
+    T.push({c:'info',h});
+  }
+  const top10=M.rows.filter(r=>r.real>0.5).sort((x,y)=>y.real-x.real).slice(0,10);
+  if(k.rv>0&&top10.length){ const s10=sum(top10,'real'); T.push({c:P(s10,k.rv)>=.5?'warn':'info',h:`<b>Konsentrasi.</b> 10 proyek terbesar menyumbang ${mgP(P(s10,k.rv))} dari total realisasi (${fmt(s10,true)})${P(s10,k.rv)>=.5?' — realisasi bertumpu pada sedikit proyek':''}.`}); }
+  if(M.others.length) T.push({c:'warn',h:`<b>Kualitas data.</b> Area di luar 14 area baku (${scwEsc(M.others.join(', '))}) digabung ke baris LAINNYA; sebaiknya area di sheet list dirapikan agar laporan per area akurat.`});
+  const stuck=M.rows.filter(r=>!mkorReal(r)&&r.awal>0.5).sort((x,y)=>y.awal-x.awal).slice(0,10);
+  return {texts:T,areas,wils,top10,stuck,sisa};
+}
+/* ── grafik SVG ── */
+const mgSvg=(w,h,inner)=>`<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" style="display:block;overflow:visible">${inner}</svg>`;
+const mgTx=(x,y,s,t,P,o={})=>`<text x="${x}" y="${y}" text-anchor="${o.a||'start'}" style="fill:${o.c||P.t2};font-size:${s}px;font-weight:${o.b?700:400};font-family:inherit">${scwEsc(t)}</text>`;
+const mgRc=(x,y,w,h,c,tip)=>`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(0,w).toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" style="fill:${c}">${tip?`<title>${scwEsc(tip)}</title>`:''}</rect>`;
+const mgLegend=(P,sisa)=>`<div class="mga-lg"><span><i style="background:${P.c}"></i>Realisasi carry over</span><span><i style="background:${P.p}"></i>Realisasi proyek periode</span>${sisa?`<span><i style="background:${P.track}"></i>Sisa</span>`:''}</div>`;
+function mgChartArea(A,P){
+  const a=A.areas.filter(x=>x.base>0.5).sort((x,y)=>y.pct-x.pct); if(!a.length) return '<div class="mg-ks">Tidak ada data.</div>';
+  const W=640,rh=23,x0=122,bw=360,mx=Math.max(...a.map(x=>x.base)); let s='';
+  a.forEach((r,i)=>{ const y=i*rh+6, sc=bw/mx, wc=r.rc*sc, wp=r.rp*sc, wb=r.base*sc, tip=`${r.area} (${r.wil}) — realisasi ${fmt(r.real,true)} dari ${fmt(r.base,true)} = ${mgP(r.pct)}; ${r.rn}/${r.n} proyek bergerak`;
+    s+=mgTx(x0-8,y+10,11,r.area,P,{a:'end',c:P.t1})+mgRc(x0,y+2,wb,10,P.track,tip)+mgRc(x0,y+2,wc,10,P.c)+mgRc(x0+wc,y+2,wp,10,P.p)
+      +mgTx(x0+bw+14,y+11,11,mgP(r.pct),P,{b:1,c:P.t1})+mgTx(x0+bw+66,y+11,10,mgS(r.real)+' / '+mgS(r.base),P,{c:P.t3}); });
+  return mgSvg(W,a.length*rh+10,s);
+}
+function mgChartMonth(mon,P){
+  if(!mon.length) return '<div class="mg-ks">Tidak ada data.</div>';
+  const W=640,H=240,l=46,r=8,t=22,b=30,pw=W-l-r,ph=H-t-b, tot=mon.map(m=>m.c+m.p), mx=Math.max(1,...tot)*1.12, n=mon.length, step=pw/n, bw=Math.min(36,step*.62), avg=tot.reduce((s,x)=>s+x,0)/n; let s='';
+  for(let i=0;i<=3;i++){ const v=mx*i/3, y=t+ph-ph*i/3; s+=`<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" style="stroke:${P.grid};stroke-width:1"/>`+mgTx(l-6,y+3.5,10,mgS(v),P,{a:'end',c:P.t3}); }
+  mon.forEach((m,i)=>{ const x=l+step*i+(step-bw)/2, hc=Math.max(0,m.c)/mx*ph, hp=Math.max(0,m.p)/mx*ph, y0=t+ph, tip=`${m.lbl}: carry over ${fmt(m.c,true)} + proyek periode ${fmt(m.p,true)} = ${fmt(m.c+m.p,true)}`;
+    s+=mgRc(x,y0-hc,bw,hc,P.c,tip)+mgRc(x,y0-hc-hp-(hc>0&&hp>0?2:0),bw,hp,P.p,tip);
+    if(n<=14) s+=mgTx(x+bw/2,y0-hc-hp-6,10,mgS(tot[i]),P,{a:'middle',c:P.t1,b:1});
+    if(n<=14||i%2===0) s+=mgTx(x+bw/2,H-10,10,m.lbl,P,{a:'middle',c:P.t3}); });
+  const ya=t+ph-avg/mx*ph; s+=`<line x1="${l}" x2="${W-r}" y1="${ya}" y2="${ya}" style="stroke:${P.t2};stroke-width:1.5;stroke-dasharray:5 4"/>`+mgTx(W-r,9,10,'- - rata-rata '+mgS(avg)+'/bulan',P,{a:'end',c:P.t2,b:1});
+  return mgSvg(W,H,s);
+}
+function mgChartWil(A,P){
+  const w=A.wils.filter(x=>x.base>0.5); if(!w.length) return '<div class="mg-ks">Tidak ada data.</div>';
+  const W=640,H=240,l=46,r=8,t=24,b=28,pw=W-l-r,ph=H-t-b, mx=Math.max(...w.map(x=>x.base))*1.12, step=pw/w.length, bw=Math.min(90,step*.5); let s='';
+  for(let i=0;i<=3;i++){ const v=mx*i/3, y=t+ph-ph*i/3; s+=`<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" style="stroke:${P.grid};stroke-width:1"/>`+mgTx(l-6,y+3.5,10,mgS(v),P,{a:'end',c:P.t3}); }
+  w.forEach((x,i)=>{ const bx=l+step*i+(step-bw)/2, y0=t+ph, hc=x.rc/mx*ph, hp=x.rp/mx*ph, hs=x.sisa/mx*ph, tip=`${x.wil}: realisasi ${fmt(x.real,true)} dari ${fmt(x.base,true)} = ${mgP(x.pct)}; sisa ${fmt(x.sisa,true)}`;
+    s+=mgRc(bx,y0-hc,bw,hc,P.c,tip)+mgRc(bx,y0-hc-hp-2,bw,hp,P.p,tip)+mgRc(bx,y0-hc-hp-hs-4,bw,hs,P.track,tip)
+      +mgTx(bx+bw/2,y0-hc-hp-hs-10,11,mgP(x.pct)+' · basis '+mgS(x.base),P,{a:'middle',c:P.t1,b:1})+mgTx(bx+bw/2,H-9,11,x.wil,P,{a:'middle',c:P.t1}); });
+  return mgSvg(W,H,s);
+}
+function mgTopHTML(a,vf,cls){
+  if(!a.length) return '<div class="mg-ks">Tidak ada.</div>';
+  return '<table class="mga-t"><tbody>'+a.map((r,i)=>`<tr onclick="scwOpenProj(${jsq(r.k)})"><td style="width:22px;color:var(--text3)">${i+1}</td><td><a>${scwEsc(r.nama)}</a><small>${scwEsc(r.k)} · ${scwEsc(r.area||'')} · ${scwEsc(r.sc||'—')}</small></td><td>${fmt(vf(r),true)}</td></tr>`).join('')+'</tbody></table>';
+}
+function mgaRender(){
+  const A=MG_AN; if(!A) return;
+  $('mga-sub').textContent='dibuat otomatis dari data periode '+MG_M.lbl.per+' · M = miliar rupiah';
+  $('mga-list').innerHTML=A.texts.map(t=>`<li class="${t.c}"><div>${t.h}</div></li>`).join('');
+  const P=MG_PAL_WEB;
+  $('mga-cA').innerHTML=mgLegend(P,true)+mgChartArea(A,P);
+  $('mga-cB').innerHTML=mgLegend(P,false)+mgChartMonth(MG_MON,P);
+  $('mga-cC').innerHTML=mgLegend(P,true)+mgChartWil(A,P);
+  $('mga-top1').innerHTML=mgTopHTML(A.top10,r=>r.real);
+  $('mga-top2').innerHTML=mgTopHTML(A.stuck,r=>r.awal);
+}
+function mgAnaPrintHTML(M){
+  const A=MG_AN, P=MG_PAL_PRN; if(!A) return '';
+  const tl=(a,vf)=>'<table class="mgp-tl">'+a.map((r,i)=>`<tr><td>${i+1}</td><td>${scwEsc(r.nama)}<br><i>${scwEsc(r.k)} · ${scwEsc(r.area||'')} · ${scwEsc(r.sc||'—')}</i></td><td>${scwEsc(fmt(vf(r),true))}</td></tr>`).join('')+'</table>';
+  return `<div class="mgp-pg2"><div class="mgp-h"><div><div class="mgp-t">ANALISA — REALISASI PROYEK TEKNIK</div><div class="mgp-s">Periode ${scwEsc(M.lbl.per)} · M = miliar rupiah</div></div><div class="mgp-co">PT SANDANA</div></div>
+   <ul class="mgp-bul">${A.texts.map(t=>`<li>${t.h}</li>`).join('')}</ul>
+   <div class="mgp-g"><div><div class="mgp-ch">Capaian per area</div>${mgLegend(P,true)}${mgChartArea(A,P)}</div>
+    <div><div class="mgp-ch">Realisasi per bulan</div>${mgLegend(P,false)}${mgChartMonth(MG_MON,P)}<div class="mgp-ch" style="margin-top:6px">Capaian per wilayah</div>${mgLegend(P,true)}${mgChartWil(A,P)}</div></div>
+   <div class="mgp-g"><div><div class="mgp-ch">5 proyek realisasi terbesar</div>${tl(A.top10.slice(0,5),r=>r.real)}</div><div><div class="mgp-ch">5 proyek outstanding terbesar yang belum bergerak</div>${tl(A.stuck.slice(0,5),r=>r.awal)}</div></div></div>`;
 }
 /* ── Excel (berformat laporan; memakai xlsx-js-style bila bisa dimuat, jika tidak tetap terunduh tanpa warna) ── */
 function mgLoadStyleLib(){
@@ -5717,8 +5936,17 @@ async function mgExcel(){
     'Realisasi (Rp)':Math.round(r.real),'Outstanding Akhir (Rp)':Math.round(r.akhir),'Terealisasi':mkorReal(r)?'Ya':'Tidak','Keterangan':r.ket||''}));
   const wd=XLSX.utils.json_to_sheet(det.length?det:[{'(kosong)':'Tidak ada data'}]);
   wd['!cols']=Object.keys(det[0]||{a:1}).map(k=>({wch:Math.min(46,Math.max(k.length+2,12))})); wd['!freeze']={xSplit:0,ySplit:1}; wd['!autofilter']={ref:wd['!ref']};
+  const A=MG_AN, ana=[['ANALISA — REALISASI PROYEK TEKNIK'],['Periode '+L.per+' · M = miliar rupiah'],[]];
+  if(A){ A.texts.forEach(t=>ana.push([t.h.replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&amp;/g,'&')]));
+    ana.push([],['CAPAIAN PER AREA'],['Area','Wilayah','Basis (Rp)','Realisasi carry over (Rp)','Realisasi proyek periode (Rp)','Realisasi total (Rp)','Capaian (%)','Sisa (Rp)']);
+    A.areas.filter(x=>x.base>0.5).sort((x,y)=>y.pct-x.pct).forEach(x=>ana.push([x.area,x.wil,Math.round(x.base),Math.round(x.rc),Math.round(x.rp),Math.round(x.real),Math.round(x.pct*10000)/100,Math.round(x.sisa)]));
+    ana.push([],['CAPAIAN PER WILAYAH'],['Wilayah','Basis (Rp)','Realisasi (Rp)','Capaian (%)','Sisa (Rp)']);
+    A.wils.forEach(x=>ana.push([x.wil,Math.round(x.base),Math.round(x.real),Math.round(x.pct*10000)/100,Math.round(x.sisa)]));
+    ana.push([],['REALISASI PER BULAN'],['Bulan','Carry over (Rp)','Proyek periode (Rp)','Total (Rp)']);
+    MG_MON.forEach(m=>ana.push([m.lbl,Math.round(m.c),Math.round(m.p),Math.round(m.c+m.p)])); }
+  const wa=XLSX.utils.aoa_to_sheet(ana); wa['!cols']=[{wch:26},{wch:14},{wch:20},{wch:24},{wch:26},{wch:20},{wch:12},{wch:18}];
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Ringkasan Manajemen'); XLSX.utils.book_append_sheet(wb,wd,'Rincian Proyek');
+  XLSX.utils.book_append_sheet(wb,ws,'Ringkasan Manajemen'); XLSX.utils.book_append_sheet(wb,wa,'Analisa'); XLSX.utils.book_append_sheet(wb,wd,'Rincian Proyek');
   XLSX.writeFile(wb,'Ringkasan-Manajemen-'+M.f.fromThn+'-'+M.f.fromBln+'-'+M.f.toThn+'-'+M.f.toBln+'.xlsx');
   toast(st?'Excel diunduh (berformat laporan)':'Excel diunduh (tanpa warna — pustaka gaya tidak termuat)','ok');
 }
@@ -5735,8 +5963,8 @@ function mgPDF(){
     <div><b>${scwEsc(fmt(k.rpv,true))}</b><span>Realisasi proyek periode</span><i>${k.rpn} proyek · ${mgP(mgDiv(k.rpv,k.pv))}</i></div>
     <div><b>${scwEsc(fmt(k.rv,true))}</b><span>Total realisasi</span><i>${k.rn} dari ${k.tn} proyek</i></div>
     <div><b>${mgP(pc)}</b><span>Pencapaian total</span><i>sisa ${scwEsc(fmt(Math.max(0,k.tv-k.rv),true))}</i></div></div>
-   ${mgTableHTML(M)}
-   <div class="mgp-n">Carry over = proyek SPI sebelum awal periode yang pekerjaannya belum tuntas pada awal periode (Rp = sisa pekerjaan). Proyek periode = SPI terbit di periode (Rp = nilai kontrak). Realisasi = nilai kontrak × kenaikan progress menurut Berita Acara Progress Teknik (log progress) di periode. Baris area: % = porsi terhadap total wilayah; baris TOTAL kolom realisasi: % = rasio terhadap kolom carry over / proyek periode.</div>`;
+   ${mgTableHTML(M,false)}
+   <div class="mgp-n">Carry over = proyek SPI sebelum awal periode yang pekerjaannya belum tuntas pada awal periode (Rp = sisa pekerjaan). Proyek periode = SPI terbit di periode (Rp = nilai kontrak). Realisasi = nilai kontrak × kenaikan progress menurut Berita Acara Progress Teknik (log progress) di periode. Baris area: % = porsi terhadap total wilayah; baris TOTAL kolom realisasi: % = rasio terhadap kolom carry over / proyek periode.</div>`+mgAnaPrintHTML(M);
   let ps=$('mgmt-page-style'); if(!ps){ps=document.createElement('style');ps.id='mgmt-page-style';document.head.appendChild(ps);}
   ps.textContent='@media print{@page{size:A4 landscape;margin:8mm}}';
   const clean=()=>{document.body.classList.remove('print-mgmt'); ov.style.display='none'; window.removeEventListener('afterprint',clean);};
