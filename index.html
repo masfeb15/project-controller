@@ -1536,6 +1536,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         <select id="spc-gran" onchange="buildSphChart()" aria-label="Satuan"><option value="m">Bulanan</option><option value="w">Mingguan</option></select>
         <select id="spc-metric" onchange="buildSphChart()" aria-label="Ukuran"><option value="v">Nilai (Rp)</option><option value="n">Jumlah penawaran</option></select>
         <select id="spc-mode" onchange="buildSphChart()" aria-label="Tampilan"><option value="mon">Per periode</option><option value="cum">Kumulatif</option></select>
+        <select id="spc-group" onchange="buildSphChart()" aria-label="Pengelompokan" title="Gabungkan sales dalam satu grafik"><option value="s">Per sales</option><option value="w">Gabung per wilayah</option><option value="a">Gabung per area</option></select>
         <label class="scw-chk"><input type="checkbox" id="spc-same" onchange="buildSphChart()"> Skala sama</label>
       </div>
       <div class="scw-warn" id="spc-warn" role="status" hidden></div>
@@ -6319,9 +6320,9 @@ function sphParse(txt){
   const R=parseCSV(txt), hi=R.findIndex(r=>r.some(c=>/^tanggal$/i.test(cl(c))));
   if(hi<0) throw new Error('header "Tanggal" tidak ditemukan');
   const H=R[hi].map(c=>cl(c).toLowerCase()), ix=f=>H.findIndex(f);
-  const c={d:ix(h=>h==='tanggal'),no:ix(h=>h.startsWith('nomor')),pel:ix(h=>h==='pelanggan'),cab:ix(h=>h.includes('cabang')),wil:ix(h=>h==='wilayah'),
-    v:ix(h=>h==='total harga'),sc:ix(h=>h.includes('tenaga penjual')||h==='sales'),st:ix(h=>h.startsWith('status'))};
-  if(c.d<0||c.v<0||c.sc<0) throw new Error('kolom Tanggal / Total Harga / Nama Tenaga Penjual tidak ditemukan');
+  const c={d:ix(h=>h==='tanggal'),no:ix(h=>h.startsWith('nomor')),pel:ix(h=>h==='pelanggan'),cab:ix(h=>h.includes('cabang')||h.includes('area penjualan')||h==='area'),wil:ix(h=>h==='wilayah'),
+    v:ix(h=>h==='total harga'||h==='nominal'||h==='harga'),sc:ix(h=>h.includes('tenaga penjual')||h==='sales'||h==='nama sales'),st:ix(h=>h.startsWith('status'))};
+  if(c.d<0||c.v<0||c.sc<0) throw new Error('kolom Tanggal / Total Harga (NOMINAL) / Nama Tenaga Penjual (SALES) tidak ditemukan; header terbaca: '+H.filter(Boolean).join(', ')+'');
   const lines=[];
   R.slice(hi+1).forEach(r=>{
     const day=scwParseDay(r[c.d]); if(day==null) return;
@@ -6463,15 +6464,16 @@ function sphcModel(){
   const allWil=[...new Set(inP.map(r=>r.wil))].sort(), allArea=[...new Set(inP.filter(r=>!wil.size||wil.has(r.wil)).map(r=>r.area).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id',{numeric:true}));
   const pool=inP.filter(r=>(!wil.size||wil.has(r.wil))&&(!area.size||area.has(r.area)));
   const allSc=[...new Set(pool.filter(r=>r.sc).map(r=>r.sc))].sort();
-  const S={}, AR={}, tot={v:new Array(n).fill(0),n:new Array(n).fill(0)}, z=()=>new Array(n).fill(0);
+  const G={}, GA={}, S={}, AR={}, tot={v:new Array(n).fill(0),n:new Array(n).fill(0)}, z=()=>new Array(n).fill(0);
   pool.forEach(r=>{
     if(!r.sc||(scSel.size&&!scSel.has(r.sc))) return;
     const i=bins.findIndex(b=>r.day>=b.from&&r.day<=b.to); if(i<0) return;
     const o=S[r.sc]||(S[r.sc]={sc:r.sc,v:z(),n:z(),seg:[0,0,0],segN:[0,0,0],ac:{},wc:{}});
     o.v[i]+=r.v; o.n[i]++; o.seg[r.st]+=r.v; o.segN[r.st]++; o.ac[r.area]=(o.ac[r.area]||0)+1; o.wc[r.wil]=(o.wc[r.wil]||0)+1; tot.v[i]+=r.v; tot.n[i]++;
+    [[G,r.wil],[GA,r.area||'—']].forEach(([T,key])=>{const g=T[key]||(T[key]={l:key,v:z(),n:z(),scs:new Set()}); g.v[i]+=r.v; g.n[i]++; g.scs.add(r.sc);});
     const q=AR[r.area||'—']||(AR[r.area||'—']={l:r.area||'—',seg:[0,0,0],segN:[0,0,0]}); q.seg[r.st]+=r.v; q.segN[r.st]++;
   });
-  return {bins,n,unit,unitS,range,gran,S,AR,tot,allWil,allArea,allSc,areas:[...area],wils:[...wil]};
+  return {bins,n,unit,unitS,range,gran,S,AR,G,GA,tot,allWil,allArea,allSc,areas:[...area],wils:[...wil]};
 }
 function sphHBar(items,F,k){
   const P=SCL_WEB, W=580, lw=172, rw=78, rh=24, pw=W-lw-rw, mx=Math.max(1,...items.map(i=>i.tot)); let s='';
@@ -6480,6 +6482,16 @@ function sphHBar(items,F,k){
     s+=mgTx(x+5,y+16,10.5,sphFmt(it.tot,k),P,{c:P.t2,b:1});});
   return mgSvg(W,Math.max(rh,items.length*rh),s)+`<div class="mg-lg" style="margin-top:6px">`+SPH_ST.map((t,j)=>`<span><i style="background:${SPH_STC[j]}"></i>${t}</span>`).join('')+`</div>`;
 }
+function sphMulti(ss,labels,F,W,H){
+  const P=SCL_WEB, l=46, r=10, t=14, b=22, n=labels.length, pw=W-l-r, ph=H-t-b;
+  const mx=Math.max(1,...ss.flatMap(s=>s.vals))*1.08, X=i=>n===1?l+pw/2:l+pw*i/(n-1), Y=v=>t+ph-Math.max(0,v)/mx*ph; let s='';
+  [0,.5,1].forEach(f=>{const y=t+ph-ph*f; s+=`<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" style="stroke:${P.grid};stroke-width:${f===0?1.2:.6}"/>`+mgTx(l-4,y+3,10,F(mx*f/1.08),P,{a:'end',c:P.t3});});
+  ss.forEach(g=>{s+=`<polyline points="${g.vals.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')}" style="fill:none;stroke:${g.c};stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round"/>`+
+    g.vals.map((v,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:${g.c}"><title>${scwEsc(g.l)} · ${scwEsc(labels[i])}: ${scwEsc(F(v))}</title></circle>`).join('');});
+  const ev=Math.max(1,Math.ceil(n/18)); labels.forEach((lb,i)=>{if(i%ev===0) s+=mgTx(X(i),H-4,10,lb,P,{a:'middle',c:P.t3});});
+  return mgSvg(W,H,s)+`<div class="mg-lg" style="margin-top:6px">`+ss.map(g=>`<span><i style="background:${g.c}"></i>${scwEsc(g.l)} · ${scwEsc(g.tl)}</span>`).join('')+`</div>`;
+}
+const SPH_WC={BARAT:'var(--blue)',TIMUR:'var(--green)',LAINNYA:'var(--amber)'};
 function buildSphChart(){
   if(!$('spc-sec')) return;
   sphcInit();
@@ -6504,6 +6516,18 @@ function buildSphChart(){
   $('spc-area-t').textContent='🗺️ '+kN+' per area';
   $('spc-areas').innerHTML=ar.length?sphHBar(ar,F,k):'<div class="scw-empty">Tidak ada data.</div>';
   $('spc-note').innerHTML='Penawaran dihitung per nomor penawaran unik. Garis putus-putus = rata-rata per '+M.unit+'. Warna batang: hijau = Terproses, kuning = Menunggu diproses, biru = data awal GSheet (Jan–Jun, tanpa status).';
+  const gm=$('spc-group').value;
+  if(gm!=='s'){
+    const gs=Object.values(gm==='w'?M.G:M.GA).map(g=>{g.total=g[k].reduce((a,x)=>a+x,0); g.avg=g.total/M.n; let pi=0; g[k].forEach((v,i)=>{if(v>g[k][pi]) pi=i;}); g.peak=pi; g.ns=g.scs.size; return g;}).filter(g=>g.total>0).sort((a,b)=>b.total-a.total);
+    gs.forEach((g,i)=>{g.c=(gm==='w'&&SPH_WC[g.l])||AREA_COLORS[i%AREA_COLORS.length]; g.vals=cum?cumA(g[k]):g[k]; g.tl=F(g.total);});
+    const yg=same?Math.max(1,...gs.map(g=>Math.max(...g.vals))):0, gl=gm==='w'?'wilayah':'area';
+    $('spc-sub').textContent+=' · digabung per '+gl;
+    $('spc-grid').innerHTML=gs.length?`<div class="scl-card" style="grid-column:1/-1"><div class="scl-h"><div class="scl-n"><b>Perbandingan per ${gl} — ${scwEsc(kN.toLowerCase())}${cum?' kumulatif':' per '+M.unit}</b><small>semua sales dalam satu ${gl} digabung · ${gs.length} ${gl}</small></div></div>`+sphMulti(gs,M.bins.map(b=>b.lbl),k==='n'?(v=>String(Math.round(v))):mgS,900,240)+`</div>`+
+      gs.map((g,i)=>`<div class="scl-card"><div class="scl-h"><span class="scl-rk" style="background:${g.c};color:#fff">${i+1}</span><div class="scl-n"><b>${scwEsc(g.l)}</b><small>${g.ns} sales</small></div><div class="scl-t">${scwEsc(F(g.total))}</div></div>`+
+        sclLine(g.vals,M.bins.map(b=>b.lbl),{P,W:300,H:112,ymax:yg,avg:cum?null:g.avg,labelAll:false,bg:'var(--surf)',maxLbl:6})+
+        `<div class="scl-f"><span>Rata-rata ${scwEsc(F(g.avg))}/${M.unitS}</span><span>Puncak ${scwEsc(M.bins[g.peak].lbl)} · ${scwEsc(F(g[k][g.peak]))}</span></div></div>`).join(''):'<div class="scw-empty">Tidak ada data.</div>';
+    return;
+  }
   const ymax=same?Math.max(1,...rows.map(o=>Math.max(...(cum?cumA(o[k]):o[k])))):0;
   $('spc-grid').innerHTML=rows.length?rows.map((o,i)=>{const vals=cum?cumA(o[k]):o[k];
     return `<div class="scl-card"><div class="scl-h"><span class="scl-rk">${i+1}</span><div class="scl-n"><b title="${scwEsc(o.sc)}">${scwEsc(o.sc)}</b><small>${scwEsc((o.wil&&o.wil!=='LAINNYA'?o.wil+' · ':'')+o.area)}</small></div><div class="scl-t">${scwEsc(F(o.total))}</div></div>`+
