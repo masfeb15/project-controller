@@ -3684,7 +3684,7 @@ function mkorModel(f){
   const {lo,hi}=mkorBounds(f), byK={}, f100=scwFin100Map();
   ALL.forEach(r=>{
     let kw=cl(r[C.KORWIL_TEK]); if(!kw||kw==='(kosong)'){ if(!f.all) return; kw='(tanpa korwil)'; }
-    const st=cl(r[C.STATUS]); if(f.all){ if(st==='BATAL') return; } else if(PIC_STATUS_SEL.size>0&&!PIC_STATUS_SEL.has(st)) return;   /* f.all = Ringkasan Manajemen: semua proyek, tanpa filter chip/korwil */
+    const st=cl(r[C.STATUS]); if(f.all){ if(st==='BATAL') return; const jn=normJenis(r[C.JENIS]); if(jn==='ALKES'||jn==='RETAIL') return; } else if(PIC_STATUS_SEL.size>0&&!PIC_STATUS_SEL.has(st)) return;   /* f.all = Ringkasan Manajemen: semua proyek, tanpa filter chip/korwil */
     if(f.area&&cl(r[C.AREA])!==f.area) return;
     if(f.korwil&&kw!==f.korwil) return;
     if(f.sc&&cl(r[C.PIC_TEK])!==f.sc) return;
@@ -3716,7 +3716,7 @@ function mkorModel(f){
     }
     if(p0<0.9999||hut){o.nProyek++; o.nk+=nk;}     /* proyek yang masih punya pekerjaan di awal periode (atau baru masuk) */
     if(p0<0.9999||p1>p0||hut) o.rows.push({k,nama:pn(r),sc:cl(r[C.PIC_TEK])||'—',area:cl(r[C.AREA]),wil:cl(r[C.WILAYAH]).toUpperCase(),st,nk,p0,p1,awal:nk*(1-p0),real:nk*(p1-p0),akhir:nk*(1-p1),
-      hut:!!hut,bastIn:!!(hut&&hut.inP),baru,spi,
+      hut:!!hut,bastIn:!!(hut&&hut.inP),baru,spi,ba:scwParseDay(r[C.TGL_BA]),jenis:cl(r[C.JENIS]),
       ket:baru?('Proyek baru · SPI '+(spi!=null?scwDayStr(spi):'')):hut?('Hutang kerja: ditagih 100% '+(hut.d100!=null?scwDayStr(hut.d100):'')+(hut.ba!=null?(' · BAST '+scwDayStr(hut.ba)+(hut.inP?' (dalam periode)':' (setelah periode)')):' · BAST belum ada')):''});
     if(baru&&(p0<0.9999||p1>p0)) o.nBaru++;
     if(baru) o.baru+=nk*(1-p0); else o.awal+=nk*(1-p0);
@@ -5720,7 +5720,7 @@ function buildMgmt(){
   $('mg-sub').textContent='Periode '+M.lbl.per+' · realisasi dari log progress s/d '+(ll!=null?scwDayStr(ll):'—')+' · aturan sama dengan Ringkasan PIC';
   $('mg-kpi').innerHTML=mgKpiHTML(M);
   $('mg-tbl').innerHTML=mgTableHTML(M,true);
-  $('mg-note').innerHTML=(M.others.length?`<b>LAINNYA</b> = proyek dengan area di luar 14 area baku (${scwEsc(M.others.join(', '))}); sebaiknya dirapikan di sheet list. `:'')+`<b>Cara membaca.</b> <b>Carry over</b>: proyek yang SPI-nya terbit sebelum awal periode dan pekerjaannya belum tuntas pada awal periode; Rp = sisa pekerjaan (nilai kontrak × (1 − progress awal periode)), termasuk proyek yang sudah ditagih 100% tetapi BAST belum diakui (Rp 0). <b>Proyek periode</b>: SPI terbit di dalam periode; Rp = nilai kontrak. <b>Realisasi</b>: nilai kontrak × kenaikan progress menurut Berita Acara Progress Teknik (log progress) di dalam periode; Jumlah = proyek yang progress-nya naik atau BAST-nya diakui di periode. Pada baris area, % = porsi terhadap total wilayah; pada baris TOTAL kolom Realisasi, % = rasio realisasi terhadap kolom carry over / proyek periode.`;
+  $('mg-note').innerHTML=(M.others.length?`<b>LAINNYA</b> = proyek dengan area di luar 14 area baku (${scwEsc(M.others.join(', '))}); sebaiknya dirapikan di sheet list. `:'')+`<b>Jenis ALKES dan RETAIL tidak dihitung</b> (bukan proyek). <b>Cara membaca.</b> <b>Carry over</b>: proyek yang SPI-nya terbit sebelum awal periode dan pekerjaannya belum tuntas pada awal periode; Rp = sisa pekerjaan (nilai kontrak × (1 − progress awal periode)), termasuk proyek yang sudah ditagih 100% tetapi BAST belum diakui (Rp 0). <b>Proyek periode</b>: SPI terbit di dalam periode; Rp = nilai kontrak. <b>Realisasi</b>: nilai kontrak × kenaikan progress menurut Berita Acara Progress Teknik (log progress) di dalam periode; Jumlah = proyek yang progress-nya naik atau BAST-nya diakui di periode. Pada baris area, % = porsi terhadap total wilayah; pada baris TOTAL kolom Realisasi, % = rasio realisasi terhadap kolom carry over / proyek periode.`;
   MG_MON=mgMonthly(f); MG_AN=mgAnalyze(M,MG_MON); mgdFill(); mgdRender(); mgaRender();
 }
 /* ══ Ringkasan Manajemen — rincian proyek, analisa & grafik ══ */
@@ -5729,8 +5729,8 @@ const MG_PAL_WEB={t1:'var(--text)',t2:'var(--text2)',t3:'var(--text3)',grid:'rgb
 const MG_PAL_PRN={t1:'#111',t2:'#333',t3:'#666',grid:'#cfcfcf',track:'#d6d6d6',c:'#2563eb',p:'#f59e0b'};
 let MG_MON=[], MG_AN=null, MG_LL=null;
 const MGD={q:'',grp:'',rl:'',area:'',kw:'',sort:'real',dir:-1,lim:150};
-const MGD_COLS=[['k','KODE'],['nama','PROYEK'],['area','AREA'],['kw','KORWIL'],['sc','SC TEKNIK'],['st','STATUS'],['baru','KELOMPOK'],['spi','SPI'],['nk','NILAI KONTRAK'],['p0','PROG. AWAL'],['p1','PROG. AKHIR'],['awal','OUTSTANDING AWAL'],['real','REALISASI'],['akhir','SISA']];
-const MGD_W=[6,16,6.5,7,7,5.5,5.5,5.5,8,4.5,4.5,8,8,8], MGD_R=['nk','awal','real','akhir'];
+const MGD_COLS=[['k','KODE'],['nama','PROYEK'],['area','AREA'],['kw','KORWIL'],['sc','SC TEKNIK'],['st','STATUS'],['baru','KELOMPOK'],['spi','SPI'],['ba','TGL BA/BAST'],['nk','NILAI KONTRAK'],['p0','PROG. AWAL'],['p1','PROG. AKHIR'],['awal','OUTSTANDING AWAL'],['real','REALISASI'],['akhir','SISA']];
+const MGD_W=[6,13,6,6.5,6.5,5,5,5.5,5.5,8,4.5,4.5,8,8,8], MGD_R=['nk','awal','real','akhir'];
 function mgdRows(){
   const M=MG_M; if(!M) return [];
   const q=MGD.q.trim().toLowerCase();
@@ -5769,11 +5769,11 @@ function mgdRender(){
   const ar=k=>MGD.sort===k?(MGD.dir<0?' ▼':' ▲'):'', pc=x=>(x*100).toFixed(1).replace('.',',')+'%';
   let h='<colgroup>'+MGD_W.map(w=>`<col style="width:${w}%">`).join('')+'</colgroup><thead><tr>'+MGD_COLS.map(([k,l])=>`<th onclick="mgdSort('${k}')" class="${MGD_R.includes(k)?'r':''}">${l}${ar(k)}</th>`).join('')+'</tr></thead><tbody>';
   sh.forEach(r=>{
-    h+=`<tr onclick="scwOpenProj(${jsq(r.k)})"><td title="${scwEsc(r.k)}">${scwEsc(r.k)}</td><td title="${scwEsc(r.nama)}">${scwEsc(r.nama)}</td><td title="${scwEsc(r.area||'')}">${scwEsc(r.area||'')}</td><td title="${scwEsc(r.kw)}">${scwEsc(r.kw)}</td><td title="${scwEsc(r.sc||'')}">${scwEsc(r.sc||'')}</td><td>${scwEsc(r.st||'')}</td><td class="mgd-g ${r.baru?'p':'c'}">${r.baru?'Periode':'Carry over'}</td><td>${r.spi!=null?scwDayStr(r.spi):''}</td>`+
+    h+=`<tr onclick="scwOpenProj(${jsq(r.k)})"><td title="${scwEsc(r.k)}">${scwEsc(r.k)}</td><td title="${scwEsc(r.nama)}">${scwEsc(r.nama)}</td><td title="${scwEsc(r.area||'')}">${scwEsc(r.area||'')}</td><td title="${scwEsc(r.kw)}">${scwEsc(r.kw)}</td><td title="${scwEsc(r.sc||'')}">${scwEsc(r.sc||'')}</td><td>${scwEsc(r.st||'')}</td><td class="mgd-g ${r.baru?'p':'c'}">${r.baru?'Periode':'Carry over'}</td><td>${r.spi!=null?scwDayStr(r.spi):''}</td><td>${r.ba!=null?scwDayStr(r.ba):''}</td>`+
       `<td class="r">${mgN(r.nk)}</td><td class="r">${pc(r.p0)}</td><td class="r">${pc(r.p1)}</td><td class="r">${mgN(r.awal)}</td><td class="r ${mkorReal(r)?'mgd-ok':''}">${mgN(r.real)}</td><td class="r">${mgN(r.akhir)}</td></tr>`;
   });
-  if(!sh.length) h+='<tr><td colspan="14" style="text-align:center;padding:18px;color:var(--text3)">Tidak ada proyek yang cocok dengan filter.</td></tr>';
-  h+=`</tbody><tfoot><tr><td colspan="8">TOTAL ${a.length} proyek</td><td class="r">${mgN(S.nk)}</td><td></td><td></td><td class="r">${mgN(S.awal)}</td><td class="r">${mgN(S.real)}</td><td class="r">${mgN(S.akhir)}</td></tr></tfoot>`;
+  if(!sh.length) h+='<tr><td colspan="15" style="text-align:center;padding:18px;color:var(--text3)">Tidak ada proyek yang cocok dengan filter.</td></tr>';
+  h+=`</tbody><tfoot><tr><td colspan="9">TOTAL ${a.length} proyek</td><td class="r">${mgN(S.nk)}</td><td></td><td></td><td class="r">${mgN(S.awal)}</td><td class="r">${mgN(S.real)}</td><td class="r">${mgN(S.akhir)}</td></tr></tfoot>`;
   t.innerHTML=h;
   $('mgd-sub').textContent=a.length+' dari '+M.rows.length+' proyek · realisasi '+fmt(S.real,true)+(MGD.area?' · area '+MGD.area:'');
   $('mgd-more').innerHTML=a.length>MGD.lim?`<button type="button" class="scw-dl" onclick="mgdMore()">Tampilkan ${Math.min(250,a.length-MGD.lim)} lagi (sisa ${a.length-MGD.lim})</button>`:'';
@@ -5931,11 +5931,12 @@ async function mgExcel(){
   /* sheet rincian proyek */
   const det=M.rows.slice().sort((a,b)=>String(a.wil).localeCompare(String(b.wil))||String(a.area).localeCompare(String(b.area))||(a.baru-b.baru)||b.real-a.real).map(r=>({
     'Wilayah':r.wil||'','Area':(r.area||'').toUpperCase(),'Korwil Teknik':r.kw,'SC Teknik':r.sc,'Kode':r.k,'Proyek':r.nama,'Status':r.st,
-    'Kelompok':r.baru?'Proyek periode':'Carry over','Tanggal SPI':r.spi!=null?scwDayStr(r.spi):'','Nilai Kontrak (Rp)':Math.round(r.nk),
+    'Jenis':r.jenis||'','Kelompok':r.baru?'Proyek periode':'Carry over','Tanggal SPI':r.spi!=null?scwDayStr(r.spi):'','Tgl BA/BAST':r.ba!=null?scwDayStr(r.ba):'','Nilai Kontrak (Rp)':Math.round(r.nk),
     'Progress Awal (%)':Math.round(r.p0*10000)/100,'Progress Akhir (%)':Math.round(r.p1*10000)/100,'Outstanding Awal / Nilai Proyek (Rp)':Math.round(r.awal),
     'Realisasi (Rp)':Math.round(r.real),'Outstanding Akhir (Rp)':Math.round(r.akhir),'Terealisasi':mkorReal(r)?'Ya':'Tidak','Keterangan':r.ket||''}));
   const wd=XLSX.utils.json_to_sheet(det.length?det:[{'(kosong)':'Tidak ada data'}]);
-  wd['!cols']=Object.keys(det[0]||{a:1}).map(k=>({wch:Math.min(46,Math.max(k.length+2,12))})); wd['!freeze']={xSplit:0,ySplit:1}; wd['!autofilter']={ref:wd['!ref']};
+  wd['!cols']=Object.keys(det[0]||{a:1}).map(k=>({wch:Math.min(46,Math.max(k.length+2,12))}));
+  { const hs=Object.keys(det[0]||{}); const pc=hs.map((h,i)=>/^Progress/.test(h)?i:-1).filter(i=>i>=0); det.forEach((_,ri)=>pc.forEach(ci=>{const c=wd[XLSX.utils.encode_cell({r:ri+1,c:ci})]; if(c&&c.t==='n') c.z='0.00';})); } wd['!freeze']={xSplit:0,ySplit:1}; wd['!autofilter']={ref:wd['!ref']};
   const A=MG_AN, ana=[['ANALISA — REALISASI PROYEK TEKNIK'],['Periode '+L.per+' · M = miliar rupiah'],[]];
   if(A){ A.texts.forEach(t=>ana.push([t.h.replace(/<[^>]+>/g,'').replace(/&lt;/g,'<').replace(/&amp;/g,'&')]));
     ana.push([],['CAPAIAN PER AREA'],['Area','Wilayah','Basis (Rp)','Realisasi carry over (Rp)','Realisasi proyek periode (Rp)','Realisasi total (Rp)','Capaian (%)','Sisa (Rp)']);
@@ -5964,7 +5965,7 @@ function mgPDF(){
     <div><b>${scwEsc(fmt(k.rv,true))}</b><span>Total realisasi</span><i>${k.rn} dari ${k.tn} proyek</i></div>
     <div><b>${mgP(pc)}</b><span>Pencapaian total</span><i>sisa ${scwEsc(fmt(Math.max(0,k.tv-k.rv),true))}</i></div></div>
    ${mgTableHTML(M,false)}
-   <div class="mgp-n">Carry over = proyek SPI sebelum awal periode yang pekerjaannya belum tuntas pada awal periode (Rp = sisa pekerjaan). Proyek periode = SPI terbit di periode (Rp = nilai kontrak). Realisasi = nilai kontrak × kenaikan progress menurut Berita Acara Progress Teknik (log progress) di periode. Baris area: % = porsi terhadap total wilayah; baris TOTAL kolom realisasi: % = rasio terhadap kolom carry over / proyek periode.</div>`+mgAnaPrintHTML(M);
+   <div class="mgp-n">Carry over = proyek SPI sebelum awal periode yang pekerjaannya belum tuntas pada awal periode (Rp = sisa pekerjaan). Proyek periode = SPI terbit di periode (Rp = nilai kontrak). Realisasi = nilai kontrak × kenaikan progress menurut Berita Acara Progress Teknik (log progress) di periode. Jenis ALKES dan RETAIL tidak dihitung (bukan proyek). Baris area: % = porsi terhadap total wilayah; baris TOTAL kolom realisasi: % = rasio terhadap kolom carry over / proyek periode.</div>`+mgAnaPrintHTML(M);
   let ps=$('mgmt-page-style'); if(!ps){ps=document.createElement('style');ps.id='mgmt-page-style';document.head.appendChild(ps);}
   ps.textContent='@media print{@page{size:A4 landscape;margin:8mm}}';
   const clean=()=>{document.body.classList.remove('print-mgmt'); ov.style.display='none'; window.removeEventListener('afterprint',clean);};
