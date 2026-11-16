@@ -568,7 +568,35 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .mga-t td{padding:5px 6px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
 .mga-t td:last-child{text-align:right;font-family:var(--mono);color:var(--text);white-space:nowrap}
 .mga-t a{color:var(--text);font-weight:600}.mga-t small{display:block;color:var(--text3);font-size:10.5px}
+
+/* Grafik garis per SC */
+.scl-sec .mg-kpi{margin-bottom:12px}
+.scl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px}
+.scl-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r2);padding:10px 12px;min-width:0;break-inside:avoid}
+.scl-h{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.scl-rk{flex:none;width:22px;height:22px;border-radius:50%;background:var(--blue-d);color:var(--blue);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.scl-n{flex:1;min-width:0}.scl-n b{display:block;font-size:12.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.scl-n small{display:block;font-size:10.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scl-t{flex:none;font-family:var(--mono);font-size:12.5px;font-weight:800;color:var(--text)}
+.scl-f{display:flex;justify-content:space-between;gap:6px;font-size:10.5px;color:var(--text3);margin-top:2px}
 @media print{
+  body.print-scl > *{display:none!important}
+  body.print-scl #scl-pdf-overlay{display:block!important;position:static;width:100%;margin:0;padding:0;background:#fff;color:#111;font-family:Arial,sans-serif}
+  #scl-pdf-overlay *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #scl-pdf-overlay .mgp-h{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1f3b73;padding-bottom:4px;margin-bottom:6px}
+  #scl-pdf-overlay .mgp-t{font-size:14px;font-weight:900;color:#1f3b73}#scl-pdf-overlay .mgp-s{font-size:9px;color:#555;margin-top:2px}#scl-pdf-overlay .mgp-co{font-size:11px;font-weight:800;color:#1f3b73}
+  #scl-pdf-overlay .mgp-kpi{display:grid;gap:5px;margin-bottom:6px}
+  #scl-pdf-overlay .mgp-kpi>div{border:1px solid #bbb;border-radius:4px;padding:4px 6px;background:#f6f8fc}
+  #scl-pdf-overlay .mgp-kpi b{display:block;font-size:12px;color:#1f3b73}#scl-pdf-overlay .mgp-kpi span{display:block;font-size:7px;font-weight:700;text-transform:uppercase;color:#444}#scl-pdf-overlay .mgp-kpi i{display:block;font-size:7.5px;color:#666;font-style:normal}
+  #scl-pdf-overlay .mgp-ch{font-size:9px;font-weight:800;color:#1f3b73;margin-bottom:2px}
+  #scl-pdf-overlay .scl-ov{border:1px solid #ccc;border-radius:4px;padding:5px 8px;margin-bottom:6px}
+  #scl-pdf-overlay .scl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:0}
+  #scl-pdf-overlay .scl-card{border:1px solid #ccc;border-radius:4px;padding:4px 6px;background:#fff;break-inside:avoid;page-break-inside:avoid}
+  #scl-pdf-overlay .scl-h{display:flex;align-items:center;gap:5px;margin-bottom:1px}
+  #scl-pdf-overlay .scl-rk{flex:none;width:14px;height:14px;border-radius:50%;background:#dbe6fb;color:#1d4ed8;font-size:7px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  #scl-pdf-overlay .scl-n{flex:1;min-width:0}#scl-pdf-overlay .scl-n b{display:block;font-size:8px;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#scl-pdf-overlay .scl-n small{display:block;font-size:6.5px;color:#666}
+  #scl-pdf-overlay .scl-t{flex:none;font-size:8px;font-weight:800;color:#111}
+  #scl-pdf-overlay .scl-f{display:flex;justify-content:space-between;font-size:6.5px;color:#555}
+  #scl-pdf-overlay .mgp-n{font-size:7px;color:#555;margin-top:5px;line-height:1.35}
   body.print-mgmt > *{display:none!important}
   body.print-mgmt #mgmt-pdf-overlay{display:block!important;position:static;width:100%;margin:0;padding:0;background:#fff;color:#111;font-family:Arial,sans-serif}
   #mgmt-pdf-overlay *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -1233,6 +1261,29 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     <div class="scw-wrap">
       <div class="scw-scroll" id="scw-scroll"></div>
       <div class="scw-note" id="scw-note"></div>
+    </div>
+    <div class="scl-sec" id="scl-sec">
+      <div class="sec-hd" style="margin:22px 0 10px"><div><div class="sec-title" style="color:var(--blue);font-size:16px">📈 Grafik Realisasi per SC Teknik</div><div class="sec-sub" id="scl-sub"></div></div></div>
+      <div class="scw-bar">
+        <span class="scw-lbl">Periode</span>
+        <select id="scl-from-bln" onchange="buildScLine()" aria-label="Dari bulan"></select><select id="scl-from-thn" onchange="buildScLine()" aria-label="Dari tahun"></select>
+        <span class="scw-lbl">s.d</span>
+        <select id="scl-to-bln" onchange="buildScLine()" aria-label="Sampai bulan"></select><select id="scl-to-thn" onchange="buildScLine()" aria-label="Sampai tahun"></select>
+        <span class="scw-lbl">Area</span>
+        <div class="msel" id="scl-area" data-all="Semua Area"><button type="button" class="msel-b" onclick="msToggle('scl-area',event)" aria-label="Area">Semua Area</button><div class="msel-p" hidden></div></div>
+        <span class="scw-lbl">SC</span>
+        <div class="msel" id="scl-sc" data-all="Semua SC"><button type="button" class="msel-b" onclick="msToggle('scl-sc',event)" aria-label="SC">Semua SC</button><div class="msel-p" hidden></div></div>
+        <select id="scl-mode" onchange="buildScLine()" aria-label="Tampilan"><option value="mon">Per bulan</option><option value="cum">Kumulatif</option></select>
+        <label class="scw-chk"><input type="checkbox" id="scl-same" onchange="buildScLine()"> Skala sama</label>
+        <label class="scw-chk"><input type="checkbox" id="scl-zero" onchange="buildScLine()"> Tampilkan SC realisasi 0</label>
+        <span style="flex:1"></span>
+        <button type="button" class="scw-dl" onclick="sclPDF()">🖨 Unduh PDF</button>
+      </div>
+      <div class="scw-warn" id="scl-warn" role="status" hidden></div>
+      <div class="mg-kpi" id="scl-kpi"></div>
+      <div class="mg-card"><div class="mg-h" id="scl-over-t"></div><div id="scl-over"></div></div>
+      <div class="scw-note" id="scl-note" style="margin-top:8px"></div>
+      <div class="scl-grid" id="scl-grid"></div>
     </div>
   </div>
 
@@ -4469,6 +4520,7 @@ function scwPeriodText(M){
 function buildScWeek(){
   if(!ALL.length) return;
   initScWeek();
+  try{buildScLine();}catch(e){console.error(e);}
   if(!MS_VALS['scw-area']) msFill('scw-area',[...new Set(ALL.map(r=>cl(r[C.AREA]).toUpperCase()).filter(Boolean))].sort());
   const M=SCW_MODEL=scwBuildModel(), sel=M.sel;
   const wEl=$('scw-warn'); if(M.warn){wEl.textContent='⚠️ '+M.warn;wEl.hidden=false;}else wEl.hidden=true;
@@ -4509,6 +4561,125 @@ function buildScWeek(){
 
 function scwOpenProj(k){ openModal('kode',k); }
 
+/* ══ Grafik garis realisasi per SC (per bulan, periode bebas) + PDF laporan ══ */
+const SCL_WEB={t1:'var(--text)',t2:'var(--text2)',t3:'var(--text3)',grid:'rgba(128,128,128,.28)',ln:'var(--blue)',avg:'var(--amber)'};
+const SCL_PRN={t1:'#111',t2:'#333',t3:'#666',grid:'#d4d4d4',ln:'#1d4ed8',avg:'#d97706'};
+let SCL_M=null, SCL_SIG='';
+function sclInit(){
+  if($('scl-from-bln')&&!$('scl-from-bln').options.length){
+    let ll=null; LOG_PROG.forEach(r=>{const t=scwParseDay(r[LP.TGL]); if(t!=null&&(ll==null||t>ll)) ll=t;});
+    const d=ll!=null?new Date(ll*864e5):new Date(), ly=d.getUTCFullYear(), lm=d.getUTCMonth();
+    const mo=SCW_MONTHS.map((n,i)=>`<option value="${i}">${n}</option>`).join(''); let yo=''; for(let y=2024;y<=Math.max(ly,2026);y++) yo+=`<option value="${y}">${y}</option>`;
+    ['scl-from-bln','scl-to-bln'].forEach(i=>$(i).innerHTML=mo); ['scl-from-thn','scl-to-thn'].forEach(i=>$(i).innerHTML=yo);
+    $('scl-from-bln').value='0'; $('scl-from-thn').value=String(ly); $('scl-to-bln').value=String(lm); $('scl-to-thn').value=String(ly);
+  }
+  if(!MS_VALS['scl-area']) msFill('scl-area',[...new Set(ALL.map(r=>cl(r[C.AREA]).toUpperCase()).filter(Boolean))].sort());
+}
+function sclModel(){
+  const fy=+$('scl-from-thn').value, fm=+$('scl-from-bln').value, ty=+$('scl-to-thn').value, tm=+$('scl-to-bln').value;
+  const n=(ty*12+tm)-(fy*12+fm)+1;
+  if(n<1) return {err:'Periode "Dari" lebih akhir daripada "S.d".'};
+  if(n>36) return {err:'Periode maksimal 36 bulan.'};
+  const months=[]; for(let i=0;i<n;i++){const a=fy*12+fm+i; months.push({y:Math.floor(a/12),m:a%12,lbl:SCW_MON_S[a%12]+" '"+String(Math.floor(a/12)).slice(-2)});}
+  const lo=scwDay(fy,fm,1), hi=scwDay(ty,tm+1,1), areaSel=msGet('scl-area'), inArea=a=>!areaSel.size||areaSel.has(cl(a).toUpperCase());
+  const master=scwMaster(), mKey={}; master.forEach(m=>mKey[m.key]=m);
+  const normSC=v=>{const x=cl(v).toUpperCase().replace(/\s+/g,' '); const m=mKey[scwKey(x)]; return m?m.name:x;};
+  const kodeSC={}, kodeRow={}, ac={};
+  ALL.forEach(r=>{const k=normKode(r[C.KODE]); if(!k) return; kodeRow[k]=r; const sc=normSC(r[C.PIC_TEK]); if(!sc) return; kodeSC[k]=sc;
+    const a=cl(r[C.AREA]).toUpperCase(); if(a){(ac[sc]=ac[sc]||{})[a]=(ac[sc][a]||0)+1;} });
+  const S={}, get=sc=>S[sc]||(S[sc]={sc,m:new Array(n).fill(0),total:0}); let unmapped=0;
+  LOG_PROG.forEach(r=>{
+    const k=normKode(r[LP.KODE]); if(!k) return; const t=scwParseDay(r[LP.TGL]); if(t==null||t<lo||t>=hi) return;
+    const sc=kodeSC[k]; if(areaSel.size&&!(kodeRow[k]&&inArea(kodeRow[k][C.AREA]))) return;
+    let nk=num(r[LP.NK]); if(!nk&&kodeRow[k]) nk=num(kodeRow[k][C.NK]);
+    const v=(scwPct(r[LP.PCT_BARU])-scwPct(r[LP.PCT_SBLM]))*nk; if(!v) return;
+    if(!sc){unmapped+=v;return;}
+    const d=new Date(t*864e5), i=(d.getUTCFullYear()*12+d.getUTCMonth())-(fy*12+fm); if(i<0||i>=n) return;
+    const o=get(sc); o.m[i]+=v; o.total+=v;
+  });
+  if(!areaSel.size) master.forEach(m=>{const o=get(m.name); o.fixedArea=m.area;});
+  let rows=Object.values(S);
+  rows.forEach(o=>{ const a=ac[o.sc]||{}; o.area=o.fixedArea||scwJoinAreas(Object.entries(a).sort((x,y)=>y[1]-x[1]).slice(0,2).map(e=>e[0])); o.avg=o.total/n;
+    let pi=0; o.m.forEach((v,i)=>{if(v>o.m[pi]) pi=i;}); o.peak=pi; });
+  const allNames=rows.map(o=>o.sc).sort();
+  const scSel=msGet('scl-sc'); if(scSel.size) rows=rows.filter(o=>scSel.has(o.sc));
+  if(!$('scl-zero').checked) rows=rows.filter(o=>Math.abs(o.total)>0.5);
+  rows.sort((a,b)=>b.total-a.total||a.sc.localeCompare(b.sc));
+  const tot=new Array(n).fill(0); rows.forEach(o=>o.m.forEach((v,i)=>tot[i]+=v));
+  return {unmapped,months,rows,tot,total:tot.reduce((a,x)=>a+x,0),n,allNames,fy,fm,ty,tm,areas:[...areaSel]};
+}
+/* garis: vals[] per titik, labels[] sumbu x */
+function sclLine(vals,labels,o){
+  const P=o.P, W=o.W, H=o.H, l=o.l!=null?o.l:8, r=8, t=o.t!=null?o.t:18, b=o.b!=null?o.b:18, n=vals.length, pw=W-l-r, ph=H-t-b;
+  const mx=Math.max(o.ymax||0,...vals,1)*1.08, X=i=>n===1?l+pw/2:l+pw*i/(n-1), Y=v=>t+ph-Math.max(0,v)/mx*ph; let s='';
+  [0,.5,1].forEach(f=>{const y=t+ph-ph*f; s+=`<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" style="stroke:${P.grid};stroke-width:${f===0?1.2:.6}"/>`; if(o.yl) s+=mgTx(l-4,y+3,o.fs||9,mgS(mx*f/1.08),P,{a:'end',c:P.t3});});
+  if(o.avg!=null){const y=Y(o.avg); s+=`<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" style="stroke:${P.avg};stroke-width:1.2;stroke-dasharray:4 3"/>`;}
+  if(n>1){ const pts=vals.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ');
+    s+=`<polygon points="${X(0).toFixed(1)},${t+ph} ${pts} ${X(n-1).toFixed(1)},${t+ph}" style="fill:${P.ln};opacity:.10"/><polyline points="${pts}" style="fill:none;stroke:${P.ln};stroke-width:2;stroke-linejoin:round;stroke-linecap:round"/>`; }
+  const pk=vals.indexOf(Math.max(...vals)), showAll=o.labelAll;
+  vals.forEach((v,i)=>{ s+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${n>16?1.8:2.8}" style="fill:${P.ln};stroke:${o.bg||'transparent'};stroke-width:1.5"><title>${scwEsc(labels[i])}: ${scwEsc(fmt(v,true))}</title></circle>`;
+    if((showAll||i===pk)&&v>0) s+=mgTx(X(i),Y(v)-6,o.fs||9,mgS(v),P,{a:'middle',c:P.t1,b:1}); });
+  const every=Math.max(1,Math.ceil(n/(o.maxLbl||12)));
+  labels.forEach((lb,i)=>{ if(i%every===0||i===n-1) s+=mgTx(X(i),H-4,o.fs||9,lb,P,{a:n===1?'middle':(i===0?'start':i===n-1?'end':'middle'),c:P.t3}); });
+  return mgSvg(W,H,s);
+}
+function sclCum(a){let c=0;return a.map(v=>c+=v);}
+function sclCardHTML(o,i,M,P,ymax,cum){
+  const vals=cum?sclCum(o.m):o.m, lbls=M.months.map(m=>m.lbl);
+  return `<div class="scl-card"><div class="scl-h"><span class="scl-rk">${i+1}</span><div class="scl-n"><b title="${scwEsc(o.sc)}">${scwEsc(o.sc)}</b><small>${scwEsc(o.area||'—')}</small></div><div class="scl-t">${scwEsc(fmt(o.total,true))}</div></div>`+
+    sclLine(vals,lbls,{P,W:300,H:112,ymax,avg:cum?null:o.avg,labelAll:false,bg:'var(--surf)',maxLbl:6})+
+    `<div class="scl-f"><span>Rata-rata ${scwEsc(fmt(o.avg,true))}/bln</span><span>Puncak ${scwEsc(M.months[o.peak].lbl)} · ${scwEsc(fmt(o.m[o.peak],true))}</span></div></div>`;
+}
+function sclKpiHTML(M){
+  const act=M.rows.filter(o=>o.total>0.5).length, pk=M.tot.indexOf(Math.max(...M.tot)), top=M.rows[0];
+  const c=(cl2,l,v,s)=>`<div class="mg-k ${cl2}"><div class="mg-kl">${l}</div><div class="mg-kv" style="font-size:18px">${v}</div><div class="mg-ks">${s}</div></div>`;
+  return c('neu','Total realisasi',scwEsc(fmt(M.total,true)),M.n+' bulan · '+M.months[0].lbl+' – '+M.months[M.n-1].lbl)+
+    c('neu','Rata-rata per bulan',scwEsc(fmt(M.total/M.n,true)),'semua SC terpilih')+
+    c('good','SC berealisasi',act+' / '+M.rows.length,'SC dengan realisasi di periode')+
+    c('good','Bulan tertinggi',scwEsc(M.months[pk].lbl),scwEsc(fmt(M.tot[pk],true)))+
+    c('warn','SC tertinggi',top&&top.total>0?scwEsc(top.sc):'—',top&&top.total>0?scwEsc(fmt(top.total,true)):'');
+}
+function buildScLine(){
+  if(!$('scl-sec')||!ALL.length) return;
+  sclInit();
+  const M=SCL_M=sclModel();
+  if(M.err){ $('scl-warn').textContent='⚠️ '+M.err; $('scl-warn').hidden=false; $('scl-kpi').innerHTML=''; $('scl-over').innerHTML=''; $('scl-grid').innerHTML=''; return; }
+  $('scl-warn').hidden=true;
+  const sig=M.allNames.join('|'); if(sig!==SCL_SIG){SCL_SIG=sig; msFill('scl-sc',M.allNames);}
+  const cum=$('scl-mode').value==='cum', same=$('scl-same').checked, P=SCL_WEB;
+  $('scl-note').innerHTML='Realisasi = Δ% progress × nilai kontrak (log progress), dijumlahkan per bulan. Garis putus-putus = rata-rata bulanan SC.'+(M.unmapped>0.5?` Realisasi proyek <b>tanpa PIC Teknik</b> di sheet list tidak masuk grafik per SC: <b>${scwEsc(fmt(M.unmapped,true))}</b> pada periode ini.`:'');
+  $('scl-sub').textContent=M.months[0].lbl+' – '+M.months[M.n-1].lbl+(M.areas.length?' · Area: '+M.areas.join(', '):'')+' · '+M.rows.length+' SC';
+  $('scl-kpi').innerHTML=sclKpiHTML(M);
+  const tv=cum?sclCum(M.tot):M.tot;
+  $('scl-over').innerHTML=sclLine(tv,M.months.map(m=>m.lbl),{P,W:900,H:210,l:44,t:22,b:22,yl:true,fs:10,labelAll:M.n<=14,avg:cum?null:M.total/M.n,bg:'var(--surf)'});
+  $('scl-over-t').textContent=(cum?'Total realisasi kumulatif':'Total realisasi per bulan')+' — semua SC terpilih';
+  const ymax=same?Math.max(1,...M.rows.map(o=>Math.max(...(cum?sclCum(o.m):o.m)))):0;
+  $('scl-grid').innerHTML=M.rows.length?M.rows.map((o,i)=>sclCardHTML(o,i,M,P,ymax,cum)).join(''):'<div class="scw-empty">Tidak ada SC untuk filter ini.</div>';
+}
+function sclPDF(){
+  const M=SCL_M; if(!M||M.err||!M.rows.length){toast('Tidak ada data untuk dicetak','info');return;}
+  let ov=$('scl-pdf-overlay'); if(!ov){ov=document.createElement('div');ov.id='scl-pdf-overlay';ov.style.display='none';document.body.appendChild(ov);}
+  const P=SCL_PRN, cum=$('scl-mode').value==='cum', same=$('scl-same').checked, tv=cum?sclCum(M.tot):M.tot;
+  const ymax=same?Math.max(1,...M.rows.map(o=>Math.max(...(cum?sclCum(o.m):o.m)))):0;
+  const pk=M.tot.indexOf(Math.max(...M.tot)), act=M.rows.filter(o=>o.total>0.5).length;
+  const card=(o,i)=>`<div class="scl-card"><div class="scl-h"><span class="scl-rk">${i+1}</span><div class="scl-n"><b>${scwEsc(o.sc)}</b><small>${scwEsc(o.area||'—')}</small></div><div class="scl-t">${scwEsc(fmt(o.total,true))}</div></div>${sclLine(cum?sclCum(o.m):o.m,M.months.map(m=>m.lbl),{P,W:300,H:100,ymax,avg:cum?null:o.avg,fs:9,maxLbl:6})}<div class="scl-f"><span>Rata-rata ${scwEsc(fmt(o.avg,true))}/bln</span><span>Puncak ${scwEsc(M.months[o.peak].lbl)}</span></div></div>`;
+  ov.innerHTML=`<div class="mgp-h"><div><div class="mgp-t">LAPORAN REALISASI SC TEKNIK — GRAFIK PER SC</div><div class="mgp-s">Periode ${scwEsc(M.months[0].lbl)} – ${scwEsc(M.months[M.n-1].lbl)}${M.areas.length?' · Area: '+scwEsc(M.areas.join(', ')):''} · ${cum?'kumulatif':'per bulan'} · Dicetak ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}</div></div><div class="mgp-co">PT SANDANA</div></div>
+   <div class="mgp-kpi" style="grid-template-columns:repeat(5,1fr)">
+    <div><b>${scwEsc(fmt(M.total,true))}</b><span>Total realisasi</span><i>${M.n} bulan</i></div>
+    <div><b>${scwEsc(fmt(M.total/M.n,true))}</b><span>Rata-rata per bulan</span><i>semua SC terpilih</i></div>
+    <div><b>${act} / ${M.rows.length}</b><span>SC berealisasi</span><i>di periode</i></div>
+    <div><b>${scwEsc(M.months[pk].lbl)}</b><span>Bulan tertinggi</span><i>${scwEsc(fmt(M.tot[pk],true))}</i></div>
+    <div><b>${scwEsc(M.rows[0].sc)}</b><span>SC tertinggi</span><i>${scwEsc(fmt(M.rows[0].total,true))}</i></div></div>
+   <div class="scl-ov"><div class="mgp-ch">${cum?'Total realisasi kumulatif':'Total realisasi per bulan'} — semua SC terpilih</div>${sclLine(tv,M.months.map(m=>m.lbl),{P,W:900,H:150,l:44,t:20,b:20,yl:true,fs:9,labelAll:M.n<=14,avg:cum?null:M.total/M.n})}</div>
+   <div class="scl-grid">${M.rows.map(card).join('')}</div>
+   <div class="mgp-n">Realisasi = kenaikan % progress × nilai kontrak menurut log progress (DP/UM/retensi tidak dihitung), dijumlahkan per bulan dan per SC Teknik. Garis putus-putus = rata-rata bulanan SC. ${same?'Skala sumbu Y sama untuk semua SC.':'Skala sumbu Y tiap SC berbeda — bandingkan besaran lewat angka total di kanan atas kartu.'}</div>`;
+  let ps=$('scl-page-style'); if(!ps){ps=document.createElement('style');ps.id='scl-page-style';document.head.appendChild(ps);}
+  ps.textContent='@media print{@page{size:A4 landscape;margin:8mm}}';
+  const clean=()=>{document.body.classList.remove('print-scl'); ov.style.display='none'; window.removeEventListener('afterprint',clean);};
+  window.addEventListener('afterprint',clean);
+  document.body.classList.add('print-scl'); ov.style.display='block';
+  setTimeout(()=>window.print(),150);
+}
 /* ── Unduh Excel bersama: kolom diberi lebar otomatis ── */
 function xlsxSave(sheets,fname){
   if(typeof XLSX==='undefined'){toast('Pustaka Excel belum termuat — coba lagi sesaat lagi','err');return;}
@@ -4836,7 +5007,7 @@ function tgtFiltered(M,noScope){
   });
 }
 /* ══ DROPDOWN CENTANG (multi-pilih) ══ */
-const MS_SEL={}, MS_VALS={}, MS_CB={'scw-area':()=>buildScWeek(),'df-area':()=>filterDB(),'df-jenis':()=>filterDB(),'df-korwil':()=>filterDB()};
+const MS_SEL={}, MS_VALS={}, MS_CB={'scl-area':()=>buildScLine(),'scl-sc':()=>buildScLine(),'scw-area':()=>buildScWeek(),'df-area':()=>filterDB(),'df-jenis':()=>filterDB(),'df-korwil':()=>filterDB()};
 const msGo=id=>{(MS_CB[id]||(()=>buildTarget(true)))();};
 function msGet(id){return MS_SEL[id]||(MS_SEL[id]=new Set());}
 function msLabel(id){
