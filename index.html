@@ -891,6 +891,10 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 8l8 6 8-6"/></svg>
     SPH Penawaran
   </div>
+  <div class="s-item" onclick="goPage('rsp',this)" id="si-rsp" style="color:var(--amber)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5"/></svg>
+    Ranking SPI
+  </div>
 </aside>
 
 <!-- MAIN -->
@@ -1584,6 +1588,80 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     </div>
   </div>
 
+  <!-- ═══ RANKING SPI ═══ -->
+  <div class="page" id="page-rsp">
+    <div class="sec-hd">
+      <div>
+        <div class="sec-title" style="color:var(--purple)">🏅 Ranking SPI — Perolehan Proyek per Sales</div>
+        <div class="sec-sub" id="rsp-sub">Pilih periode</div>
+      </div>
+    </div>
+    <div class="scw-bar">
+      <span class="scw-lbl">Periode</span>
+      <select id="rsp-from-bln" onchange="buildRsp()" aria-label="Dari bulan"></select><select id="rsp-from-thn" onchange="buildRsp()" aria-label="Dari tahun"></select>
+      <span class="scw-lbl">s.d</span>
+      <select id="rsp-to-bln" onchange="buildRsp()" aria-label="Sampai bulan"></select><select id="rsp-to-thn" onchange="buildRsp()" aria-label="Sampai tahun"></select>
+      <span class="scw-lbl">Kolom</span>
+      <select id="rsp-gran" onchange="buildRsp()" aria-label="Kolom per" title="Kolom rincian di tabel ranking"><option value="m">Per bulan</option><option value="w">Per minggu</option></select>
+      <span class="scw-lbl">Minggu ke-</span>
+      <div class="msel" id="rsp-wk" data-all="Semua Minggu" title="Aktif bila periode satu bulan &amp; kolom per minggu"><button type="button" class="msel-b" onclick="msToggle('rsp-wk',event)" aria-label="Minggu">Semua Minggu</button><div class="msel-p" hidden></div></div>
+      <span class="scw-lbl">Wilayah</span>
+      <div class="msel" id="rsp-wil" data-all="Semua Wilayah"><button type="button" class="msel-b" onclick="msToggle('rsp-wil',event)" aria-label="Wilayah">Semua Wilayah</button><div class="msel-p" hidden></div></div>
+      <span class="scw-lbl">Area</span>
+      <div class="msel" id="rsp-area" data-all="Semua Area"><button type="button" class="msel-b" onclick="msToggle('rsp-area',event)" aria-label="Area">Semua Area</button><div class="msel-p" hidden></div></div>
+      <span class="scw-lbl">Sales</span>
+      <div class="msel" id="rsp-sc" data-all="Semua Sales"><button type="button" class="msel-b" onclick="msToggle('rsp-sc',event)" aria-label="Sales">Semua Sales</button><div class="msel-p" hidden></div></div>
+      <span class="scw-lbl">Jenis</span>
+      <div class="msel" id="rsp-jenis" data-all="Semua Jenis"><button type="button" class="msel-b" onclick="msToggle('rsp-jenis',event)" aria-label="Jenis">Semua Jenis</button><div class="msel-p" hidden></div></div>
+      <select id="rsp-stat" onchange="buildRsp()" aria-label="Status"><option value="">Semua Status</option><option value="0">Selesai</option><option value="1">Berjalan</option></select>
+      <label class="scw-chk" title="Kolom PIC SALES di list berisi nama panggilan/ejaan berbeda (ALDY, ALDY AKMAL, VERO, …). Dicocokkan ke nama lengkap sales di data SPH bila hanya satu kandidat yang cocok."><input type="checkbox" id="rsp-merge" checked onchange="buildRsp()"> Samakan nama dgn data SPH</label>
+      <span style="flex:1"></span>
+      <button type="button" class="scw-dl" onclick="rspExport()" title="Ranking per sales dan rincian proyek">⬇ Unduh Excel</button>
+      <button type="button" class="scw-dl" onclick="rspImg()" title="Unduh ranking sebagai gambar PNG (siap kirim ke WhatsApp)">🖼 Unduh Gambar</button>
+      <button type="button" class="scw-dl" onclick="window.print()">🖨 Cetak / PDF</button>
+    </div>
+    <div class="scw-warn" id="rsp-warn" role="status" hidden></div>
+    <div class="mkor-kpi" id="rsp-kpi" style="border:1px solid var(--border);border-radius:var(--r2);margin-bottom:12px"></div>
+    <div class="scw-wrap">
+      <div class="scw-scroll" id="rsp-scroll"></div>
+      <div class="scw-note" id="rsp-note"></div>
+    </div>
+    <div class="scl-sec" id="rsc-sec">
+      <div class="sec-hd" style="margin:22px 0 10px"><div><div class="sec-title" style="color:var(--purple);font-size:16px">📈 Grafik Perolehan SPI per Sales</div><div class="sec-sub" id="rsc-sub"></div></div></div>
+      <div class="scw-bar">
+        <span class="scw-lbl">Periode</span>
+        <select id="rsc-from-bln" onchange="buildRspChart()" aria-label="Dari bulan"></select><select id="rsc-from-thn" onchange="buildRspChart()" aria-label="Dari tahun"></select>
+        <span class="scw-lbl">s.d</span>
+        <select id="rsc-to-bln" onchange="buildRspChart()" aria-label="Sampai bulan"></select><select id="rsc-to-thn" onchange="buildRspChart()" aria-label="Sampai tahun"></select>
+        <span class="scw-lbl">Wilayah</span>
+        <div class="msel" id="rsc-wil" data-all="Semua Wilayah"><button type="button" class="msel-b" onclick="msToggle('rsc-wil',event)" aria-label="Wilayah">Semua Wilayah</button><div class="msel-p" hidden></div></div>
+        <span class="scw-lbl">Area</span>
+        <div class="msel" id="rsc-area" data-all="Semua Area"><button type="button" class="msel-b" onclick="msToggle('rsc-area',event)" aria-label="Area">Semua Area</button><div class="msel-p" hidden></div></div>
+        <span class="scw-lbl">Sales</span>
+        <div class="msel" id="rsc-sc" data-all="Semua Sales"><button type="button" class="msel-b" onclick="msToggle('rsc-sc',event)" aria-label="Sales">Semua Sales</button><div class="msel-p" hidden></div></div>
+        <span class="scw-lbl">Jenis</span>
+        <div class="msel" id="rsc-jenis" data-all="Semua Jenis"><button type="button" class="msel-b" onclick="msToggle('rsc-jenis',event)" aria-label="Jenis">Semua Jenis</button><div class="msel-p" hidden></div></div>
+      <select id="rsc-gran" onchange="buildRspChart()" aria-label="Satuan"><option value="m">Bulanan</option><option value="w">Mingguan</option></select>
+        <select id="rsc-metric" onchange="buildRspChart()" aria-label="Ukuran"><option value="v">Nilai (Rp)</option><option value="n">Jumlah SPI</option></select>
+        <select id="rsc-mode" onchange="buildRspChart()" aria-label="Tampilan"><option value="mon">Per periode</option><option value="cum">Kumulatif</option></select>
+        <select id="rsc-group" onchange="buildRspChart()" aria-label="Pengelompokan" title="Gabungkan sales dalam satu grafik"><option value="s">Per sales</option><option value="w">Gabung per wilayah</option><option value="a">Gabung per area</option></select>
+        <label class="scw-chk"><input type="checkbox" id="rsc-same" onchange="buildRspChart()"> Skala sama</label>
+        <span style="flex:1"></span>
+        <button type="button" class="scw-dl" onclick="rscPDF()" title="Cetak grafik SPI per sales (tanpa tabel ranking)">🖨 Cetak / PDF Grafik</button>
+      </div>
+      <div class="scw-warn" id="rsc-warn" role="status" hidden></div>
+      <div class="mg-kpi" id="rsc-kpi"></div>
+      <div class="mg-card"><div class="mg-h" id="rsc-over-t"></div><div id="rsc-over"></div></div>
+      <div class="mg-grid" style="margin-top:12px">
+        <div class="mg-card"><div class="mg-h" id="rsc-rank-t"></div><div id="rsc-rank"></div></div>
+        <div class="mg-card"><div class="mg-h" id="rsc-area-t"></div><div id="rsc-areas"></div></div>
+      </div>
+      <div class="scw-note" id="rsc-note" style="margin-top:8px"></div>
+      <div class="scw-wrap" id="rsp-rekap-wrap" style="margin-top:12px"><div style="padding:8px 12px 0;font-size:12px;font-weight:700;color:var(--text)"><span id="rsp-rekap-t">Rekap per jenis</span> <span style="font-weight:400;color:var(--text3)">· mengikuti filter Periode / Wilayah / Area / Sales di atas · klik baris untuk memfilter jenis</span></div><div class="scw-scroll" id="rsp-rekap"></div></div>
+      <div class="scl-grid" id="rsc-grid"></div>
+    </div>
+  </div>
+
   <!-- ═══ COST CONTROL ═══ -->
   <div class="page" id="page-costcontrol">
     <div class="sec-hd">
@@ -1721,6 +1799,10 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
     <button class="bn-btn" id="bn-sph" onclick="goPage('sph',this)" style="color:var(--purple)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 8l8 6 8-6"/></svg>
       SPH
+    </button>
+    <button class="bn-btn" id="bn-rsp" onclick="goPage('rsp',this)" style="color:var(--amber)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5"/></svg>
+      SPI
     </button>
   </div>
   <!-- hint geser kanan -->
@@ -2333,7 +2415,7 @@ async function loadData(manual=false){
 function buildAll(){
   buildInvIdx();
   DB_F=[...ALL];PG_F=ALL.filter(r=>cl(r[C.STATUS])==='PROGRESS');INV_F=[...INV];
-  buildSidebar();buildDash();buildProgPage();renderDB();renderInv();renderFinansial();buildPIC();buildAlerts();initCostControl();initTagihan();buildMkorChart();buildScWeek();buildTarget();try{if($('page-mgmt')&&$('page-mgmt').classList.contains('active'))buildMgmt();}catch(e){}updateBadges();
+  buildSidebar();buildDash();buildProgPage();renderDB();renderInv();renderFinansial();buildPIC();buildAlerts();initCostControl();initTagihan();buildMkorChart();buildScWeek();buildTarget();try{if($('page-mgmt')&&$('page-mgmt').classList.contains('active'))buildMgmt();}catch(e){}try{if($('page-rsp')&&$('page-rsp').classList.contains('active'))buildRsp();}catch(e){}updateBadges();
 }
 
 function updateBadges(){
@@ -5459,6 +5541,7 @@ function goPage(page,el){
   if(page==='target') buildTarget();
   if(page==='mgmt' && ALL.length) buildMgmt();
   if(page==='sph') buildSph();
+  if(page==='rsp') buildRsp();
 }
 function filterToArea(a){goPage('database',$('si-database'));MS_SEL['df-area']=new Set([a]);msFill('df-area',MS_VALS['df-area']||[a]);filterDB();}
 function filterToStatus(s){goPage('database',$('si-database'));$('df-status').value=s;filterDB();}
@@ -6827,7 +6910,346 @@ function sphcPDF(){
   document.body.classList.add('print-scl'); ov.style.display='block';
   setTimeout(()=>window.print(),150);
 }
-Object.assign(MS_CB,{'sph-wk':()=>buildSph(),'sph-wil':()=>buildSph(),'sph-area':()=>buildSph(),'sph-sc':()=>buildSph(),'sph-jenis':()=>buildSph(),'spc-jenis':()=>buildSphChart(),'spc-wil':()=>buildSphChart(),'spc-area':()=>buildSphChart(),'spc-sc':()=>buildSphChart()});
+/* ══════════ RANKING SPI — perolehan proyek per sales (sumber: tab list) ══════════ */
+const RSP_ST=['Selesai','Berjalan'], RSP_STC=['var(--green)','var(--amber)'], RSP_STC_P=['#0f9d6a','#d97706'];
+function rspJ(list,js){
+  if(!js.size) return list;
+  const m=[...js].reduce((a,j)=>a|(1<<SPH_J.indexOf(j)),0);
+  return list.filter(r=>r.jm&m).map(r=>({...r,v:r.jv.reduce((s,x,i)=>s+((m>>i)&1?x:0),0)}));
+}
+const rspJNames=r=>SPH_J.filter((_,i)=>(r.jm>>i)&1).join(' + ');
+const rspFmt=(v,k)=>k==='n'?String(Math.round(v)):fmt(v,true);
+let RSP=[], RSP_M=null, RSC_M=null, RSC_SIG='';
+/* 1 baris list = 1 SPI. Batal dikeluarkan. Tanggal = TGL SPI (kolom BULAN), sales = PIC SALES, nilai = NILAI SPI */
+function rspBuild(){
+  const out=[], on=$('rsp-merge')?$('rsp-merge').checked:true, tk=s=>s.match(/[A-Z]+/g)||[];
+  const NT=on?[...new Set(SPH.map(r=>r.sc).filter(Boolean))].map(n=>({n,t:tk(n)})):[], cache={};
+  /* nama panggilan → nama lengkap SPH, hanya bila tepat satu kandidat (ambigu seperti ALDY/BIMA/FARHAN dibiarkan) */
+  const canon=pic=>{
+    if(!on||!pic) return pic; if(cache[pic]!==undefined) return cache[pic];
+    let res=pic; const ex=NT.find(x=>x.n===pic);
+    if(ex) res=pic; else {
+      const pt=tk(pic), m=NT.filter(x=>pt.length&&pt.every(t=>x.t.some(w=>w.startsWith(t)))), m1=m.filter(x=>x.t[0].startsWith(pt[0])), c=m1.length?m1:m;
+      if(c.length===1) res=c[0].n;
+    }
+    return cache[pic]=res;
+  };
+  ALL.forEach(r=>{
+    const stt=cl(r[C.STATUS]).toUpperCase(); if(stt==='BATAL') return;
+    const day=scwParseDay(r[C.BULAN]); if(day==null) return;
+    const v=Math.max(0,num(r[C.NILAI_SPI])||num(r[C.NK])), jn=normJenis(r[C.JENIS2]), j=jn==='ALKES'?1:jn==='MOT'?2:0, jv=[0,0,0]; jv[j]=v;
+    const wl=cl(r[C.WILAYAH]).toUpperCase(), pic=cl(r[C.PIC_SALES]).toUpperCase().replace(/\s+/g,' ');
+    out.push({day,no:cl(r[C.SPI]),kode:cl(r[C.KODE]),pel:cl(r[C.PROYEK]),area:cl(r[C.AREA]).toUpperCase().replace(/\s+/g,' '),wil:(wl==='BARAT'||wl==='TIMUR')?wl:'LAINNYA',
+      sc:canon(pic),st:/^FINISH/.test(stt)?0:1,v,jm:1<<j,jv,j});
+  });
+  RSP=out;
+}
+/* ── bagian atas: ranking sales per periode (rentang bulan; kolom per bulan atau per minggu) ── */
+let RSP_WK_KEY='';
+function rspInit(){
+  if($('rsp-from-bln').options.length) return;
+  const last=RSP.reduce((a,r)=>Math.max(a,r.day),0), d=new Date(last*864e5), ly=d.getUTCFullYear(), lm=d.getUTCMonth();
+  const mo=SCW_MONTHS.map((n,i)=>`<option value="${i}">${n}</option>`).join(''); let yo=''; for(let y=2019;y<=Math.max(ly,2026);y++) yo+=`<option value="${y}">${y}</option>`;
+  ['rsp-from-bln','rsp-to-bln'].forEach(i=>$(i).innerHTML=mo); ['rsp-from-thn','rsp-to-thn'].forEach(i=>$(i).innerHTML=yo);
+  $('rsp-from-bln').value='0'; $('rsp-from-thn').value=String(ly); $('rsp-to-bln').value=String(lm); $('rsp-to-thn').value=String(ly);
+}
+const rspWkLbl=w=>'W'+w.n+' · '+w.label;
+function rspBins(){
+  const fy=+$('rsp-from-thn').value, fm=+$('rsp-from-bln').value, ty=+$('rsp-to-thn').value, tm=+$('rsp-to-bln').value, gran=$('rsp-gran').value;
+  const nm=(ty*12+tm)-(fy*12+fm)+1, yy=y=>"'"+String(y).slice(-2), multiY=fy!==ty;
+  const range=SCW_MON_S[fm]+' '+yy(fy)+' – '+SCW_MON_S[tm]+' '+yy(ty), tag=SCW_MON_S[fm]+fy+'-'+SCW_MON_S[tm]+ty;
+  if(nm<1) return {err:'Periode "Dari" lebih akhir daripada "S.d".'};
+  if(nm>36) return {err:'Periode maksimal 36 bulan.'};
+  let bins=[];
+  for(let i=0;i<nm;i++){const a=fy*12+fm+i, y=Math.floor(a/12), m=a%12;
+    if(gran==='m') bins.push({lbl:SCW_MON_S[m]+' '+yy(y),from:scwDay(y,m,1),to:scwDay(y,m+1,1)-1});
+    else scwWeeks(y,m).forEach(w=>bins.push({lbl:rspWkLbl(w)+(multiY?' '+yy(y):''),wk:rspWkLbl(w),from:w.from,to:w.to}));}
+  const ws=msGet('rsp-wk'); if(nm===1&&gran==='w'&&ws.size) bins=bins.filter(b=>ws.has(b.wk));
+  const last=RSP.reduce((a,r)=>Math.max(a,r.day),0), kp=bins.filter(b=>b.from<=last); if(kp.length&&kp.length<bins.length) bins=kp;
+  return {bins,nm,fy,fm,ty,tm,gran,range,tag};
+}
+function rspSyncWk(){
+  const fy=+$('rsp-from-thn').value, fm=+$('rsp-from-bln').value, ty=+$('rsp-to-thn').value, tm=+$('rsp-to-bln').value;
+  const one=(ty*12+tm)-(fy*12+fm)===0&&$('rsp-gran').value==='w', b=$('rsp-wk').querySelector('.msel-b');
+  b.disabled=!one; $('rsp-wk').style.opacity=one?'':'.5';
+  const key=one?fy+'-'+fm:''; if(key!==RSP_WK_KEY){RSP_WK_KEY=key; MS_SEL['rsp-wk']=new Set();}
+  msFill('rsp-wk',one?scwWeeks(fy,fm).map(rspWkLbl):[]);
+}
+function rspModel(){
+  rspSyncWk();
+  const B=rspBins(), wil=msGet('rsp-wil'), area=msGet('rsp-area'), scSel=msGet('rsp-sc'), st=$('rsp-stat').value;
+  const M={err:B.err,bins:B.bins||[],range:B.range,gran:B.gran,tag:B.tag,rows:[],list:[],T:{n:0,v:0,termN:0,termV:0,b:[]},noSales:{n:0,v:0},wils:[],areas:[]};
+  if(B.err||!M.bins.length) return M;
+  const bins=M.bins, lo=bins[0].from, hi=bins[bins.length-1].to;
+  const mo=rspJ(RSP.filter(r=>r.day>=lo&&r.day<=hi),msGet('rsp-jenis'));
+  M.wils=[...new Set(mo.map(r=>r.wil))].sort();
+  M.areas=[...new Set(mo.filter(r=>!wil.size||wil.has(r.wil)).map(r=>r.area).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id',{numeric:true}));
+  M.scs=[...new Set(RSP.filter(r=>r.sc&&r.day>=Math.min(lo,hi-90)&&r.day<=hi&&(!wil.size||wil.has(r.wil))&&(!area.size||area.has(r.area))).map(r=>r.sc))].sort();
+  bins.forEach(()=>M.T.b.push({n:0,v:0}));
+  const S={};
+  mo.forEach(r=>{
+    if((wil.size&&!wil.has(r.wil))||(area.size&&!area.has(r.area))||(st!==''&&String(r.st)!==st)) return;
+    const i=bins.findIndex(b=>r.day>=b.from&&r.day<=b.to); if(i<0) return;
+    if(scSel.size&&!scSel.has(r.sc)) return;
+    if(!r.sc){M.noSales.n++; M.noSales.v+=r.v; return;}
+    const o=S[r.sc]||(S[r.sc]={sc:r.sc,n:0,v:0,termN:0,termV:0,b:bins.map(()=>({n:0,v:0})),ac:{},wc:{},list:[]});
+    const q=o.b[i]; q.n++; q.v+=r.v; o.n++; o.v+=r.v;
+    if(r.st===0){o.termN++; o.termV+=r.v; M.T.termN++; M.T.termV+=r.v;}
+    o.ac[r.area]=(o.ac[r.area]||0)+1; o.wc[r.wil]=(o.wc[r.wil]||0)+1; o.list.push(r); M.list.push(r);
+    M.T.n++; M.T.v+=r.v; M.T.b[i].n++; M.T.b[i].v+=r.v;
+  });
+  M.rows=Object.values(S).map(o=>{
+    o.area=Object.entries(o.ac).sort((a,b)=>b[1]-a[1]).slice(0,2).map(e=>e[0]).join(' & ')||'—';
+    o.wil=(Object.entries(o.wc).sort((a,b)=>b[1]-a[1])[0]||['—'])[0]; return o;
+  }).sort((a,b)=>b.v-a.v||b.n-a.n||a.sc.localeCompare(b.sc));
+  return M;
+}
+function buildRsp(){
+  if(!$('page-rsp')) return;
+  rspBuild(); rspInit();
+  const wE=$('rsp-warn'); if(!RSP.length){wE.textContent='⚠️ Belum ada data SPI dari tab list (periksa sumber data / klik Sync).'; wE.hidden=false;} else wE.hidden=true;
+  const M=RSP_M=rspModel(), bins=M.bins, T=M.T;
+  msFill('rsp-wil',M.wils); msFill('rsp-area',M.areas); msFill('rsp-sc',M.scs||[]); msFill('rsp-jenis',SPH_J);
+  try{buildRspChart();}catch(e){console.error(e);}
+  if(M.err||!bins.length){$('rsp-sub').textContent=M.err||'Tidak ada periode'; $('rsp-kpi').innerHTML=''; $('rsp-scroll').innerHTML='<div class="scw-empty">'+scwEsc(M.err||'Pilih periode.')+'</div>'; $('rsp-note').textContent=''; return;}
+  $('rsp-sub').textContent=M.range+' · kolom per '+(M.gran==='w'?'minggu':'bulan')+' ('+bins.length+') · '+RSP.length.toLocaleString('id-ID')+' SPI dalam data';
+  const top=M.rows[0], pctT=T.v?T.termV/T.v:0;
+  $('rsp-kpi').innerHTML=[
+    {l:'Total Nilai SPI',v:fmt(T.v,true),s:M.range+' · '+bins.length+(M.gran==='w'?' minggu':' bulan'),c:'var(--purple)'},
+    {l:'Jumlah SPI',v:T.n.toLocaleString('id-ID'),s:'SPI (proyek berstatus bukan Batal)',c:'var(--cyan)'},
+    {l:'Sales Aktif',v:String(M.rows.length),s:'sales mengirim SPI',c:'var(--blue)'},
+    {l:'Selesai',v:fmt(T.termV,true),s:T.termN+' SPI · '+(pctT*100).toFixed(1)+'% dari nilai',c:'var(--green)'},
+    {l:'🏆 Nilai Tertinggi',v:top?top.sc:'—',s:top?fmt(top.v,true)+' · '+top.n+' SPI':'Belum ada SPI',c:'var(--amber)'}
+  ].map(s=>`<div class="mkor-kpi-card" style="border-top:3px solid ${kcB(s.c)}"><div class="mkor-kpi-l">${s.l}</div><div class="mkor-kpi-v" style="color:${kcT(s.c)};font-size:${String(s.v).length>16?12:15}px">${scwEsc(s.v)}</div><div class="mkor-kpi-s">${scwEsc(s.s)}</div></div>`).join('');
+  const ncol=4+bins.length*2+4;
+  const h1=`<tr><th rowspan="2">No</th><th rowspan="2">Sales</th><th rowspan="2">Area</th>`+
+    `<th class="r grp" rowspan="2">Jumlah SPI</th><th class="r" rowspan="2">Total Nilai (Rp)</th><th class="r" rowspan="2">Porsi</th><th class="r" rowspan="2">Selesai (Rp)</th>`+bins.map(b=>`<th class="grp" colspan="2">${scwEsc(b.lbl)}</th>`).join('')+`</tr>`;
+  const h2=`<tr class="h2">`+bins.map(()=>`<th class="r grp">Jml</th><th class="r">Nilai (Rp)</th>`).join('')+`</tr>`;
+  const body=M.rows.map((o,i)=>{
+    const rk=i<3?` g${i+1}`:'';
+    return `<tr class="row" onclick="rspToggleDet(${i})" title="Klik untuk rincian SPI"><td><span class="scw-rk${rk}">${i+1}</span></td><td class="scn">${scwEsc(o.sc)}</td><td style="color:var(--text2)">${scwEsc(o.area)}</td>`+
+      `<td class="r bl grp">${o.n}</td><td class="r ${o.v?'real':'z'}">${scwRp(o.v)}</td><td class="r">${T.v?(o.v/T.v*100).toFixed(1)+'%':'-'}</td><td class="r ${o.termV?'real':'z'}">${scwRp(o.termV)}</td>`+
+      bins.map((_,j)=>{const d=o.b[j];return `<td class="r bl grp">${d.n||0}</td><td class="r ${d.v?'real':'z'}">${scwRp(d.v)}</td>`;}).join('')+`</tr><tr class="scw-det" id="rsp-det-${i}" hidden><td colspan="${ncol}"></td></tr>`;
+  }).join('');
+  const foot=`<tr class="tot"><td colspan="3">TOTAL</td><td class="r bl">${T.n}</td><td class="r">${scwRp(T.v)}</td><td class="r">${T.v?'100%':'-'}</td><td class="r">${scwRp(T.termV)}</td>`+bins.map((_,j)=>`<td class="r bl">${T.b[j].n}</td><td class="r">${scwRp(T.b[j].v)}</td>`).join('')+`</tr>`;
+  $('rsp-scroll').innerHTML=M.rows.length?`<table class="scw-table"><thead>${h1}${h2}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table>`:'<div class="scw-empty">Tidak ada SPI untuk filter ini.</div>';
+  $('rsp-note').innerHTML='Ranking = <b>total seluruh periode</b> ('+scwEsc(M.range)+'), diurutkan dari Nilai SPI terbesar. Satu baris data = satu SPI/proyek (status <b>Batal tidak dihitung</b>); tanggal = Tgl SPI, sales = PIC Sales, nilai = Nilai SPI di tab <b>list</b>. <b>Selesai</b> = status FINISH (termasuk Finish Retensi), <b>Berjalan</b> = PROGRESS. Klik baris sales untuk melihat proyek yang didapat.'+
+    (M.noSales.n?` · SPI tanpa PIC Sales (tidak masuk ranking): <b>${M.noSales.n}</b> · Rp ${scwRp(M.noSales.v)}.`:'');
+}
+function rspPickJenis(j){MS_SEL['rsc-jenis']=new Set(msGet('rsc-jenis').size===1&&msGet('rsc-jenis').has(j)?[]:[j]); buildRspChart();}
+function rspToggleDet(i){
+  const row=$('rsp-det-'+i), M=RSP_M; if(!row||!M) return;
+  if(!row.hidden){row.hidden=true; return;}
+  const o=M.rows[i], L=o.list.slice().sort((a,b)=>b.v-a.v), lim=200;
+  row.firstElementChild.innerHTML=`<div style="padding:8px 12px;font-size:11px"><b>${scwEsc(o.sc)}</b> · ${o.n} SPI · ${scwEsc(fmt(o.v,true))}`+
+    `<table style="width:100%;margin-top:6px;border-collapse:collapse"><tr style="color:var(--text3);text-align:left"><th>Tanggal</th><th>No. SPI</th><th>Proyek</th><th>Area</th><th>Jenis</th><th>Status</th><th style="text-align:right">Nilai (Rp)</th></tr>`+
+    L.slice(0,lim).map(r=>`<tr style="border-top:1px solid var(--border2)"><td>${scwDayStr(r.day)}</td><td style="font-family:var(--mono)">${scwEsc(r.no||'—')}</td><td>${scwEsc(r.pel||'—')}</td><td>${scwEsc(r.area)}</td><td>${rspJNames(r)}</td><td style="color:${RSP_STC[r.st]}">${RSP_ST[r.st]}</td><td style="text-align:right">${scwRp(r.v)}</td></tr>`).join('')+
+    `</table>${L.length>lim?`<div style="color:var(--text3);margin-top:4px">… ${L.length-lim} SPI lain (lihat Unduh Excel)</div>`:''}</div>`;
+  row.hidden=false;
+}
+function rspExport(){
+  const M=RSP_M; if(!M||M.err||!M.rows.length){toast('Tidak ada data untuk diunduh','info');return;} if(typeof XLSX==='undefined'){toast('Pustaka Excel belum termuat','err');return;}
+  const a=M.rows.map((o,i)=>{const r={'No':i+1,'Sales':o.sc,'Wilayah':o.wil,'Area':o.area,'Jumlah SPI':o.n,'Total Nilai (Rp)':Math.round(o.v),'Porsi (%)':M.T.v?Math.round(o.v/M.T.v*1000)/10:0,'Selesai (Rp)':Math.round(o.termV)};
+    M.bins.forEach((b,j)=>{const d=o.b[j]; r[b.lbl+' Jml']=d.n; r[b.lbl+' Nilai']=Math.round(d.v);}); return r;});
+  const b=M.list.slice().sort((x,y)=>x.sc.localeCompare(y.sc)||x.day-y.day).map(r=>({'Tgl SPI':scwDayStr(r.day),'No. SPI':r.no,'Sales':r.sc,'Proyek':r.pel,'Wilayah':r.wil,'Area':r.area,'Jenis':rspJNames(r),'Status':RSP_ST[r.st],'Nilai (Rp)':Math.round(r.v)}));
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(a),'Ranking Sales'); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(b),'Rincian Proyek');
+  XLSX.writeFile(wb,'Ranking-SPI-'+M.tag+'.xlsx'); toast('Excel diunduh','ok');
+}
+
+/* ── unduh gambar ranking (tabel Sales · Wilayah · Nominal · Volume + total) ── */
+function rspImg(){
+  const M=RSP_M; if(!M||M.err||!M.bins.length){toast('Atur periode dulu','info');return;}
+  const wil=msGet('rsp-wil'), area=msGet('rsp-area'), hi=M.bins[M.bins.length-1].to, lo0=hi-90;
+  const top1=ac=>(Object.entries(ac).sort((a,b)=>b[1]-a[1])[0]||['—'])[0];
+  const R=new Map(); M.rows.forEach(o=>R.set(o.sc,{sc:o.sc,area:top1(o.ac),v:o.v,n:o.n}));
+  const A={}; RSP.forEach(r=>{ /* sales aktif 90 hari terakhir tanpa SPI di periode → tampil merah (0) */
+    if(!r.sc||r.day<lo0||r.day>hi||(wil.size&&!wil.has(r.wil))||(area.size&&!area.has(r.area))) return;
+    const q=A[r.sc]||(A[r.sc]={}); q[r.area]=(q[r.area]||0)+1;});
+  const scSel=msGet('rsp-sc'); Object.keys(A).forEach(k=>{if(!R.has(k)&&(!scSel.size||scSel.has(k))) R.set(k,{sc:k,area:top1(A[k]),v:0,n:0});});
+  const rows=[...R.values()].sort((a,b)=>b.v-a.v||b.n-a.n||a.sc.localeCompare(b.sc));
+  if(!rows.length){toast('Tidak ada data','info');return;}
+  const tc=t=>t.toLowerCase().replace(/(^|[\s.\-'])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
+  const dm=d=>{const t=new Date(d*864e5); return {d:t.getUTCDate(),m:SCW_MON_S[t.getUTCMonth()],y:t.getUTCFullYear()};};
+  let per=M.range.replace(/'/g,'');
+  if(M.gran==='w'){const a=dm(M.bins[0].from), b=dm(hi); per=a.m===b.m&&a.y===b.y?a.d+' - '+b.d+' '+b.m:a.d+' '+a.m+(a.y!==b.y?' '+a.y:'')+' - '+b.d+' '+b.m+' '+b.y;}
+  const nf=v=>Math.round(v).toLocaleString('en-US'), S=2, rh=30, W=[270,230,210,140], tw=W.reduce((a,b)=>a+b,0);
+  const tot={v:rows.reduce((a,r)=>a+r.v,0),n:rows.reduce((a,r)=>a+r.n,0)};
+  const H=(2+rows.length+1)*rh, cv=document.createElement('canvas'); cv.width=(tw+2)*S; cv.height=(H+2)*S;
+  const g=cv.getContext('2d'); g.scale(S,S); g.translate(1,1); g.fillStyle='#fff'; g.fillRect(-1,-1,tw+2,H+2); g.textBaseline='middle';
+  const X=[0,W[0],W[0]+W[1],W[0]+W[1]+W[2],tw];
+  const cell=(c0,c1,r,bg,txt,al,font,col)=>{const x=X[c0],w=X[c1]-x,y=r*rh; if(bg){g.fillStyle=bg; g.fillRect(x,y,w,rh);} g.strokeStyle='#000'; g.lineWidth=1; g.strokeRect(x+.5,y+.5,w-1,rh-1);
+    g.font=font||'15px Arial'; g.fillStyle=col||'#000'; g.textAlign=al; let t=String(txt); while(g.measureText(t).width>w-14&&t.length>2) t=t.slice(0,-2)+'…'; g.fillText(t,al==='left'?x+6:al==='right'?x+w-6:x+w/2,y+rh/2+1);};
+  const GR='#86e08e', BL='#bfe3f5', B='bold 17px Arial';
+  cell(0,2,0,GR,'RANKING SPI','center',B); cell(2,4,0,GR,per,'center',B);
+  [['SALES','left'],['WILAYAH','left'],['Nilai SPI','right'],['Jumlah SPI','right']].forEach((h,i)=>cell(i,i+1,1,BL,h[0],'center',B));
+  rows.forEach((r,i)=>{const y=i+2, z=!r.v&&!r.n, bg=z?'#ffc7ce':null, col=z?'#c00000':'#000';
+    cell(0,1,y,null,tc(r.sc),'left'); cell(1,2,y,null,r.area,'left'); cell(2,3,y,bg,nf(r.v),'right',null,col); cell(3,4,y,bg,String(r.n),'center',null,col);});
+  const ty=rows.length+2, TB='bold 16px Arial'; cell(0,2,ty,'#fff2cc','TOTAL','center',TB); cell(2,3,ty,'#fff2cc',nf(tot.v),'right',TB); cell(3,4,ty,'#fff2cc',String(tot.n),'center',TB);
+  g.strokeStyle='#000'; g.lineWidth=2.5; g.strokeRect(0,0,tw,H); g.beginPath(); g.moveTo(0,ty*rh); g.lineTo(tw,ty*rh); g.stroke();
+  cv.toBlob(b=>{if(!b){toast('Gagal membuat gambar','err');return;} const u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download='Ranking-SPI-'+M.tag+'.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000); toast('Gambar diunduh','ok');},'image/png');
+}
+
+/* ── bagian bawah: grafik ── */
+function rscInit(){
+  if($('rsc-from-bln').options.length) return;
+  const last=RSP.reduce((a,r)=>Math.max(a,r.day),0), d=new Date(last*864e5), ly=d.getUTCFullYear(), lm=d.getUTCMonth();
+  const mo=SCW_MONTHS.map((n,i)=>`<option value="${i}">${n}</option>`).join(''); let yo=''; for(let y=2019;y<=Math.max(ly,2026);y++) yo+=`<option value="${y}">${y}</option>`;
+  ['rsc-from-bln','rsc-to-bln'].forEach(i=>$(i).innerHTML=mo); ['rsc-from-thn','rsc-to-thn'].forEach(i=>$(i).innerHTML=yo);
+  $('rsc-from-bln').value='0'; $('rsc-from-thn').value=String(ly); $('rsc-to-bln').value=String(lm); $('rsc-to-thn').value=String(ly);
+}
+function rscModel(){
+  const fy=+$('rsc-from-thn').value, fm=+$('rsc-from-bln').value, ty=+$('rsc-to-thn').value, tm=+$('rsc-to-bln').value, gran=$('rsc-gran').value;
+  const nm=(ty*12+tm)-(fy*12+fm)+1;
+  if(nm<1) return {err:'Periode "Dari" lebih akhir daripada "S.d".'};
+  if(nm>(gran==='w'?24:36)) return {err:'Periode maksimal '+(gran==='w'?'24 bulan untuk tampilan mingguan.':'36 bulan.')};
+  const yy=y=>"'"+String(y).slice(-2), multiY=fy!==ty; let bins=[];
+  for(let i=0;i<nm;i++){const a=fy*12+fm+i, y=Math.floor(a/12), m=a%12;
+    if(gran==='m') bins.push({lbl:SCW_MON_S[m]+' '+yy(y),from:scwDay(y,m,1),to:scwDay(y,m+1,1)-1});
+    else scwWeeks(y,m).forEach(w=>bins.push({lbl:w.d1+' '+SCW_MON_S[m]+(multiY?' '+yy(y):''),from:w.from,to:w.to}));}
+  const last=RSP.reduce((a,r)=>Math.max(a,r.day),0), kp=bins.filter(b=>b.from<=last); if(kp.length&&kp.length<bins.length) bins=kp;
+  const n=bins.length, unit=gran==='w'?'minggu':'bulan', unitS=gran==='w'?'mgg':'bln', range=SCW_MON_S[fm]+' '+yy(fy)+' – '+SCW_MON_S[tm]+' '+yy(ty);
+  const lo=bins[0].from, hi=bins[n-1].to, wil=msGet('rsc-wil'), area=msGet('rsc-area'), scSel=msGet('rsc-sc');
+  const inP=rspJ(RSP.filter(r=>r.day>=lo&&r.day<=hi),msGet('rsc-jenis'));
+  const allWil=[...new Set(inP.map(r=>r.wil))].sort(), allArea=[...new Set(inP.filter(r=>!wil.size||wil.has(r.wil)).map(r=>r.area).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id',{numeric:true}));
+  const pool=inP.filter(r=>(!wil.size||wil.has(r.wil))&&(!area.size||area.has(r.area)));
+  const allSc=[...new Set(pool.filter(r=>r.sc).map(r=>r.sc))].sort();
+  const G={}, GA={}, S={}, AR={}, tot={v:new Array(n).fill(0),n:new Array(n).fill(0)}, z=()=>new Array(n).fill(0);
+  pool.forEach(r=>{
+    if(!r.sc||(scSel.size&&!scSel.has(r.sc))) return;
+    const i=bins.findIndex(b=>r.day>=b.from&&r.day<=b.to); if(i<0) return;
+    const o=S[r.sc]||(S[r.sc]={sc:r.sc,v:z(),n:z(),seg:[0,0,0],segN:[0,0,0],ac:{},wc:{}});
+    o.v[i]+=r.v; o.n[i]++; o.seg[r.st]+=r.v; o.segN[r.st]++; o.ac[r.area]=(o.ac[r.area]||0)+1; o.wc[r.wil]=(o.wc[r.wil]||0)+1; tot.v[i]+=r.v; tot.n[i]++;
+    [[G,r.wil],[GA,r.area||'—']].forEach(([T,key])=>{const g=T[key]||(T[key]={l:key,v:z(),n:z(),scs:new Set()}); g.v[i]+=r.v; g.n[i]++; g.scs.add(r.sc);});
+    const q=AR[r.area||'—']||(AR[r.area||'—']={l:r.area||'—',seg:[0,0,0],segN:[0,0,0]}); q.seg[r.st]+=r.v; q.segN[r.st]++;
+  });
+  const J=SPH_J.map(()=>({n:0,v:0,tN:0,tV:0,mN:0,mV:0}));
+  RSP.forEach(r=>{ /* rekap per jenis: ikut periode/wilayah/area/sales, tidak ikut filter jenis */
+    if(r.day<lo||r.day>hi||!r.sc||(wil.size&&!wil.has(r.wil))||(area.size&&!area.has(r.area))||(scSel.size&&!scSel.has(r.sc))) return;
+    SPH_J.forEach((_,i)=>{if(!((r.jm>>i)&1)) return; const q=J[i], v=r.jv[i]; q.n++; q.v+=v; if(r.st===0){q.tN++; q.tV+=v;} else if(r.st===1){q.mN++; q.mV+=v;}});
+  });
+  return {bins,n,unit,unitS,range,gran,S,AR,G,GA,tot,J,allWil,allArea,allSc,areas:[...area],wils:[...wil]};
+}
+function rspHBar(items,F,k,PP){
+  const P=PP||SCL_WEB, STC=PP?RSP_STC_P:RSP_STC, W=580, lw=172, rw=78, rh=24, pw=W-lw-rw, mx=Math.max(1,...items.map(i=>i.tot)); let s='';
+  items.forEach((it,q)=>{const y=q*rh; s+=mgTx(lw-6,y+16,11,it.l.length>27?it.l.slice(0,26)+'…':it.l,P,{a:'end',c:P.t1}); let x=lw;
+    it.seg.forEach((v,j)=>{const w=v/mx*pw; if(w>0){s+=`<rect x="${x.toFixed(1)}" y="${y+4}" width="${w.toFixed(1)}" height="${rh-9}" rx="2" style="fill:${STC[j]}"><title>${scwEsc(it.l)} · ${RSP_ST[j]}: ${scwEsc(rspFmt(v,k))}</title></rect>`; x+=w;}});
+    s+=mgTx(x+5,y+16,10.5,rspFmt(it.tot,k),P,{c:P.t2,b:1});});
+  return mgSvg(W,Math.max(rh,items.length*rh),s)+`<div class="mg-lg" style="margin-top:6px">`+RSP_ST.map((t,j)=>`<span><i style="background:${STC[j]}"></i>${t}</span>`).join('')+`</div>`;
+}
+function rspMulti(ss,labels,F,W,H,PP){
+  const P=PP||SCL_WEB, l=46, r=10, t=14, b=22, n=labels.length, pw=W-l-r, ph=H-t-b;
+  const mx=Math.max(1,...ss.flatMap(s=>s.vals))*1.08, X=i=>n===1?l+pw/2:l+pw*i/(n-1), Y=v=>t+ph-Math.max(0,v)/mx*ph; let s='';
+  [0,.5,1].forEach(f=>{const y=t+ph-ph*f; s+=`<line x1="${l}" x2="${W-r}" y1="${y}" y2="${y}" style="stroke:${P.grid};stroke-width:${f===0?1.2:.6}"/>`+mgTx(l-4,y+3,10,F(mx*f/1.08),P,{a:'end',c:P.t3});});
+  ss.forEach(g=>{s+=`<polyline points="${g.vals.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')}" style="fill:none;stroke:${g.c};stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round"/>`+
+    g.vals.map((v,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" style="fill:${g.c}"><title>${scwEsc(g.l)} · ${scwEsc(labels[i])}: ${scwEsc(F(v))}</title></circle>`).join('');});
+  const ev=Math.max(1,Math.ceil(n/18)); labels.forEach((lb,i)=>{if(i%ev===0) s+=mgTx(X(i),H-4,10,lb,P,{a:'middle',c:P.t3});});
+  return mgSvg(W,H,s)+`<div class="mg-lg" style="margin-top:6px">`+ss.map(g=>`<span><i style="background:${g.c}"></i>${scwEsc(g.l)} · ${scwEsc(g.tl)}</span>`).join('')+`</div>`;
+}
+const RSP_WC={BARAT:'var(--blue)',TIMUR:'var(--green)',LAINNYA:'var(--amber)'};
+function buildRspChart(){
+  if(!$('rsc-sec')) return;
+  rscInit();
+  const M=RSC_M=rscModel(), wE=$('rsc-warn');
+  if(M.err){wE.textContent='⚠️ '+M.err; wE.hidden=false; ['rsc-kpi','rsc-over','rsc-rank','rsc-areas','rsc-grid','rsp-rekap'].forEach(i=>$(i).innerHTML=''); return;}
+  wE.hidden=true; msFill('rsc-jenis',SPH_J);
+  const sig=M.allSc.join('|')+'#'+M.allWil.join('|')+'#'+M.allArea.join('|'); if(sig!==RSC_SIG){RSC_SIG=sig; msFill('rsc-sc',M.allSc); msFill('rsc-wil',M.allWil); msFill('rsc-area',M.allArea);}
+  const k=$('rsc-metric').value, cum=$('rsc-mode').value==='cum', same=$('rsc-same').checked, P=SCL_WEB, F=v=>rspFmt(v,k), kN=k==='n'?'Jumlah SPI':'Nilai SPI';
+  const rows=Object.values(M.S).map(o=>{o.total=o[k].reduce((a,x)=>a+x,0); o.avg=o.total/M.n; let pi=0; o[k].forEach((v,i)=>{if(v>o[k][pi]) pi=i;}); o.peak=pi;
+    o.area=Object.entries(o.ac).sort((a,b)=>b[1]-a[1]).slice(0,2).map(e=>e[0]).join(' & ')||'—'; o.wil=(Object.entries(o.wc).sort((a,b)=>b[1]-a[1])[0]||['—'])[0]; return o;})
+    .filter(o=>o.total>0).sort((a,b)=>b.total-a.total||a.sc.localeCompare(b.sc));
+  const tv=M.tot[k], total=tv.reduce((a,x)=>a+x,0), pk=tv.indexOf(Math.max(...tv)), top=rows[0], cumA=a=>{let c=0;return a.map(v=>c+=v);}, U=M.unit.charAt(0).toUpperCase()+M.unit.slice(1);
+  $('rsc-sub').textContent=M.range+' · '+(M.gran==='w'?'mingguan':'bulanan')+(M.wils.length?' · Wilayah: '+M.wils.join(', '):'')+(M.areas.length?' · Area: '+M.areas.join(', '):'')+' · '+rows.length+' sales';
+  const c=(cl2,l,v,s)=>`<div class="mg-k ${cl2}"><div class="mg-kl">${l}</div><div class="mg-kv" style="font-size:18px">${v}</div><div class="mg-ks">${s}</div></div>`;
+  $('rsc-kpi').innerHTML=c('neu','Total '+(k==='n'?'SPI':'nilai'),scwEsc(F(total)),M.n+' '+M.unit+' · '+M.range)+c('neu','Rata-rata per '+M.unit,scwEsc(F(total/M.n)),'semua sales terpilih')+
+    c('good','Sales aktif',String(rows.length),'mengirim SPI di periode')+c('good',U+' tertinggi',scwEsc(M.bins[pk].lbl),scwEsc(F(tv[pk])))+c('warn','Sales tertinggi',top?scwEsc(top.sc):'—',top?scwEsc(F(top.total)):'');
+  $('rsc-over-t').textContent=(cum?kN+' kumulatif':kN+' per '+M.unit)+' — semua sales terpilih';
+  $('rsc-over').innerHTML=sclLine(cum?cumA(tv):tv,M.bins.map(b=>b.lbl),{P,W:900,H:210,l:44,t:22,b:22,yl:true,fs:10,labelAll:M.n<=14,maxLbl:20,avg:cum?null:total/M.n,bg:'var(--surf)'});
+  $('rsc-rank-t').textContent='🏆 Ranking sales — '+kN.replace(/^./,c=>c.toLowerCase())+' (maks. 15) per status';
+  $('rsc-rank').innerHTML=rows.length?rspHBar(rows.slice(0,15).map(o=>({l:o.sc,seg:k==='n'?o.segN:o.seg,tot:o.total})),F,k):'<div class="scw-empty">Tidak ada data.</div>';
+  const ar=Object.values(M.AR).map(a=>{const sg=k==='n'?a.segN:a.seg; return {l:a.l,seg:sg,tot:sg.reduce((x,y)=>x+y,0)};}).filter(a=>a.tot>0).sort((a,b)=>b.tot-a.tot);
+  $('rsc-area-t').textContent='🗺️ '+kN+' per area';
+  $('rsc-areas').innerHTML=ar.length?rspHBar(ar,F,k):'<div class="scw-empty">Tidak ada data.</div>';
+  $('rsp-rekap-t').textContent='Rekap per jenis — '+M.range;
+  $('rsp-rekap').innerHTML=`<table class="scw-table"><thead><tr><th>Jenis</th><th class="r">SPI</th><th class="r">Nilai (Rp)</th><th class="r grp">Selesai (Jml)</th><th class="r">Selesai (Rp)</th><th class="r">% Selesai (nilai)</th><th class="r grp">Berjalan (Jml)</th><th class="r">Berjalan (Rp)</th></tr></thead><tbody>`+
+    SPH_J.map((j,i)=>{const q=M.J[i], on=msGet('rsc-jenis').has(j); return `<tr class="row" onclick="rspPickJenis('${j}')" title="Klik untuk memfilter jenis ${j}" style="${on?'background:var(--surf2)':''}"><td class="scn">${j}${on?' ✓':''}</td><td class="r bl">${q.n}</td><td class="r ${q.v?'real':'z'}">${scwRp(q.v)}</td><td class="r bl grp">${q.tN}</td><td class="r ${q.tV?'real':'z'}">${scwRp(q.tV)}</td><td class="r">${q.v?(q.tV/q.v*100).toFixed(1)+'%':'-'}</td><td class="r bl grp">${q.mN}</td><td class="r ${q.mV?'real':'z'}">${scwRp(q.mV)}</td></tr>`;}).join('')+`</tbody></table>`;
+  $('rsc-note').innerHTML='Satu data = satu SPI/proyek (Batal tidak dihitung), tanggal = Tgl SPI. Garis putus-putus = rata-rata per '+M.unit+'. Warna batang: hijau = Selesai (Finish), kuning = Berjalan (Progress).';
+  const gm=$('rsc-group').value;
+  if(gm!=='s'){
+    const gs=Object.values(gm==='w'?M.G:M.GA).map(g=>{g.total=g[k].reduce((a,x)=>a+x,0); g.avg=g.total/M.n; let pi=0; g[k].forEach((v,i)=>{if(v>g[k][pi]) pi=i;}); g.peak=pi; g.ns=g.scs.size; return g;}).filter(g=>g.total>0).sort((a,b)=>b.total-a.total);
+    gs.forEach((g,i)=>{g.c=(gm==='w'&&RSP_WC[g.l])||AREA_COLORS[i%AREA_COLORS.length]; g.vals=cum?cumA(g[k]):g[k]; g.tl=F(g.total);});
+    const yg=same?Math.max(1,...gs.map(g=>Math.max(...g.vals))):0, gl=gm==='w'?'wilayah':'area';
+    $('rsc-sub').textContent+=' · digabung per '+gl;
+    $('rsc-grid').innerHTML=gs.length?`<div class="scl-card" style="grid-column:1/-1"><div class="scl-h"><div class="scl-n"><b>Perbandingan per ${gl} — ${scwEsc(kN.replace(/^./,c=>c.toLowerCase()))}${cum?' kumulatif':' per '+M.unit}</b><small>semua sales dalam satu ${gl} digabung · ${gs.length} ${gl}</small></div></div>`+rspMulti(gs,M.bins.map(b=>b.lbl),k==='n'?(v=>String(Math.round(v))):mgS,900,240)+`</div>`+
+      gs.map((g,i)=>`<div class="scl-card"><div class="scl-h"><span class="scl-rk" style="background:${g.c};color:#fff">${i+1}</span><div class="scl-n"><b>${scwEsc(g.l)}</b><small>${g.ns} sales</small></div><div class="scl-t">${scwEsc(F(g.total))}</div></div>`+
+        sclLine(g.vals,M.bins.map(b=>b.lbl),{P,W:300,H:112,ymax:yg,avg:cum?null:g.avg,labelAll:false,bg:'var(--surf)',maxLbl:6})+
+        `<div class="scl-f"><span>Rata-rata ${scwEsc(F(g.avg))}/${M.unitS}</span><span>Puncak ${scwEsc(M.bins[g.peak].lbl)} · ${scwEsc(F(g[k][g.peak]))}</span></div></div>`).join(''):'<div class="scw-empty">Tidak ada data.</div>';
+    return;
+  }
+  const ymax=same?Math.max(1,...rows.map(o=>Math.max(...(cum?cumA(o[k]):o[k])))):0;
+  $('rsc-grid').innerHTML=rows.length?rows.map((o,i)=>{const vals=cum?cumA(o[k]):o[k];
+    return `<div class="scl-card"><div class="scl-h"><span class="scl-rk">${i+1}</span><div class="scl-n"><b title="${scwEsc(o.sc)}">${scwEsc(o.sc)}</b><small>${scwEsc((o.wil&&o.wil!=='LAINNYA'?o.wil+' · ':'')+o.area)}</small></div><div class="scl-t">${scwEsc(F(o.total))}</div></div>`+
+      sclLine(vals,M.bins.map(b=>b.lbl),{P,W:300,H:112,ymax,avg:cum?null:o.avg,labelAll:false,bg:'var(--surf)',maxLbl:6})+
+      `<div class="scl-f"><span>Rata-rata ${scwEsc(F(o.avg))}/${M.unitS}</span><span>Puncak ${scwEsc(M.bins[o.peak].lbl)} · ${scwEsc(F(o[k][o.peak]))}</span></div></div>`;}).join(''):'<div class="scw-empty">Tidak ada sales untuk filter ini.</div>';
+}
+
+function rscPDF(){
+  const M=RSC_M; if(!M||M.err){toast('Atur periode grafik dengan benar dulu','info');return;}
+  const k=$('rsc-metric').value, cum=$('rsc-mode').value==='cum', same=$('rsc-same').checked, gm=$('rsc-group').value, P=SCL_PRN, F=v=>rspFmt(v,k), kN=k==='n'?'Jumlah SPI':'Nilai SPI';
+  const cumA=a=>{let c=0;return a.map(v=>c+=v);}, labels=M.bins.map(b=>b.lbl), U=M.unit.charAt(0).toUpperCase()+M.unit.slice(1);
+  const rows=Object.values(M.S).map(o=>{o.total=o[k].reduce((a,x)=>a+x,0); o.avg=o.total/M.n; let pi=0; o[k].forEach((v,i)=>{if(v>o[k][pi]) pi=i;}); o.peak=pi;
+    o.area=Object.entries(o.ac).sort((a,b)=>b[1]-a[1]).slice(0,2).map(e=>e[0]).join(' & ')||'—'; o.wil=(Object.entries(o.wc).sort((a,b)=>b[1]-a[1])[0]||['—'])[0]; return o;})
+    .filter(o=>o.total>0).sort((a,b)=>b.total-a.total||a.sc.localeCompare(b.sc));
+  if(!rows.length){toast('Tidak ada data untuk dicetak','info');return;}
+  const tv=M.tot[k], total=tv.reduce((a,x)=>a+x,0), pk=tv.indexOf(Math.max(...tv)), top=rows[0];
+  const ar=Object.values(M.AR).map(a=>{const sg=k==='n'?a.segN:a.seg; return {l:a.l,seg:sg,tot:sg.reduce((x,y)=>x+y,0)};}).filter(a=>a.tot>0).sort((a,b)=>b.tot-a.tot);
+  const sub=M.range+' · '+(M.gran==='w'?'mingguan':'bulanan')+(M.wils.length?' · Wilayah: '+M.wils.join(', '):'')+(M.areas.length?' · Area: '+M.areas.join(', '):'')+' · '+rows.length+' sales';
+  const hdr=(a,b2,c)=>`<div><b>${a}</b><span>${b2}</span><i>${c}</i></div>`;
+  let cards='';
+  const cardF=(rk,name,small,tot,vals,ymax,avg,pkLbl,pkV,avgV,bg)=>`<div class="scl-card"><div class="scl-h"><span class="scl-rk" ${bg?`style="background:${bg};color:#fff"`:''}>${rk}</span><div class="scl-n"><b>${scwEsc(name)}</b><small>${scwEsc(small)}</small></div><div class="scl-t">${scwEsc(tot)}</div></div>${sclLine(vals,labels,{P,W:300,H:100,ymax,avg,fs:9,maxLbl:6})}<div class="scl-f"><span>Rata-rata ${scwEsc(avgV)}/${M.unitS}</span><span>Puncak ${scwEsc(pkLbl)} · ${scwEsc(pkV)}</span></div></div>`;
+  let multi='', gl='';
+  if(gm!=='s'){
+    gl=gm==='w'?'wilayah':'area';
+    const gs=Object.values(gm==='w'?M.G:M.GA).map(g=>{g.total=g[k].reduce((a,x)=>a+x,0); g.avg=g.total/M.n; let pi=0; g[k].forEach((v,i)=>{if(v>g[k][pi]) pi=i;}); g.peak=pi; g.ns=g.scs.size; return g;}).filter(g=>g.total>0).sort((a,b)=>b.total-a.total);
+    const pal=['#1d4ed8','#059669','#d97706','#7c3aed','#dc2626','#0891b2','#be185d','#4d7c0f'];
+    gs.forEach((g,i)=>{g.c=pal[i%pal.length]; g.vals=cum?cumA(g[k]):g[k]; g.tl=F(g.total);});
+    const yg=same?Math.max(1,...gs.map(g=>Math.max(...g.vals))):0;
+    multi=`<div class="scl-ov"><div class="mgp-ch">Perbandingan per ${gl} — ${scwEsc(kN.replace(/^./,c=>c.toLowerCase()))}${cum?' kumulatif':' per '+M.unit}</div>${rspMulti(gs,labels,k==='n'?(v=>String(Math.round(v))):mgS,900,170,P)}</div>`;
+    cards=gs.map((g,i)=>cardF(i+1,g.l,g.ns+' sales',F(g.total),g.vals,yg,cum?null:g.avg,M.bins[g.peak].lbl,F(g[k][g.peak]),F(g.avg),g.c)).join('');
+  } else {
+    const ymax=same?Math.max(1,...rows.map(o=>Math.max(...(cum?cumA(o[k]):o[k])))):0;
+    cards=rows.map((o,i)=>cardF(i+1,o.sc,(o.wil&&o.wil!=='LAINNYA'?o.wil+' · ':'')+o.area,F(o.total),cum?cumA(o[k]):o[k],ymax,cum?null:o.avg,M.bins[o.peak].lbl,F(o[k][o.peak]),F(o.avg))).join('');
+  }
+  // rekap per jenis (periode & filter grafik)
+  let rekap=''; {
+    const rp=v=>v?scwEsc(fmt(v,true)):'-';
+    rekap=`<div class="mgp-ch" style="margin-top:2px">Rekap per jenis — ${scwEsc(M.range)}${M.wils.length?' · Wilayah: '+scwEsc(M.wils.join(', ')):''}${M.areas.length?' · Area: '+scwEsc(M.areas.join(', ')):''}</div>
+      <table class="spp-t"><thead><tr><th>Jenis</th><th>SPI</th><th>Nilai (Rp)</th><th>Selesai (Jml)</th><th>Selesai (Rp)</th><th>% Selesai</th><th>Berjalan (Jml)</th><th>Berjalan (Rp)</th></tr></thead><tbody>`+
+      SPH_J.map((j,i)=>{const q=M.J[i]; return `<tr><td class="l">${scwEsc(j)}</td><td>${q.n}</td><td>${rp(q.v)}</td><td>${q.tN}</td><td>${rp(q.tV)}</td><td>${q.v?(q.tV/q.v*100).toFixed(1)+'%':'-'}</td><td>${q.mN}</td><td>${rp(q.mV)}</td></tr>`;}).join('')+
+      `</tbody></table>`;
+  }
+  let ov=$('scl-pdf-overlay'); if(!ov){ov=document.createElement('div');ov.id='scl-pdf-overlay';ov.style.display='none';document.body.appendChild(ov);}
+  ov.innerHTML=`<div class="mgp-h"><div><div class="mgp-t">LAPORAN RANKING SPI — GRAFIK PEROLEHAN SPI PER SALES</div><div class="mgp-s">Periode ${scwEsc(sub)} · ${cum?'kumulatif':'per '+M.unit} · ${scwEsc(kN)} · Dicetak ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}</div></div><div class="mgp-co">PT Sandana · Project Controller</div></div>
+   <div class="mgp-kpi" style="grid-template-columns:repeat(5,1fr)">
+    ${hdr(scwEsc(F(total)),'Total '+(k==='n'?'SPI':'nilai'),M.n+' '+M.unit+' · '+scwEsc(M.range))}
+    ${hdr(scwEsc(F(total/M.n)),'Rata-rata per '+M.unit,'semua sales terpilih')}
+    ${hdr(String(rows.length),'Sales aktif','mengirim SPI')}
+    ${hdr(scwEsc(M.bins[pk].lbl),U+' tertinggi',scwEsc(F(tv[pk])))}
+    ${hdr(scwEsc(top.sc),'Sales tertinggi',scwEsc(F(top.total)))}</div>
+   <div class="scl-ov"><div class="mgp-ch">${cum?kN+' kumulatif':kN+' per '+M.unit} — semua sales terpilih</div>${sclLine(cum?cumA(tv):tv,labels,{P,W:900,H:150,l:44,t:20,b:20,yl:true,fs:9,labelAll:M.n<=14,maxLbl:20,avg:cum?null:total/M.n})}</div>
+   <div class="mgp-g"><div class="scl-ov"><div class="mgp-ch">Ranking sales — ${scwEsc(kN.replace(/^./,c=>c.toLowerCase()))} (maks. 15) per status</div>${rspHBar(rows.slice(0,15).map(o=>({l:o.sc,seg:k==='n'?o.segN:o.seg,tot:o.total})),F,k,P)}</div>
+    <div class="scl-ov"><div class="mgp-ch">${scwEsc(kN)} per area</div>${ar.length?rspHBar(ar.slice(0,15),F,k,P):''}</div></div>
+   <div class="mgp-rk">${rekap}</div>
+   <div class="mgp-pg2">${multi}<div class="scl-grid" style="margin-top:6px">${cards}</div>
+   <div class="mgp-n">Satu data = satu SPI/proyek (Batal tidak dihitung), tanggal = Tgl SPI. Garis putus-putus = rata-rata per ${M.unit}. Warna batang: hijau = Selesai (Finish), kuning = Berjalan (Progress). ${same?'Skala sumbu Y sama untuk semua kartu.':'Skala sumbu Y tiap kartu berbeda — bandingkan besaran lewat angka total di kanan atas kartu.'}</div></div>`;
+  let ps=$('scl-page-style'); if(!ps){ps=document.createElement('style');ps.id='scl-page-style';document.head.appendChild(ps);}
+  ps.textContent='@media print{@page{size:A4 landscape;margin:8mm}}';
+  const clean=()=>{document.body.classList.remove('print-scl'); ov.style.display='none'; window.removeEventListener('afterprint',clean);};
+  window.addEventListener('afterprint',clean);
+  document.body.classList.add('print-scl'); ov.style.display='block';
+  setTimeout(()=>window.print(),150);
+}
+
+Object.assign(MS_CB,{'sph-wk':()=>buildSph(),'rsp-wk':()=>buildRsp(),'rsp-wil':()=>buildRsp(),'rsp-area':()=>buildRsp(),'rsp-sc':()=>buildRsp(),'rsp-jenis':()=>buildRsp(),'rsc-jenis':()=>buildRspChart(),'rsc-wil':()=>buildRspChart(),'rsc-area':()=>buildRspChart(),'rsc-sc':()=>buildRspChart(),'sph-wil':()=>buildSph(),'sph-area':()=>buildSph(),'sph-sc':()=>buildSph(),'sph-jenis':()=>buildSph(),'spc-jenis':()=>buildSphChart(),'spc-wil':()=>buildSphChart(),'spc-area':()=>buildSphChart(),'spc-sc':()=>buildSphChart()});
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.startsWith('http')){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
 </body>
