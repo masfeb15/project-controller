@@ -964,7 +964,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
       <div><div class="sec-title">Database Proyek</div><div class="sec-sub" id="db-sub">—</div></div>
     </div>
     <div class="filter-bar">
-      <input type="text" id="df-q" placeholder="🔍 Cari nama, kode, SPI, PIC…" oninput="filterDB()">
+      <input type="text" id="df-q" placeholder="🔍 Cari nama, pekerjaan, kode, SPI, PIC…" oninput="filterDB()">
       <select id="df-status" onchange="filterDB()">
         <option value="">Semua Status</option>
         <option value="PROGRESS">Progress</option>
@@ -1006,10 +1006,12 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         <table id="db-table">
           <thead><tr>
             <th onclick="sortDB('PROYEK')">Proyek</th>
+            <th onclick="sortDB('PEKERJAAN')">Pekerjaan</th>
             <th onclick="sortDB('KODE')">Kode</th>
             <th onclick="sortDB('SPI')">SPI</th>
             <th onclick="sortDB('TAHUN')">Tahun</th>
             <th onclick="sortDB('BLN')">Bulan</th>
+            <th onclick="sortDB('JENIS2')">Jenis</th>
             <th onclick="sortDB('AREA')">Area</th>
             <th onclick="sortDB('PIC_TEK')">PIC Teknik</th>
             <th onclick="sortDB('PIC_SALES')">PIC Sales</th>
@@ -1017,6 +1019,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
             <th onclick="sortDB('STATUS')" data-os="Status">Status</th>
             <th onclick="sortDB('PROGRESS')" id="th-prog">Progress</th>
             <th onclick="sortDB('DELAY')" data-os="Delay">Delay</th>
+            <th onclick="sortDB('TGL_BA')">Tgl BA / BAST</th>
             <th>DOK SPK / Term Payment</th>
             <th onclick="sortDB('NK')">Nilai Kontrak</th>
             <th onclick="sortDB('TERTAGIH')" data-os="Tertagih">Tertagih</th>
@@ -2608,7 +2611,7 @@ function filterDB(){
   document.querySelectorAll('#db-table th[data-os]').forEach(t=>t.textContent=t.dataset.os+(osCut!=null?' per tgl':''));
 
   DB_F=ALL.filter(r=>{
-    if(q&&!cl(r[C.PROYEK]).toLowerCase().includes(q)&&!cl(r[C.KODE]).toLowerCase().includes(q)&&!cl(r[C.SPI]).toLowerCase().includes(q)&&!cl(r[C.PIC_TEK]).toLowerCase().includes(q)&&!cl(r[C.PIC_SALES]).toLowerCase().includes(q)&&!cl(r[C.NO_SO]).toLowerCase().includes(q))return false;
+    if(q&&!cl(r[C.PROYEK]).toLowerCase().includes(q)&&!cl(r[C.KODE]).toLowerCase().includes(q)&&!cl(r[C.SPI]).toLowerCase().includes(q)&&!cl(r[C.PIC_TEK]).toLowerCase().includes(q)&&!cl(r[C.PIC_SALES]).toLowerCase().includes(q)&&!cl(r[C.NO_SO]).toLowerCase().includes(q)&&!cl(r[C.PEKERJAAN]).toLowerCase().includes(q))return false;
     if(status&&cl(r[C.STATUS])!==status)return false;
     if(area.size&&!area.has(cl(r[C.AREA])))return false;
     if(tahun&&cl(r[C.TAHUN])!==tahun)return false;
@@ -2651,7 +2654,8 @@ function filterDB(){
 }
 function clearDB(){document.querySelectorAll('#db-table th[data-os]').forEach(t=>t.textContent=t.dataset.os);if($('th-prog'))$('th-prog').textContent='Progress';if($('df-os-hide'))$('df-os-hide').checked=false;window.OS_INFO=null;if($('db-table'))$('db-table').classList.remove('os-on');if($('os-hint'))$('os-hint').textContent='';['df-q','df-status','df-tahun','df-wil','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});['df-area','df-jenis','df-korwil'].forEach(id=>{MS_SEL[id]=new Set();msFill(id,MS_VALS[id]||[]);});DB_F=[...ALL];DB_PAGE=1;renderDB();}
 function sortDB(col){document.querySelectorAll('thead th').forEach(t=>t.classList.remove('s-asc','s-desc'));if(DB_SORT.col===col)DB_SORT.dir*=-1;else{DB_SORT.col=col;DB_SORT.dir=1;}sortDBArr();DB_PAGE=1;renderDB();}
-function sortDBArr(){const nums=['NK','TERTAGIH','SISA','PCT_TAGIH','PCT_ANGGARAN','PCT_DP','PROGRESS','DELAY'];DB_F.sort((a,b)=>{const ci=C[DB_SORT.col];if(ci===undefined)return 0;const av=nums.includes(DB_SORT.col)?num(a[ci]):cl(a[ci]);const bv=nums.includes(DB_SORT.col)?num(b[ci]):cl(b[ci]);return typeof av==='number'?(av-bv)*DB_SORT.dir:av.localeCompare(bv)*DB_SORT.dir;});}
+function sortDBArr(){const nums=['NK','TERTAGIH','SISA','PCT_TAGIH','PCT_ANGGARAN','PCT_DP','PROGRESS','DELAY'];DB_F.sort((a,b)=>{const ci=C[DB_SORT.col];if(ci===undefined)return 0;
+    if(DB_SORT.col==='TGL_BA'){const x=scwParseDay(a[ci]),y=scwParseDay(b[ci]);return ((x==null?-1e9:x)-(y==null?-1e9:y))*DB_SORT.dir;}const av=nums.includes(DB_SORT.col)?num(a[ci]):cl(a[ci]);const bv=nums.includes(DB_SORT.col)?num(b[ci]):cl(b[ci]);return typeof av==='number'?(av-bv)*DB_SORT.dir:av.localeCompare(bv)*DB_SORT.dir;});}
 function renderDB(){
   const osBln2=parseInt($('df-os-bln')?.value)||0,osThn2=parseInt($('df-os-thn')?.value)||0;
   const blnNames=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
@@ -2668,10 +2672,12 @@ function renderDB(){
     const rowCls=delay<-100&&cl(r[C.STATUS])==='PROGRESS'?'row-alert':delay<0&&cl(r[C.STATUS])==='PROGRESS'?'row-warn':'';
     return`<tr class="${rowCls}" onclick="openModal('db',${start+i})">
       <td class="t-name">${pn(r)}</td>
+      <td class="t-dok" title="${cl(r[C.PEKERJAAN]).replace(/"/g,'&quot;')}">${cl(r[C.PEKERJAAN])||'—'}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${normKode(r[C.KODE])}</td>
       <td style="font-family:var(--mono);font-size:11px">${cl(r[C.SPI])}</td>
       <td style="font-family:var(--mono);font-size:11px">${cl(r[C.TAHUN])}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${cl(r[C.BULAN])||'—'}</td>
+      <td style="font-size:11px;font-weight:600;color:var(--text2)">${cl(r[C.JENIS2])||cl(r[C.JENIS])||'—'}</td>
       <td><span class="pill pill-blue">${cl(r[C.AREA])}</span></td>
       <td style="font-size:11px;color:var(--text2)">${cl(r[C.PIC_TEK])||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${cl(r[C.PIC_SALES])||'—'}</td>
@@ -2679,6 +2685,7 @@ function renderDB(){
       <td>${badge(osO?osO.status:cl(r[C.STATUS]))}${osO&&osO.unknown?'<span class="os-flag" title="Berstatus selesai, tetapi tidak ada tanggal BAST maupun 100% di log progress — tanggal selesai tidak diketahui">tgl selesai ?</span>':''}</td>
       <td>${osO?(osO.pct==null?'<span style="color:var(--text3)" title="Tidak ada log progress untuk proyek ini">—</span>':pbx(osO.pct)):pb(r[C.PROGRESS])}</td>
       <td>${osO?(osO.delay==null?'<span style="color:var(--text3)">—</span>':delayTag(osO.delay)):delayTag(r[C.DELAY])}</td>
+      <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">${excelDate(cl(r[C.TGL_BA]))}</td>
       <td class="t-dok" title="${cl(r[C.DOK])}">${cl(r[C.DOK])||'—'}</td>
       <td class="money">${fmt(num(r[C.NK]),true)}</td>
       <td class="money">${fmt(osO?osO.tag:num(r[C.TERTAGIH]),true)}</td>
@@ -2688,7 +2695,7 @@ function renderDB(){
       <td class="os-col money">${osO?fmt(osO.real,true):''}</td>
       <td class="os-col money">${osO?fmt(osO.tag,true):''}</td>
       <td class="os-col money" style="color:${osO&&osO.sel>0?'var(--amber)':osO&&osO.sel<0?'var(--red)':'var(--text3)'}">${osO?fmt(osO.sel,true):''}</td>
-    </tr>`;}).join('')||'<tr><td colspan="21" style="text-align:center;padding:32px;color:var(--text3)">Tidak ada data</td></tr>';
+    </tr>`;}).join('')||'<tr><td colspan="24" style="text-align:center;padding:32px;color:var(--text3)">Tidak ada data</td></tr>';
   renderPag('db-pag',DB_PAGE,Math.ceil(DB_F.length/PER.db),p=>{DB_PAGE=p;renderDB();});
 }
 
@@ -3373,13 +3380,53 @@ function applyEditOverlay(){
 /* ══ EXPORT EXCEL ══ */
 const xN2=v=>{const n=Number(v);return isFinite(n)?Math.round(n*100)/100:0;};                    /* nominal: desimal asli, 2 digit */
 const xP2=v=>{const t=(v==null?'':String(v)).trim(), n=num(t); return Math.round((t.indexOf('%')>=0?n:n*100)*100)/100;};   /* persen: 30.18 (bukan 3018) */
-function exportXLS(src){
+/* Export sebagai TABEL Excel (filter + striping) dengan baris TOTAL: jumlah baris + SUM kolom nominal.
+   Baris total memakai SUBTOTAL, jadi ikut berubah bila tabel difilter di Excel. Tambah 'prog','inv', dst. ke daftar ini bila ingin menu lain ikut. */
+const XLS_TABLE_SRC=['db'];
+const XLS_SUM_H=h=>/^(Nilai|HPP|Tertagih|Sisa Tagihan|Realisasi|Selisih)/i.test(h)&&!/hari|%/i.test(h);
+const XLS_PCT_H=h=>/\(%\)|^%|^% |%$/.test(h);
+const XLS_DATE_H=h=>/^TGL /i.test(h);
+let _exceljsP=null;
+function loadExcelJS(){
+  if(window.ExcelJS) return Promise.resolve();
+  return _exceljsP||(_exceljsP=new Promise((res,rej)=>{const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'; s.onload=res; s.onerror=()=>{_exceljsP=null; rej(new Error('ExcelJS gagal dimuat'));}; document.head.appendChild(s);}));
+}
+async function exportTableXLSX(sheetName,headers,data,fname){
+  await loadExcelJS();
+  const n=data.length, nc=headers.length, last=n+1;
+  const isSum=headers.map(XLS_SUM_H), isPct=headers.map(XLS_PCT_H), isDate=headers.map(XLS_DATE_H);
+  const toDate=v=>(v===''||v==null)?null:new Date(Date.UTC(1899,11,30)+v*864e5);
+  const rows=data.map(r=>r.map((v,i)=>isDate[i]?toDate(v):v));
+  const sums=headers.map((h,i)=>isSum[i]?data.reduce((a,r)=>a+(Number(r[i])||0),0):0);
+  const colL=i=>{let s='',x=i+1; while(x>0){const m=(x-1)%26; s=String.fromCharCode(65+m)+s; x=Math.floor((x-1)/26);} return s;};
+  const wb=new ExcelJS.Workbook(); wb.creator='Project Controller — PT Sandana'; wb.created=new Date();
+  const ws=wb.addWorksheet(sheetName.slice(0,31),{views:[{state:'frozen',ySplit:1}]});
+  ws.addTable({name:'tbl'+sheetName.replace(/[^A-Za-z0-9]/g,''),ref:'A1',headerRow:true,totalsRow:true,style:{theme:'TableStyleMedium2',showRowStripes:true},
+    columns:headers.map((h,i)=>i===0
+      ?{name:h,filterButton:true,totalsRowLabel:'TOTAL'}
+      :i===1?{name:h,filterButton:true,totalsRowFunction:'custom',totalsRowFormula:'SUBTOTAL(103,A2:A'+last+')',totalsRowResult:n}
+      :isSum[i]?{name:h,filterButton:true,totalsRowFunction:'sum',totalsRowResult:sums[i]}
+      :{name:h,filterButton:true,totalsRowFunction:'none'}),
+    rows});
+  headers.forEach((h,i)=>{
+    const col=ws.getColumn(i+1), len=Math.max(h.length,...data.slice(0,2000).map(r=>String(r[i]??'').length));
+    col.width=isDate[i]?15:isSum[i]?20:Math.min(Math.max(len+3,11),42);
+    const z=isDate[i]?'dd/mm/yyyy':isPct[i]?'0.00':isSum[i]?'#,##0.00':null;
+    if(z) for(let r=2;r<=last+1;r++) ws.getCell(r,i+1).numFmt=z;
+  });
+  if(nc>1) ws.getCell(last+1,2).numFmt='#,##0 "proyek"';
+  const tr=ws.getRow(last+1); tr.font={bold:true}; tr.height=20;
+  const buf=await wb.xlsx.writeBuffer();
+  const url=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+  const a=document.createElement('a'); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+function exportXLS(src,plain){
   let headers=[], data=[], sheetName='Data';
   if(src==='db'){
     sheetName='Database Proyek';
-    headers=['Proyek','Kode','SPI','Tahun','Area','Wilayah','Jenis','Status','Progress (%)','Delay (hari)','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','Nilai Retensi','PIC Teknik','PIC Sales','Korwil Teknik'];
-    data=DB_F.map(r=>[cl(r[C.PROYEK]),cl(r[C.KODE]),cl(r[C.SPI]),cl(r[C.TAHUN]),cl(r[C.AREA]),cl(r[C.WILAYAH]),cl(r[C.JENIS2])||cl(r[C.JENIS]),cl(r[C.STATUS]),xP2(r[C.PROGRESS]),parseInt(r[C.DELAY])||0,cl(r[C.DOK]),xN2(num(r[C.NK])),xN2(num(r[C.HPP])),xN2(num(r[C.TERTAGIH])),xN2(num(r[C.SISA])),xP2(r[C.PCT_TAGIH]),xN2(num(r[C.RETENSI])),cl(r[C.PIC_TEK]),cl(r[C.PIC_SALES]),cl(r[C.KORWIL_TEK])]);
-    if(window.OS_INFO){headers=headers.concat(['Realisasi Teknik s/d tgl','Tertagih Invoice s/d tgl','Selisih (belum ditagih)','Tgl selesai tidak diketahui']);headers[7]='Status per tgl';headers[8]='Progress per tgl (%)';headers[9]='Delay per tgl (hari)';headers[13]='Tertagih per tgl';headers[14]='Sisa Tagihan per tgl';headers[15]='% Tertagih per tgl';data=data.map((row,i)=>{const o=window.OS_INFO[normKode(DB_F[i][C.KODE])];if(o){row[7]=o.status;row[8]=o.pct==null?'':parseFloat((o.pct*100).toFixed(2));row[9]=o.delay==null?'':o.delay;row[13]=xN2(o.tag);row[14]=xN2(Math.max(0,row[11]-o.tag));row[15]=o.pctTag==null?'':parseFloat((o.pctTag*100).toFixed(2));}return row;}).map((row,i)=>row.concat(osCells(DB_F[i]).map(v=>v===''?v:xN2(v)),[(window.OS_INFO[normKode(DB_F[i][C.KODE])]||{}).unknown?'YA':'']));}
+    headers=['Proyek','Pekerjaan','Kode','SPI','Tahun','Area','Wilayah','Jenis','Status','Progress (%)','Delay (hari)','TGL BA / BAST','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','Nilai Retensi','PIC Teknik','PIC Sales','Korwil Teknik'];
+    data=DB_F.map(r=>{const ba=scwParseDay(r[C.TGL_BA]); return [cl(r[C.PROYEK]),cl(r[C.PEKERJAAN]),cl(r[C.KODE]),cl(r[C.SPI]),cl(r[C.TAHUN]),cl(r[C.AREA]),cl(r[C.WILAYAH]),cl(r[C.JENIS2])||cl(r[C.JENIS]),cl(r[C.STATUS]),xP2(r[C.PROGRESS]),parseInt(r[C.DELAY])||0,ba==null?'':ba+25569,cl(r[C.DOK]),xN2(num(r[C.NK])),xN2(num(r[C.HPP])),xN2(num(r[C.TERTAGIH])),xN2(num(r[C.SISA])),xP2(r[C.PCT_TAGIH]),xN2(num(r[C.RETENSI])),cl(r[C.PIC_TEK]),cl(r[C.PIC_SALES]),cl(r[C.KORWIL_TEK])];});
+    if(window.OS_INFO){headers=headers.concat(['Realisasi Teknik s/d tgl','Tertagih Invoice s/d tgl','Selisih (belum ditagih)','Tgl selesai tidak diketahui']);headers[8]='Status per tgl';headers[9]='Progress per tgl (%)';headers[10]='Delay per tgl (hari)';headers[15]='Tertagih per tgl';headers[16]='Sisa Tagihan per tgl';headers[17]='% Tertagih per tgl';data=data.map((row,i)=>{const o=window.OS_INFO[normKode(DB_F[i][C.KODE])];if(o){row[8]=o.status;row[9]=o.pct==null?'':parseFloat((o.pct*100).toFixed(2));row[10]=o.delay==null?'':o.delay;row[15]=xN2(o.tag);row[16]=xN2(Math.max(0,row[13]-o.tag));row[17]=o.pctTag==null?'':parseFloat((o.pctTag*100).toFixed(2));}return row;}).map((row,i)=>row.concat(osCells(DB_F[i]).map(v=>v===''?v:xN2(v)),[(window.OS_INFO[normKode(DB_F[i][C.KODE])]||{}).unknown?'YA':'']));}
   }else if(src==='prog'){
     sheetName='Proyek Berjalan';
     headers=['Proyek','Kode','SPI','Tahun','Area','Jenis','Progress (%)','Delay (hari)','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','% DP','% Pemakaian Angg','PIC Teknik','PIC Sales','Korwil Teknik'];
@@ -3398,9 +3445,19 @@ function exportXLS(src){
     data=CC_F.map(r=>[r.proyek,r.kode,r.spi,String(r.thn||'').replace('.0',''),r.area,r.jenis,r.status,parseFloat((r.progress>1?r.progress:r.progress*100).toFixed(2)),r.arrow,xN2(r.nk),xN2(r.hpp),xN2(r.realisasi),xN2(r.selisih),parseFloat(r.pct_angg.toFixed(2)),r.delay,r.n_trans,Math.round(r.bb_debit),Math.round(r.bb_kredit)]);
   }
 
+  const fnm=`sandana_${src}_${new Date().toISOString().substring(0,10)}.xlsx`;
+  if(!plain&&XLS_TABLE_SRC.includes(src)){
+    toast('Menyiapkan tabel Excel…','info');
+    exportTableXLSX(sheetName,headers,data,fnm).then(()=>toast('✓ Export Excel (format tabel + total) selesai · '+data.length.toLocaleString('id')+' baris','ok'))
+      .catch(e=>{console.warn(e); toast('Pustaka tabel Excel tidak termuat — memakai export biasa','err'); exportXLS(src,true);});
+    return;
+  }
   if(!window.XLSX){
     toast('Library XLSX belum dimuat, coba refresh halaman','err');
     return;
+  }
+  if(XLS_TABLE_SRC.includes(src)&&data.length){ /* cadangan: baris total manual */
+    data=data.concat([headers.map((h,i)=>i===0?'TOTAL ('+data.length.toLocaleString('id')+' baris)':XLS_SUM_H(h)?xN2(data.reduce((a,r)=>a+(Number(r[i])||0),0)):'')]);
   }
 
   /* Buat worksheet dari array of arrays */
@@ -3418,15 +3475,14 @@ function exportXLS(src){
   const PCT_H=h=>/\(%\)|^%|^% |%$/.test(h)||/^% /.test(h);
   const NOM_H=h=>/^(Nilai|HPP|Tertagih|Sisa Tagihan|Realisasi|Selisih|BB |Nilai DPP)/i.test(h)&&!/hari|%/i.test(h);
   headers.forEach((h,ci)=>{
-    const z=PCT_H(h)?'0.00':NOM_H(h)?'#,##0.00':null; if(!z) return;
+    const z=XLS_DATE_H(h)?'dd/mm/yyyy':PCT_H(h)?'0.00':NOM_H(h)?'#,##0.00':null; if(!z) return;
     for(let ri=1;ri<=data.length;ri++){const ref=XLSX.utils.encode_cell({r:ri,c:ci}); const c=ws[ref]; if(c&&c.t==='n') c.z=z;}
   });
 
   /* Buat workbook dan simpan sebagai .xlsx asli */
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  const fname = `sandana_${src}_${new Date().toISOString().substring(0,10)}.xlsx`;
-  XLSX.writeFile(wb, fname);
+  XLSX.writeFile(wb, fnm);
   toast('✓ Export Excel selesai ('+data.length+' baris)','ok');
 }
 
