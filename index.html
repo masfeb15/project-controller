@@ -236,6 +236,14 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .msel-l label:hover{background:var(--surf2)}
 .msel-l input{accent-color:var(--blue);width:15px;height:15px}
 .filter-bar .msel-l input{flex:none;min-width:0;width:15px;height:15px;padding:0;margin:0;background:none;border:0}
+.ba-q{width:100%;box-sizing:border-box;margin:2px 0 6px;padding:6px 9px;font-size:12px;border:1px solid var(--border2);border-radius:6px;background:var(--surf2);color:var(--text);min-width:0}
+.ba-p{min-width:270px}
+.ba-hint{color:var(--text3);font-size:10px}
+.msel-l label.ba-y{font-weight:600}
+.msel-l label.ba-m{padding-left:46px;font-weight:400}
+.ba-x{display:inline-block;width:14px;flex:none;color:var(--text3);text-decoration:none;text-align:center}
+.ba-n{margin-left:auto;font-style:normal;font-size:10px;color:var(--text3);font-family:var(--mono)}
+.ba-none{padding:10px;font-size:11px;color:var(--text3)}
 .ef-sec{font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--border)}
 .ef-sec:first-child{border-top:0;margin-top:0}
 .ef-err{background:var(--red-d);border:1px solid var(--red);color:var(--red);border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:10px}
@@ -981,6 +989,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         <option value="TIMUR">Timur</option>
       </select>
       <div class="msel" id="df-jenis" data-all="Semua Jenis"><button type="button" class="msel-b" onclick="msToggle('df-jenis',event)" aria-label="Jenis">Semua Jenis</button><div class="msel-p" hidden></div></div>
+      <div class="msel" id="df-ba" data-all="Semua Tgl BA/BAST"><button type="button" class="msel-b" onclick="msToggle('df-ba',event)" aria-label="Tgl BA / BAST">Semua Tgl BA/BAST</button><div class="msel-p ba-p" hidden></div></div>
       <div class="msel" id="df-korwil" data-all="Semua Korwil Teknik"><button type="button" class="msel-b" onclick="msToggle('df-korwil',event)" aria-label="Korwil Teknik">Semua Korwil Teknik</button><div class="msel-p" hidden></div></div>
       <!-- Outstanding per tanggal -->
       <div style="display:flex;align-items:center;gap:6px;background:var(--amber-d);border:1px solid var(--amber);border-radius:8px;padding:4px 10px;flex-shrink:0">
@@ -2313,7 +2322,7 @@ function buildSidebar(){
     [...tahuns,...tahuns.map(y=>String(parseInt(y)+1))].filter((v,i,a)=>a.indexOf(v)===i).sort().forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;osThnSel.appendChild(o);});}
   const jenis=[...new Set(ALL.map(r=>cl(r[C.JENIS2])).filter(Boolean))].sort();
   ['pf-jenis'].forEach(id=>{const s=$(id);if(!s)return;while(s.options.length>1)s.remove(1);jenis.forEach(j=>{const o=document.createElement('option');o.value=j;o.textContent=j;s.appendChild(o);});});
-  msFill('df-area',areas); msFill('df-jenis',jenis);
+  msFill('df-area',areas); msFill('df-jenis',jenis); baFill();
   msFill('df-korwil',[...new Set(ALL.map(r=>cl(r[C.KORWIL_TEK])).filter(v=>v&&v!=='(kosong)'))].sort((x,y)=>x.localeCompare(y)));
   const iyears=[...new Set(INV.map(r=>cl(r[I.THN])).filter(y=>y&&!isNaN(y)&&y!=='0'))].sort();
   const iy=$('if-year');if(iy){while(iy.options.length>1)iy.remove(1);iyears.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;iy.appendChild(o);});}
@@ -2618,6 +2627,7 @@ function filterDB(){
     if(wil&&cl(r[C.WILAYAH])!==wil)return false;
     if(jenis.size&&!jenis.has(cl(r[C.JENIS2])))return false;
     if(korwil.size&&!korwil.has(cl(r[C.KORWIL_TEK])))return false;
+    if(BA_SEL.size&&!BA_SEL.has(baKeyOf(r)))return false;
     /* ── Filter Outstanding per tanggal ── */
     if(osCut!=null){
       const st=cl(r[C.STATUS]).toUpperCase(); if(st==='BATAL') return false;
@@ -2652,7 +2662,7 @@ function filterDB(){
   if(DB_SORT.col)sortDBArr();
   DB_PAGE=1;renderDB();
 }
-function clearDB(){document.querySelectorAll('#db-table th[data-os]').forEach(t=>t.textContent=t.dataset.os);if($('th-prog'))$('th-prog').textContent='Progress';if($('df-os-hide'))$('df-os-hide').checked=false;window.OS_INFO=null;if($('db-table'))$('db-table').classList.remove('os-on');if($('os-hint'))$('os-hint').textContent='';['df-q','df-status','df-tahun','df-wil','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});['df-area','df-jenis','df-korwil'].forEach(id=>{MS_SEL[id]=new Set();msFill(id,MS_VALS[id]||[]);});DB_F=[...ALL];DB_PAGE=1;renderDB();}
+function clearDB(){document.querySelectorAll('#db-table th[data-os]').forEach(t=>t.textContent=t.dataset.os);if($('th-prog'))$('th-prog').textContent='Progress';if($('df-os-hide'))$('df-os-hide').checked=false;window.OS_INFO=null;if($('db-table'))$('db-table').classList.remove('os-on');if($('os-hint'))$('os-hint').textContent='';['df-q','df-status','df-tahun','df-wil','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});['df-area','df-jenis','df-korwil'].forEach(id=>{MS_SEL[id]=new Set();msFill(id,MS_VALS[id]||[]);});BA_SEL=new Set();BA_Q='';baFill();DB_F=[...ALL];DB_PAGE=1;renderDB();}
 function sortDB(col){document.querySelectorAll('thead th').forEach(t=>t.classList.remove('s-asc','s-desc'));if(DB_SORT.col===col)DB_SORT.dir*=-1;else{DB_SORT.col=col;DB_SORT.dir=1;}sortDBArr();DB_PAGE=1;renderDB();}
 function sortDBArr(){const nums=['NK','TERTAGIH','SISA','PCT_TAGIH','PCT_ANGGARAN','PCT_DP','PROGRESS','DELAY'];DB_F.sort((a,b)=>{const ci=C[DB_SORT.col];if(ci===undefined)return 0;
     if(DB_SORT.col==='TGL_BA'){const x=scwParseDay(a[ci]),y=scwParseDay(b[ci]);return ((x==null?-1e9:x)-(y==null?-1e9:y))*DB_SORT.dir;}const av=nums.includes(DB_SORT.col)?num(a[ci]):cl(a[ci]);const bv=nums.includes(DB_SORT.col)?num(b[ci]):cl(b[ci]);return typeof av==='number'?(av-bv)*DB_SORT.dir:av.localeCompare(bv)*DB_SORT.dir;});}
@@ -5177,6 +5187,50 @@ function msToggle(id,e){
   document.querySelectorAll('.msel-p').forEach(x=>x.hidden=true); p.hidden=!open;
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.msel')) document.querySelectorAll('.msel-p').forEach(x=>x.hidden=true);});
+
+/* ══ Filter Tgl BA / BAST bertingkat Tahun → Bulan (seperti filter tanggal Excel) ══
+   BA_SEL kosong = semua. Kunci: 'YYYY-MM' per bulan, '_' = (Kosong) tanpa tanggal BA/BAST. */
+let BA_SEL=new Set(), BA_OPEN=new Set(), BA_Q='', BA_T=null;
+const baKey=d=>{const t=new Date(d*864e5); return t.getUTCFullYear()+'-'+String(t.getUTCMonth()+1).padStart(2,'0');};
+const baKeyOf=r=>{const d=scwParseDay(r[C.TGL_BA]); return d==null?'_':baKey(d);};
+const baNm=k=>k==='_'?'(Kosong)':SCW_MON_S[+k.slice(5)-1]+' '+k.slice(0,4);
+function baTree(){
+  if(BA_T&&BA_T.n===ALL.length) return BA_T;
+  const Y={}; let blank=0;
+  ALL.forEach(r=>{const k=baKeyOf(r); if(k==='_'){blank++; return;} const y=k.slice(0,4), M=Y[y]||(Y[y]={}); M[k]=(M[k]||0)+1;});
+  return BA_T={n:ALL.length,Y,blank};
+}
+function baLabel(){
+  const el=$('df-ba'); if(!el) return; const b=el.querySelector('.msel-b'), n=BA_SEL.size, ks=[...BA_SEL].sort();
+  b.textContent=n===0?el.dataset.all:(n<=2?ks.map(baNm).join(', '):n+' dipilih'); b.classList.toggle('on',n>0); b.title=n?ks.map(baNm).join(', '):'';
+}
+function baFill(){
+  const el=$('df-ba'); if(!el) return; BA_T=null;
+  el.querySelector('.msel-p').innerHTML=`<input type="text" class="ba-q" id="ba-q" placeholder="Cari tahun / bulan…" value="${scwEsc(BA_Q)}" oninput="baSearch(this.value)"><div class="msel-act"><a href="javascript:baClear()">Kosongkan</a><span class="ba-hint">tidak ada centang = semua</span></div><div class="msel-l" id="ba-list"></div>`;
+  baList(); baLabel();
+}
+function baList(){
+  const L=$('ba-list'); if(!L) return; const T=baTree(), q=BA_Q.trim().toLowerCase(), years=Object.keys(T.Y).sort();
+  const allK=years.flatMap(y=>Object.keys(T.Y[y])), full=allK.length+(T.blank?1:0)>0&&allK.every(k=>BA_SEL.has(k))&&(!T.blank||BA_SEL.has('_'));
+  let h=`<label><input type="checkbox" ${full?'checked':''} onchange="baAll(this.checked)"><span><b>(Pilih Semua)</b></span></label>`;
+  years.forEach(y=>{
+    const ks=Object.keys(T.Y[y]).sort(), yHit=!!q&&y.includes(q), shown=q?ks.filter(k=>yHit||SCW_MONTHS[+k.slice(5)-1].toLowerCase().includes(q)):ks;
+    if(q&&!shown.length) return;
+    const sel=ks.filter(k=>BA_SEL.has(k)).length, open=!!q||BA_OPEN.has(y), cnt=ks.reduce((a,k)=>a+T.Y[y][k],0);
+    h+=`<label class="ba-y"><a class="ba-x" href="javascript:baOpen('${y}')" onclick="event.stopPropagation()">${open?'▾':'▸'}</a><input type="checkbox" ${sel===ks.length?'checked':''} ${sel&&sel<ks.length?'data-ind="1"':''} onchange="baYear('${y}',this.checked)"><span>${y}</span><i class="ba-n">${cnt}</i></label>`;
+    if(open) shown.forEach(k=>{h+=`<label class="ba-m"><input type="checkbox" ${BA_SEL.has(k)?'checked':''} onchange="baMon('${k}',this.checked)"><span>${SCW_MONTHS[+k.slice(5)-1]}</span><i class="ba-n">${T.Y[y][k]}</i></label>`;});
+  });
+  if(T.blank&&(!q||'kosong'.includes(q)||'blank'.includes(q))) h+=`<label class="ba-y"><span class="ba-x"></span><input type="checkbox" ${BA_SEL.has('_')?'checked':''} onchange="baMon('_',this.checked)"><span>(Kosong)</span><i class="ba-n">${T.blank}</i></label>`;
+  if(!years.length&&!T.blank) h+='<div class="ba-none">Belum ada data</div>';
+  L.innerHTML=h; L.querySelectorAll('input[data-ind]').forEach(i=>i.indeterminate=true);
+}
+function baChanged(){baList(); baLabel(); filterDB();}
+function baMon(k,on){on?BA_SEL.add(k):BA_SEL.delete(k); baChanged();}
+function baYear(y,on){Object.keys(baTree().Y[y]||{}).forEach(k=>on?BA_SEL.add(k):BA_SEL.delete(k)); baChanged();}
+function baAll(on){const T=baTree(); BA_SEL=new Set(); if(on){Object.values(T.Y).forEach(m=>Object.keys(m).forEach(k=>BA_SEL.add(k))); if(T.blank) BA_SEL.add('_');} baChanged();}
+function baClear(){BA_SEL=new Set(); baChanged();}
+function baOpen(y){BA_OPEN.has(y)?BA_OPEN.delete(y):BA_OPEN.add(y); baList();}
+function baSearch(v){BA_Q=v; baList();}
 
 function tgtFillSelect(id,vals,all){
   const el=$(id), cur=el.value; el.innerHTML=`<option value="">${all}</option>`+vals.map(v=>`<option value="${scwEsc(v)}">${scwEsc(v)}</option>`).join(''); if(vals.includes(cur)) el.value=cur;
