@@ -1532,6 +1532,8 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
       <div class="msel" id="sph-wil" data-all="Semua Wilayah"><button type="button" class="msel-b" onclick="msToggle('sph-wil',event)" aria-label="Wilayah">Semua Wilayah</button><div class="msel-p" hidden></div></div>
       <span class="scw-lbl">Area</span>
       <div class="msel" id="sph-area" data-all="Semua Area"><button type="button" class="msel-b" onclick="msToggle('sph-area',event)" aria-label="Area">Semua Area</button><div class="msel-p" hidden></div></div>
+      <span class="scw-lbl">Sales</span>
+      <div class="msel" id="sph-sc" data-all="Semua Sales"><button type="button" class="msel-b" onclick="msToggle('sph-sc',event)" aria-label="Sales">Semua Sales</button><div class="msel-p" hidden></div></div>
       <span class="scw-lbl">Jenis</span>
       <div class="msel" id="sph-jenis" data-all="Semua Jenis"><button type="button" class="msel-b" onclick="msToggle('sph-jenis',event)" aria-label="Jenis">Semua Jenis</button><div class="msel-p" hidden></div></div>
       <select id="sph-stat" onchange="buildSph()" aria-label="Status"><option value="">Semua Status</option><option value="0">Terproses</option><option value="1">Menunggu diproses</option><option value="2">Data awal (GSheet)</option></select>
@@ -6553,18 +6555,20 @@ function sphSyncWk(){
 }
 function sphModel(){
   sphSyncWk();
-  const B=sphBins(), wil=msGet('sph-wil'), area=msGet('sph-area'), st=$('sph-stat').value;
+  const B=sphBins(), wil=msGet('sph-wil'), area=msGet('sph-area'), scSel=msGet('sph-sc'), st=$('sph-stat').value;
   const M={err:B.err,bins:B.bins||[],range:B.range,gran:B.gran,tag:B.tag,rows:[],list:[],T:{n:0,v:0,termN:0,termV:0,b:[]},noSales:{n:0,v:0},wils:[],areas:[]};
   if(B.err||!M.bins.length) return M;
   const bins=M.bins, lo=bins[0].from, hi=bins[bins.length-1].to;
   const mo=sphJ(SPH.filter(r=>r.day>=lo&&r.day<=hi),msGet('sph-jenis'));
   M.wils=[...new Set(mo.map(r=>r.wil))].sort();
   M.areas=[...new Set(mo.filter(r=>!wil.size||wil.has(r.wil)).map(r=>r.area).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id',{numeric:true}));
+  M.scs=[...new Set(SPH.filter(r=>r.sc&&r.day>=Math.min(lo,hi-90)&&r.day<=hi&&(!wil.size||wil.has(r.wil))&&(!area.size||area.has(r.area))).map(r=>r.sc))].sort();
   bins.forEach(()=>M.T.b.push({n:0,v:0}));
   const S={};
   mo.forEach(r=>{
     if((wil.size&&!wil.has(r.wil))||(area.size&&!area.has(r.area))||(st!==''&&String(r.st)!==st)) return;
     const i=bins.findIndex(b=>r.day>=b.from&&r.day<=b.to); if(i<0) return;
+    if(scSel.size&&!scSel.has(r.sc)) return;
     if(!r.sc){M.noSales.n++; M.noSales.v+=r.v; return;}
     const o=S[r.sc]||(S[r.sc]={sc:r.sc,n:0,v:0,termN:0,termV:0,b:bins.map(()=>({n:0,v:0})),ac:{},wc:{},list:[]});
     const q=o.b[i]; q.n++; q.v+=r.v; o.n++; o.v+=r.v;
@@ -6584,7 +6588,7 @@ function buildSph(){
   const wE=$('sph-warn');
   if(!SPH_LIVE){wE.textContent='⚠️ Data live belum terbaca'+(SPH_ERR?' ('+SPH_ERR+')':'')+' — menampilkan data cadangan tertanam s.d. '+scwDayStr(SPH.reduce((a,r)=>Math.max(a,r.day),0))+'. Klik Sync untuk mencoba lagi.'; wE.hidden=false;} else wE.hidden=true;
   const M=SPH_M=sphModel(), bins=M.bins, T=M.T;
-  msFill('sph-wil',M.wils); msFill('sph-area',M.areas); msFill('sph-jenis',SPH_J);
+  msFill('sph-wil',M.wils); msFill('sph-area',M.areas); msFill('sph-sc',M.scs||[]); msFill('sph-jenis',SPH_J);
   try{buildSphChart();}catch(e){console.error(e);}
   if(M.err||!bins.length){$('sph-sub').textContent=M.err||'Tidak ada periode'; $('sph-kpi').innerHTML=''; $('sph-scroll').innerHTML='<div class="scw-empty">'+scwEsc(M.err||'Pilih periode.')+'</div>'; $('sph-note').textContent=''; return;}
   $('sph-sub').textContent=M.range+' · kolom per '+(M.gran==='w'?'minggu':'bulan')+' ('+bins.length+') · '+SPH.length.toLocaleString('id-ID')+' penawaran dalam data';
@@ -6640,7 +6644,7 @@ function sphImg(){
   const A={}; SPH.forEach(r=>{ /* sales aktif 90 hari terakhir tanpa penawaran di periode → tampil merah (0) */
     if(!r.sc||r.day<lo0||r.day>hi||(wil.size&&!wil.has(r.wil))||(area.size&&!area.has(r.area))) return;
     const q=A[r.sc]||(A[r.sc]={}); q[r.area]=(q[r.area]||0)+1;});
-  Object.keys(A).forEach(k=>{if(!R.has(k)) R.set(k,{sc:k,area:top1(A[k]),v:0,n:0});});
+  const scSel=msGet('sph-sc'); Object.keys(A).forEach(k=>{if(!R.has(k)&&(!scSel.size||scSel.has(k))) R.set(k,{sc:k,area:top1(A[k]),v:0,n:0});});
   const rows=[...R.values()].sort((a,b)=>b.v-a.v||b.n-a.n||a.sc.localeCompare(b.sc));
   if(!rows.length){toast('Tidak ada data','info');return;}
   const tc=t=>t.toLowerCase().replace(/(^|[\s.\-'])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
@@ -6823,7 +6827,7 @@ function sphcPDF(){
   document.body.classList.add('print-scl'); ov.style.display='block';
   setTimeout(()=>window.print(),150);
 }
-Object.assign(MS_CB,{'sph-wk':()=>buildSph(),'sph-wil':()=>buildSph(),'sph-area':()=>buildSph(),'sph-jenis':()=>buildSph(),'spc-jenis':()=>buildSphChart(),'spc-wil':()=>buildSphChart(),'spc-area':()=>buildSphChart(),'spc-sc':()=>buildSphChart()});
+Object.assign(MS_CB,{'sph-wk':()=>buildSph(),'sph-wil':()=>buildSph(),'sph-area':()=>buildSph(),'sph-sc':()=>buildSph(),'sph-jenis':()=>buildSph(),'spc-jenis':()=>buildSphChart(),'spc-wil':()=>buildSphChart(),'spc-area':()=>buildSphChart(),'spc-sc':()=>buildSphChart()});
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.startsWith('http')){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
 </body>
