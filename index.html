@@ -1931,6 +1931,14 @@ const num=v=>{
   const n=parseFloat(s);
   return isNaN(n)?0:n;
 };
+/* Serial tanggal Excel yang terbaca sebagai angka: "46153", "46,153", "46153.00" atau "4615300.00%"
+   (sel tanggal di tab db yang kebetulan berformat persen → CSV mengirim serial × 100 + "%"). Kembalikan serial (40000–70000) atau null. */
+function dateSerialOf(v){
+  const s=String(v==null?'':v).trim(); let n;
+  const m=s.match(/^(-?[\d.,]+)\s*%$/);
+  if(m) n=num(m[1])/100; else if(/^\d[\d,]*(\.\d+)?$/.test(s)) n=num(s); else return null;
+  return (n>=40000&&n<70000)?Math.floor(n+1e-6):null;
+}
 function excelDate(v){
   if(!v||v==='—'||v==='') return '—';
   const s = v.toString().replace(/,/g,'').trim();
@@ -1943,9 +1951,9 @@ function excelDate(v){
   }
   // Format "29 Oct 2025" atau "29/10/2025" — JANGAN substring, tampilkan apa adanya
   if(s.match(/\d{1,2}[\s\-\/][A-Za-z]{3}/)||s.match(/\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/)) return s;
-  // Serial Excel (angka)
-  const n = parseInt(s);
-  if(isNaN(n)||n<40000||n>60000) return s;
+  // Serial Excel (angka, termasuk yang salah format persen)
+  const sr = dateSerialOf(s), n = sr!=null ? sr : parseInt(s);
+  if(isNaN(n)||n<40000||n>70000) return s;
   const d = new Date(Date.UTC(1899,11,30) + n*86400000);
   return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});
 }
@@ -4372,7 +4380,7 @@ function scwParseDay(v){
   if(m){const mi=SCW_MON_IDX[m[2].slice(0,3).toLowerCase()]; if(mi!=null) return scwDay(+m[3]<100?2000+ +m[3]:+m[3],mi,+m[1]);}
   m=s.match(/^([A-Za-z]{3,})\.?\s+(\d{1,2}),?\s+(\d{4})/);   /* Nov 2, 2026 */
   if(m){const mi=SCW_MON_IDX[m[1].slice(0,3).toLowerCase()]; if(mi!=null) return scwDay(+m[3],mi,+m[2]);}
-  if(/^\d+$/.test(s)){const n=parseInt(s); if(n>40000&&n<70000) return n-25569;}                /* serial Excel */
+  { const sr=dateSerialOf(s); if(sr!=null) return sr-25569; }                /* serial Excel (juga "4615300.00%" bila sel berformat persen) */
   const d=new Date(s); return isNaN(d)?null:scwDay(d.getFullYear(),d.getMonth(),d.getDate());
 }
 
