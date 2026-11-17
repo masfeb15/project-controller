@@ -1537,6 +1537,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
       <select id="sph-stat" onchange="buildSph()" aria-label="Status"><option value="">Semua Status</option><option value="0">Terproses</option><option value="1">Menunggu diproses</option><option value="2">Data awal (GSheet)</option></select>
       <span style="flex:1"></span>
       <button type="button" class="scw-dl" onclick="sphExport()" title="Ranking per sales dan rincian nomor penawaran">⬇ Unduh Excel</button>
+      <button type="button" class="scw-dl" onclick="sphImg()" title="Unduh ranking sebagai gambar PNG (siap kirim ke WhatsApp)">🖼 Unduh Gambar</button>
       <button type="button" class="scw-dl" onclick="window.print()">🖨 Cetak / PDF</button>
     </div>
     <div class="scw-warn" id="sph-warn" role="status" hidden></div>
@@ -6628,6 +6629,39 @@ function sphExport(){
   const b=M.list.slice().sort((x,y)=>x.sc.localeCompare(y.sc)||x.day-y.day).map(r=>({'Tanggal':scwDayStr(r.day),'Nomor':r.no,'Sales':r.sc,'Pelanggan':r.pel,'Wilayah':r.wil,'Area':r.area,'Jenis':sphJNames(r),'Status':SPH_ST[r.st],'Nilai (Rp)':Math.round(r.v)}));
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(a),'Ranking Sales'); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(b),'Rincian Penawaran');
   XLSX.writeFile(wb,'SPH-Sales-'+M.tag+'.xlsx'); toast('Excel diunduh','ok');
+}
+
+/* ── unduh gambar ranking (tabel Sales · Wilayah · Nominal · Volume + total) ── */
+function sphImg(){
+  const M=SPH_M; if(!M||M.err||!M.bins.length){toast('Atur periode dulu','info');return;}
+  const wil=msGet('sph-wil'), area=msGet('sph-area'), hi=M.bins[M.bins.length-1].to, lo0=hi-90;
+  const top1=ac=>(Object.entries(ac).sort((a,b)=>b[1]-a[1])[0]||['—'])[0];
+  const R=new Map(); M.rows.forEach(o=>R.set(o.sc,{sc:o.sc,area:top1(o.ac),v:o.v,n:o.n}));
+  const A={}; SPH.forEach(r=>{ /* sales aktif 90 hari terakhir tanpa penawaran di periode → tampil merah (0) */
+    if(!r.sc||r.day<lo0||r.day>hi||(wil.size&&!wil.has(r.wil))||(area.size&&!area.has(r.area))) return;
+    const q=A[r.sc]||(A[r.sc]={}); q[r.area]=(q[r.area]||0)+1;});
+  Object.keys(A).forEach(k=>{if(!R.has(k)) R.set(k,{sc:k,area:top1(A[k]),v:0,n:0});});
+  const rows=[...R.values()].sort((a,b)=>b.v-a.v||b.n-a.n||a.sc.localeCompare(b.sc));
+  if(!rows.length){toast('Tidak ada data','info');return;}
+  const tc=t=>t.toLowerCase().replace(/(^|[\s.\-'])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
+  const dm=d=>{const t=new Date(d*864e5); return {d:t.getUTCDate(),m:SCW_MON_S[t.getUTCMonth()],y:t.getUTCFullYear()};};
+  let per=M.range.replace(/'/g,'');
+  if(M.gran==='w'){const a=dm(M.bins[0].from), b=dm(hi); per=a.m===b.m&&a.y===b.y?a.d+' - '+b.d+' '+b.m:a.d+' '+a.m+(a.y!==b.y?' '+a.y:'')+' - '+b.d+' '+b.m+' '+b.y;}
+  const nf=v=>Math.round(v).toLocaleString('en-US'), S=2, rh=30, W=[270,230,210,140], tw=W.reduce((a,b)=>a+b,0);
+  const tot={v:rows.reduce((a,r)=>a+r.v,0),n:rows.reduce((a,r)=>a+r.n,0)};
+  const H=(2+rows.length+1)*rh, cv=document.createElement('canvas'); cv.width=(tw+2)*S; cv.height=(H+2)*S;
+  const g=cv.getContext('2d'); g.scale(S,S); g.translate(1,1); g.fillStyle='#fff'; g.fillRect(-1,-1,tw+2,H+2); g.textBaseline='middle';
+  const X=[0,W[0],W[0]+W[1],W[0]+W[1]+W[2],tw];
+  const cell=(c0,c1,r,bg,txt,al,font,col)=>{const x=X[c0],w=X[c1]-x,y=r*rh; if(bg){g.fillStyle=bg; g.fillRect(x,y,w,rh);} g.strokeStyle='#000'; g.lineWidth=1; g.strokeRect(x+.5,y+.5,w-1,rh-1);
+    g.font=font||'15px Arial'; g.fillStyle=col||'#000'; g.textAlign=al; let t=String(txt); while(g.measureText(t).width>w-14&&t.length>2) t=t.slice(0,-2)+'…'; g.fillText(t,al==='left'?x+6:al==='right'?x+w-6:x+w/2,y+rh/2+1);};
+  const GR='#86e08e', BL='#bfe3f5', B='bold 17px Arial';
+  cell(0,2,0,GR,'SPH SALES','center',B); cell(2,4,0,GR,per,'center',B);
+  [['SALES','left'],['WILAYAH','left'],['Nominal SPH','right'],['Volume SPH','right']].forEach((h,i)=>cell(i,i+1,1,BL,h[0],'center',B));
+  rows.forEach((r,i)=>{const y=i+2, z=!r.v&&!r.n, bg=z?'#ffc7ce':null, col=z?'#c00000':'#000';
+    cell(0,1,y,null,tc(r.sc),'left'); cell(1,2,y,null,r.area,'left'); cell(2,3,y,bg,nf(r.v),'right',null,col); cell(3,4,y,bg,String(r.n),'center',null,col);});
+  const ty=rows.length+2, TB='bold 16px Arial'; cell(0,2,ty,'#fff2cc','TOTAL','center',TB); cell(2,3,ty,'#fff2cc',nf(tot.v),'right',TB); cell(3,4,ty,'#fff2cc',String(tot.n),'center',TB);
+  g.strokeStyle='#000'; g.lineWidth=2.5; g.strokeRect(0,0,tw,H); g.beginPath(); g.moveTo(0,ty*rh); g.lineTo(tw,ty*rh); g.stroke();
+  cv.toBlob(b=>{if(!b){toast('Gagal membuat gambar','err');return;} const u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download='SPH-Sales-'+M.tag+'.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000); toast('Gambar diunduh','ok');},'image/png');
 }
 
 /* ── bagian bawah: grafik ── */
