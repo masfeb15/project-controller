@@ -1754,7 +1754,8 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
    CONFIG
 ══════════════════════════════════════ */
 const SHEET_ID  = '1LMr9TjgFfRRJzNtpZPy4KSrpNXOULNsluHKj-T57S-U';
-const GID_DB    = '326840967';
+const GID_DB    = '326840967';   // tab db (QUERY dari list) — hanya cadangan
+const GID_LIST  = '840981928';   // tab list — sumber utama data proyek
 const GID_INV   = '1151299695';
 const GID_CC    = '1416954789';   // sheet "cc"
 const GID_BB    = '865302250';      // sheet "BB"
@@ -1763,12 +1764,13 @@ const GID_KDL   = '1937430619';     // sheet "kendala"
 
 // Format export CSV — bekerja dengan publish to web Google Sheets
 const URL_DB  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_DB}&t=`;
+const URL_LIST= `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_LIST}&t=`;
 const URL_INV = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_INV}&t=`;
 const URL_CC  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_CC}&t=`;
 const URL_BB  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_BB}&t=`;
 const URL_LOG = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_LOG}&t=`;
 const URL_KDL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_KDL}&t=`;
-const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${GID_DB}`;
+const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${GID_LIST}`;
 
 /* ══ COLUMN INDEX DB ══
    [0]KODE [1]SPI [2]BULAN [3]TAHUN [4]PROYEK [5]PEKERJAAN [6]JENIS [7]JENIS2
@@ -2029,7 +2031,7 @@ function srcRender(){
   el.onclick=srcShow;
 }
 function srcShow(){
-  const NAMA={db:'Database proyek (db)',inv:'Invoice (inv)',cc:'Cost control (cc)',bb:'Buku besar (BB)',log:'Log progress',kdl:'Kendala',tgt:'Target bulanan (sheet B)',arsip:'Arsip riwayat target',sph:'Penawaran SPH (sales)'};
+  const NAMA={db:'Database proyek (list)',inv:'Invoice (inv)',cc:'Cost control (cc)',bb:'Buku besar (BB)',log:'Log progress',kdl:'Kendala',tgt:'Target bulanan (sheet B)',arsip:'Arsip riwayat target',sph:'Penawaran SPH (sales)'};
   const rows=Object.keys(NAMA).filter(k=>SRC[k]).map(k=>{const x=SRC[k];return `<tr><td style="padding:5px 10px">${x.ok?'✅':'❌'} ${NAMA[k]}</td><td style="padding:5px 10px;text-align:right">${x.n==null?'—':x.n.toLocaleString('id')+' baris'}</td><td style="padding:5px 10px;color:${x.ok?'var(--text3)':'var(--red)'}">${x.info||''}</td></tr>`}).join('');
   let ov=$('src-ov'); if(ov) ov.remove();
   ov=document.createElement('div');ov.id='src-ov';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:900;display:flex;align-items:center;justify-content:center;padding:16px';
@@ -2080,12 +2082,29 @@ async function loadData(manual=false){
   let invOk=false, ccOk=false, bbOk=false;
   try{
     ldP(10,'Mengambil data proyek…');
-    const r1=await fetchSheet(URL_DB, 3, 2000);
-    if(!r1.ok)throw new Error('HTTP '+r1.status+' — pastikan sheet sudah di-publish ke web');
-    const t1=await r1.text();
+    /* Sumber utama = tab list (nilai & format asli). Tab db (QUERY) hanya cadangan: QUERY menghilangkan teks pada kolom angka
+       (mis. KODE "0043R") dan bisa mengubah format tanggal/tahun. */
+    let t1=null, srcInfo='';
+    try{
+      const rl=await fetchSheet(URL_LIST, 3, 2000);
+      if(!rl.ok) throw new Error('HTTP '+rl.status);
+      const tl=await rl.text();
+      if(/^\s*<(!DOCTYPE|html)/i.test(tl)) throw new Error('tab list belum dibagikan');
+      const rowsL=parseCSV(tl).slice(1).filter(r=>r.length>5&&cl(r[C.PROYEK]));
+      if(!rowsL.length) throw new Error('tab list kosong atau kolom tidak sesuai');
+      const ERR=/^#(REF|N\/A|VALUE|ERROR|NAME|DIV)/i;
+      const bad=rowsL.filter(r=>ERR.test(cl(r[C.TERTAGIH]))||ERR.test(cl(r[C.NK]))).length;
+      if(bad>rowsL.length*0.3) throw new Error(bad+' dari '+rowsL.length+' baris berisi #REF!/#ERROR di kolom Tertagih/Nilai Kontrak — periksa rumus tab list');
+      t1=tl;
+    }catch(e){ console.warn('tab list gagal, memakai db:',e); srcInfo='tab list gagal ('+e.message+') → memakai tab db sebagai cadangan'; }
+    if(t1==null){
+      const r1=await fetchSheet(URL_DB, 3, 2000);
+      if(!r1.ok)throw new Error('HTTP '+r1.status+' — pastikan sheet sudah di-publish ke web');
+      t1=await r1.text();
+    }
     ldP(30,'Memproses data proyek…');
     ALL=parseCSV(t1).slice(1).filter(r=>r.length>5&&cl(r[C.PROYEK]));
-    srcSet('db',true,ALL.length);
+    srcSet('db',!srcInfo,ALL.length,srcInfo||'dari tab list');
     try{applyEditOverlay();}catch(e){}
     try{sphLoad();}catch(e){console.warn(e);}
 
