@@ -230,6 +230,8 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
 .msel-b.on{border-color:var(--blue);color:var(--blue)}
 .msel-p{position:absolute;left:0;top:36px;z-index:60;background:var(--surf);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);min-width:210px;max-height:340px;overflow:auto;padding:6px}
 .msel-p[hidden]{display:none}
+.msel-p{max-width:min(380px,calc(100vw - 16px))}
+.msel-l label span{white-space:normal;overflow-wrap:anywhere}
 .msel-act{display:flex;justify-content:space-between;padding:4px 8px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;font-size:11px}
 .msel-act a{color:var(--blue);text-decoration:none;font-weight:600}
 .msel-l label{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;font-size:12px;color:var(--text);cursor:pointer}
@@ -1247,9 +1249,14 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
       </div>
     </div>
     <div class="scw-bar">
-      <span class="scw-lbl">Bulan</span>
-      <select id="scw-bln" onchange="scwOnMonth()" aria-label="Bulan"></select>
-      <select id="scw-thn" onchange="scwOnMonth()" aria-label="Tahun"></select>
+      <span class="scw-lbl">Periode</span>
+      <select id="scw-bln" onchange="scwOnMonth()" aria-label="Dari bulan"></select>
+      <select id="scw-thn" onchange="scwOnMonth()" aria-label="Dari tahun"></select>
+      <span class="scw-lbl">s.d</span>
+      <select id="scw-to-bln" onchange="scwOnRange()" aria-label="Sampai bulan"></select>
+      <select id="scw-to-thn" onchange="scwOnRange()" aria-label="Sampai tahun"></select>
+      <span class="scw-lbl">Kolom</span>
+      <select id="scw-gran" onchange="scwOnGran()" aria-label="Kolom per" title="Per minggu (satu bulan) = tampilan lama; periode lebih dari satu bulan memakai kolom per bulan atau per minggu"><option value="w">Per minggu</option><option value="m">Per bulan</option></select>
       <span class="scw-lbl">Minggu ke-</span>
       <div class="scw-dd" id="scw-dd">
         <button type="button" class="scw-dd-btn" id="scw-dd-btn" onclick="scwToggleDD(event)" aria-haspopup="true" aria-expanded="false">
@@ -1257,8 +1264,18 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         </button>
         <div class="scw-dd-panel" id="scw-dd-panel" hidden></div>
       </div>
+      <span class="scw-lbl">Wilayah</span>
+      <div class="msel" id="scw-wil" data-all="Semua Wilayah"><button type="button" class="msel-b" onclick="msToggle('scw-wil',event)" aria-label="Wilayah">Semua Wilayah</button><div class="msel-p" hidden></div></div>
       <span class="scw-lbl">Area</span>
       <div class="msel" id="scw-area" data-all="Semua Area"><button type="button" class="msel-b" onclick="msToggle('scw-area',event)" aria-label="Area">Semua Area</button><div class="msel-p" hidden></div></div>
+      <span class="scw-lbl">SC Teknik</span>
+      <div class="msel" id="scw-sc" data-all="Semua SC"><button type="button" class="msel-b" onclick="msToggle('scw-sc',event)" aria-label="SC Teknik">Semua SC</button><div class="msel-p" hidden></div></div>
+      <span class="scw-lbl">Korwil</span>
+      <div class="msel" id="scw-kor" data-all="Semua Korwil"><button type="button" class="msel-b" onclick="msToggle('scw-kor',event)" aria-label="Korwil">Semua Korwil</button><div class="msel-p" hidden></div></div>
+      <span class="scw-lbl">Jenis</span>
+      <div class="msel" id="scw-jenis" data-all="Semua Jenis"><button type="button" class="msel-b" onclick="msToggle('scw-jenis',event)" aria-label="Jenis">Semua Jenis</button><div class="msel-p" hidden></div></div>
+      <span class="scw-lbl">Status proyek</span>
+      <div class="msel" id="scw-stat" data-all="Semua Status"><button type="button" class="msel-b" onclick="msToggle('scw-stat',event)" aria-label="Status proyek">Semua Status</button><div class="msel-p" hidden></div></div>
       <label class="scw-chk"><input type="checkbox" id="scw-zero" checked onchange="buildScWeek()"> Tampilkan SC realisasi 0</label>
       <button type="button" class="scw-dl" onclick="scwExport()" title="Ringkasan SC, rincian proyek per minggu, dan rincian nota">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
@@ -4543,6 +4560,8 @@ function initScWeek(){
   $('scw-thn').innerHTML=[...yrs].sort((a,b)=>b-a).map(y=>`<option value="${y}">${y}</option>`).join('');
   $('scw-bln').innerHTML=SCW_MONTHS.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
   $('scw-thn').value=now.getFullYear(); $('scw-bln').value=now.getMonth();
+  $('scw-to-thn').innerHTML=$('scw-thn').innerHTML; $('scw-to-bln').innerHTML=$('scw-bln').innerHTML;
+  $('scw-to-thn').value=now.getFullYear(); $('scw-to-bln').value=now.getMonth();
   SCW_READY=true;
   const dflt='* FARHAN NUBLI - DIPERBANTUKAN RS EKA PURI IGM (DRAFTER)\n* DATA PROYEK DIAMBIL DARI TGL SPI\n* CUT OFF PER SENIN 16:00';
   let saved=null; try{saved=localStorage.getItem('scwNB');}catch(e){}
@@ -4633,7 +4652,19 @@ document.addEventListener('keydown',e=>{
 });
 
 function scwSaveNB(){try{localStorage.setItem('scwNB',$('scw-nb').value);}catch(e){}}
-function scwOnMonth(){scwResetWeeks();buildScWeek();}
+let SCW_GRAN_USER=false;
+const scwNm=()=>(+$('scw-to-thn').value*12+ +$('scw-to-bln').value)-(+$('scw-thn').value*12+ +$('scw-bln').value)+1;
+function scwSyncGran(){
+  const nm=scwNm(); if(!SCW_GRAN_USER) $('scw-gran').value=nm>1?'m':'w';
+  const one=nm===1&&$('scw-gran').value==='w', dd=$('scw-dd'); dd.style.opacity=one?'':'.45'; $('scw-dd-btn').disabled=!one;
+  const st=$('scw-set'); if(st) st.style.display=one?'':'none';   /* pengaturan minggu & NB hanya untuk tampilan satu bulan */
+}
+function scwOnMonth(){   /* "Dari" berubah: jaga agar "S.d" tidak lebih awal; tampilan satu bulan = perilaku lama */
+  if(scwNm()<1){$('scw-to-thn').value=$('scw-thn').value; $('scw-to-bln').value=$('scw-bln').value;}
+  scwResetWeeks(); buildScWeek();
+}
+function scwOnRange(){buildScWeek();}
+function scwOnGran(){SCW_GRAN_USER=true; buildScWeek();}
 function scwOnWeek(){
   SCW_SEL=new Set([...document.querySelectorAll('.scw-wk:checked')].map(c=>+c.value));
   const weeks=scwWeeks(+$('scw-thn').value,+$('scw-bln').value);
@@ -4676,12 +4707,36 @@ function scwResetMaster(){
   buildScWeek(); toast('Daftar SC dikembalikan','ok');
 }
 
+/* kolom periode: satu bulan + per minggu = minggu seperti biasa; selain itu = kolom per bulan / per minggu sepanjang rentang */
+function scwBins(){
+  const y=+$('scw-thn').value, m=+$('scw-bln').value, ty=+$('scw-to-thn').value, tm=+$('scw-to-bln').value, gran=$('scw-gran').value;
+  const nm=(ty*12+tm)-(y*12+m)+1, yy=v=>String(v).slice(-2);
+  if(nm<1) return {err:'Periode "Dari" lebih akhir daripada "S.d".',y,m};
+  if(nm>36) return {err:'Periode maksimal 36 bulan.',y,m};
+  if(nm===1&&gran==='w'){
+    const weeks=scwWeeks(y,m);
+    return {single:true,y,m,nm,gran,weeks,sel:weeks.filter(w=>SCW_SEL.has(w.n)).map(w=>({...w,hdr:'W'+w.n+' · '+w.label})),range:SCW_MONTHS[m]+' '+y,tag:SCW_MON_S[m]+y};
+  }
+  const all=[]; const multiY=y!==ty;
+  for(let i=0;i<nm;i++){
+    const a=y*12+m+i, yr=Math.floor(a/12), mo=a%12;
+    if(gran==='m'){const last=new Date(yr,mo+1,0).getDate(); all.push({n:all.length+1,from:scwDay(yr,mo,1),to:scwDay(yr,mo,last),d1:1,d2:last,label:SCW_MON_S[mo]+' '+yy(yr),hdr:SCW_MON_S[mo]+' '+yy(yr)});}
+    else scwWeeks(yr,mo).forEach(w=>all.push({...w,n:all.length+1,hdr:'W'+w.n+' · '+w.label+(multiY?' '+yy(yr):'')}));
+  }
+  const keep=all.filter(b=>SCL_LL==null||b.from<=SCL_LL);          /* periode setelah data log terakhir tidak ditampilkan */
+  const range=SCW_MON_S[m]+' '+yy(y)+' – '+SCW_MON_S[tm]+' '+yy(ty);
+  return {single:false,y,m,nm,gran,weeks:all,sel:keep.length?keep:all,range,tag:SCW_MON_S[m]+y+'-'+SCW_MON_S[tm]+ty};
+}
+const scwU=v=>cl(v).toUpperCase().replace(/\s+/g,' ');
+const scwJenisOf=r=>normJenis(r[C.JENIS2])||'PROYEK';
 function scwBuildModel(){
-  const y=+$('scw-thn').value, m=+$('scw-bln').value;
-  const weeks=scwWeeks(y,m), sel=weeks.filter(w=>SCW_SEL.has(w.n));
-  const showZero=$('scw-zero').checked, areaSel=msGet('scw-area'), inArea=a=>!areaSel.size||areaSel.has(cl(a).toUpperCase());
-  const M={y,m,weeks,sel,rows:[],totals:null,unmapped:0,srcLabel:'Log Progress (Δ% progress × nilai kontrak)'};
-  if(!sel.length) return M;
+  const B=scwBins(), y=B.y, m=B.m, weeks=B.weeks||[], sel=B.sel||[];
+  const showZero=$('scw-zero').checked;
+  const F={wil:msGet('scw-wil'),area:msGet('scw-area'),jenis:msGet('scw-jenis'),stat:msGet('scw-stat'),kor:msGet('scw-kor')}, scSel=msGet('scw-sc');
+  const anyP=!!(F.wil.size||F.area.size||F.jenis.size||F.stat.size||F.kor.size);
+  const okP=r=>(!F.wil.size||F.wil.has(scwU(r[C.WILAYAH])))&&(!F.area.size||F.area.has(scwU(r[C.AREA])))&&(!F.jenis.size||F.jenis.has(scwJenisOf(r)))&&(!F.stat.size||F.stat.has(scwU(r[C.STATUS])))&&(!F.kor.size||F.kor.has(scwU(r[C.KORWIL_TEK])));
+  const M={y,m,weeks,sel,single:!!B.single,gran:B.gran,range:B.range,tag:B.tag,err:B.err,rows:[],totals:null,unmapped:0,srcLabel:'Log Progress (Δ% progress × nilai kontrak)'};
+  if(B.err||!sel.length) return M;
   const master=scwMaster(), mKey={}; master.forEach(m=>mKey[m.key]=m);
   const normSC=v=>{const n=cl(v).toUpperCase().replace(/\s+/g,' '); const m=mKey[scwKey(n)]; return m?m.name:n;};  /* samakan ejaan dengan daftar master */
 
@@ -4708,7 +4763,7 @@ function scwBuildModel(){
     let done=fin100[k]!=null?fin100[k]:null;
     if(ba!=null&&(done==null||ba<done)) done=ba;
     if(done==null&&SCW_FIN.has(st)) done=-1e9;   /* status selesai tanpa BAST & tanpa 100% di log: dianggap sudah lama selesai, tidak dihitung */
-    if(!inArea(r[C.AREA])) return;
+    if(!okP(r)) return;
     projs.push({k,sc,spi,done,fin:SCW_FIN.has(st),area:cl(r[C.AREA]).toUpperCase(),nama:pn(r)});
   });
 
@@ -4734,7 +4789,7 @@ function scwBuildModel(){
   });
 
   /* realisasi */
-  const ms=scwDay(y,m,1), ents=[];
+  const ms=B.single?scwDay(y,m,1):sel[0].from, ents=[];
   /* Sumber tunggal: sheet log_progress. Realisasi = (% progress baru − % progress sebelumnya) × nilai kontrak (DP tidak dihitung) */
   LOG_PROG.forEach(r=>{
     const k=normKode(r[LP.KODE]); if(!k) return;
@@ -4751,7 +4806,7 @@ function scwBuildModel(){
   }
   ents.forEach(([k,t,v,ref])=>{
     if(!k||t==null||!v||t<ms||t>lastTo) return;
-    if(areaSel.size&&!(kodeRow[k]&&inArea(kodeRow[k][C.AREA]))) return;
+    if(anyP&&!(kodeRow[k]&&okP(kodeRow[k]))) return;
     const sc=kodeSC[k];
     if(!sc){M.unmapped+=v;return;}
     const o=get(sc); o.cumul+=v;
@@ -4762,8 +4817,8 @@ function scwBuildModel(){
     }
   });
 
-  if(!areaSel.size) master.forEach(m=>{const o=get(m.name); o.master=true; if(m.area) o.fixedArea=m.area;});   /* dengan filter area, hanya SC yang punya proyek/realisasi di area itu */   /* SC di daftar master selalu ada */
-  const rows=Object.values(S).filter(o=>{
+  if(!anyP) master.forEach(m=>{const o=get(m.name); o.master=true; if(m.area) o.fixedArea=m.area;});   /* dengan filter area, hanya SC yang punya proyek/realisasi di area itu */   /* SC di daftar master selalu ada */
+  let rows=Object.values(S).filter(o=>{
     if(o.master&&showZero) return true;
     const hasP=sel.some(w=>(o.wk[w.n]||{}).proyek>0);
     if(!hasP&&!o.total&&!o.cumul) return false;
@@ -4774,6 +4829,7 @@ function scwBuildModel(){
     o.area=o.fixedArea||scwJoinAreas(Object.entries(a).sort((x,y2)=>y2[1]-x[1]).slice(0,2).map(e=>e[0]));
     o.entries.sort((a,b)=>a.t-b.t);
   });
+  if(scSel.size) rows=rows.filter(o=>scSel.has(o.sc));
   rows.sort((a,b)=>b.total-a.total||b.cumul-a.cumul||a.sc.localeCompare(b.sc));
   M.rows=rows;
   M.totals={total:rows.reduce((a,o)=>a+o.total,0),cumul:rows.reduce((a,o)=>a+o.cumul,0),wk:{}};
@@ -4782,48 +4838,68 @@ function scwBuildModel(){
 }
 
 function scwPeriodText(M){
-  const ar=msGet('scw-area'); return (M.sel.length?M.sel.map(w=>'W'+w.n+' ('+w.label+')').join(' · '):'—')+(ar.size?' · Area: '+[...ar].join(', '):'');
+  const f=[['Wilayah','scw-wil'],['Area','scw-area'],['SC','scw-sc'],['Korwil','scw-kor'],['Jenis','scw-jenis'],['Status','scw-stat']].filter(x=>msGet(x[1]).size).map(x=>x[0]+': '+[...msGet(x[1])].join(', '));
+  const base=M.single?(M.sel.length?M.sel.map(w=>'W'+w.n+' ('+w.label+')').join(' · '):'—'):M.range+' · kolom per '+(M.gran==='w'?'minggu':'bulan')+' ('+M.sel.length+')';
+  return base+(f.length?' · '+f.join(' · '):'');
+}
+let SCW_OPT_SIG='';
+function scwFillOpts(){
+  const master=scwMaster(), mKey={}; master.forEach(x=>mKey[x.key]=x);
+  const sc=new Set(master.map(x=>x.name)), W=new Set(), A=new Set(), K=new Set(), J=new Set(), S=new Set();
+  ALL.forEach(r=>{
+    const n=scwU(r[C.PIC_TEK]); if(n){const k=mKey[scwKey(n)]; sc.add(k?k.name:n);}
+    [[W,C.WILAYAH],[A,C.AREA],[K,C.KORWIL_TEK],[S,C.STATUS]].forEach(([set,c])=>{const v=scwU(r[c]); if(v) set.add(v);});
+    J.add(scwJenisOf(r));
+  });
+  S.delete('BATAL');
+  const L={'scw-wil':[...W].sort(),'scw-area':[...A].sort(),'scw-sc':[...sc].sort(),'scw-kor':[...K].sort(),'scw-jenis':[...J].sort(),'scw-stat':[...S].sort()};
+  const sig=Object.values(L).map(a=>a.join('|')).join('#'); if(sig===SCW_OPT_SIG) return; SCW_OPT_SIG=sig;
+  Object.keys(L).forEach(id=>msFill(id,L[id]));
 }
 
 function buildScWeek(){
   if(!ALL.length) return;
   initScWeek();
   try{buildScLine();}catch(e){console.error(e);}
-  if(!MS_VALS['scw-area']) msFill('scw-area',[...new Set(ALL.map(r=>cl(r[C.AREA]).toUpperCase()).filter(Boolean))].sort());
+  scwFillOpts(); scwSyncGran();
   const M=SCW_MODEL=scwBuildModel(), sel=M.sel;
   const wEl=$('scw-warn'); if(M.warn){wEl.textContent='⚠️ '+M.warn;wEl.hidden=false;}else wEl.hidden=true;
-  $('scw-sub').textContent=SCW_MONTHS[M.m]+' '+M.y+' · '+(sel.length?scwPeriodText(M):'pilih minimal 1 minggu');
+  $('scw-sub').textContent=M.err?M.err:((M.single?SCW_MONTHS[M.m]+' '+M.y+' · ':'')+(sel.length?scwPeriodText(M):'pilih minimal 1 minggu'));
+  if(M.err){$('scw-kpi').innerHTML=''; $('scw-scroll').innerHTML='<div class="scw-empty">'+scwEsc(M.err)+'</div>'; $('scw-note').textContent=''; return;}
   if(!sel.length){
     $('scw-kpi').innerHTML='';
     $('scw-scroll').innerHTML='<div class="scw-empty">Pilih minimal satu minggu pada dropdown <b>Minggu ke-</b>.</div>';
     $('scw-note').textContent=''; return;
   }
-  const T=M.totals, top=M.rows[0], aktif=M.rows.filter(o=>o.total>0).length;
+  const T=M.totals, top=M.rows[0], aktif=M.rows.filter(o=>o.total>0).length, ru=M.gran==='w'?'minggu':'bulan';
   $('scw-kpi').innerHTML=[
-    {l:'Total Realisasi (minggu terpilih)',v:fmt(T.total,true),s:sel.length+' minggu',c:'var(--purple)'},
-    {l:'Kumulatif s/d '+scwDayStr(sel[sel.length-1].to),v:fmt(T.cumul,true),s:'1 '+SCW_MON_S[M.m]+' → akhir minggu terakhir',c:'var(--cyan)'},
+    {l:M.single?'Total Realisasi (minggu terpilih)':'Total Realisasi ('+M.range+')',v:fmt(T.total,true),s:sel.length+' '+ru,c:'var(--purple)'},
+    M.single?{l:'Kumulatif s/d '+scwDayStr(sel[sel.length-1].to),v:fmt(T.cumul,true),s:'1 '+SCW_MON_S[M.m]+' → akhir minggu terakhir',c:'var(--cyan)'}
+            :{l:'Rata-rata per '+ru,v:fmt(T.total/sel.length,true),s:sel.length+' '+ru+' · semua SC terpilih',c:'var(--cyan)'},
     {l:'SC Berealisasi',v:aktif+' / '+M.rows.length,s:'SC Teknik dengan nota',c:'var(--green)'},
     {l:'🏆 Realisasi Tertinggi',v:top&&top.total>0?top.sc:'—',s:top&&top.total>0?fmt(top.total,true):'Belum ada realisasi',c:'var(--amber)'}
   ].map(s=>`<div class="mkor-kpi-card" style="border-top:3px solid ${kcB(s.c)}"><div class="mkor-kpi-l">${s.l}</div><div class="mkor-kpi-v" style="color:${kcT(s.c)};font-size:${String(s.v).length>16?12:15}px">${scwEsc(s.v)}</div><div class="mkor-kpi-s">${s.s}</div></div>`).join('');
 
-  const multi=sel.length>1, ncol=3+sel.length*2+(multi?1:0)+1;
+  const multi=sel.length>1, tf=multi&&!M.single, ncol=3+sel.length*2+(multi?1:0)+(M.single?1:0);
   const h1=`<tr><th rowspan="2">No</th><th rowspan="2">SC Teknik</th><th rowspan="2">Area</th>`+
-    sel.map(w=>`<th class="grp" colspan="2">W${w.n} · ${w.label}</th>`).join('')+
-    (multi?`<th class="r grp" rowspan="2">Total Pilihan</th>`:'')+
-    `<th class="r grp" rowspan="2">Kumulatif s/d ${sel[sel.length-1].d2} ${SCW_MON_S[M.m]}</th></tr>`;
+    (tf?`<th class="r grp" rowspan="2">Total Realisasi (Rp)</th>`:'')+
+    sel.map(w=>`<th class="grp" colspan="2">${scwEsc(w.hdr)}</th>`).join('')+
+    (multi&&!tf?`<th class="r grp" rowspan="2">Total Pilihan</th>`:'')+
+    (M.single?`<th class="r grp" rowspan="2">Kumulatif s/d ${sel[sel.length-1].d2} ${SCW_MON_S[M.m]}</th>`:'')+`</tr>`;
   const h2=`<tr class="h2">`+sel.map(()=>`<th class="r grp">Proyek</th><th class="r">Realisasi (Rp)</th>`).join('')+`</tr>`;
   const body=M.rows.map((o,i)=>{
     const rk=i<3&&o.total>0?` g${i+1}`:'';
     return `<tr class="row" onclick="scwToggleDet(${i})" title="Klik untuk rincian nota"><td><span class="scw-rk${rk}">${i+1}</span></td><td class="scn">${scwEsc(o.sc)}</td><td style="color:var(--text2)">${scwEsc(o.area)}</td>`+
+      (tf?`<td class="r bl grp ${o.total?'real':'z'}">${scwRp(o.total)}</td>`:'')+
       sel.map(w=>{const d=o.wk[w.n]||{proyek:0,real:0};return `<td class="r bl">${d.proyek}</td><td class="r ${d.real?'real':'z'}">${scwRp(d.real)}</td>`;}).join('')+
-      (multi?`<td class="r bl ${o.total?'real':'z'}">${scwRp(o.total)}</td>`:'')+
-      `<td class="r bl ${o.cumul?'':'z'}">${scwRp(o.cumul)}</td></tr><tr class="scw-det" id="scw-det-${i}" hidden><td colspan="${ncol}"></td></tr>`;
+      (multi&&!tf?`<td class="r bl ${o.total?'real':'z'}">${scwRp(o.total)}</td>`:'')+
+      (M.single?`<td class="r bl ${o.cumul?'':'z'}">${scwRp(o.cumul)}</td>`:'')+`</tr><tr class="scw-det" id="scw-det-${i}" hidden><td colspan="${ncol}"></td></tr>`;
   }).join('');
-  const foot=`<tr class="tot"><td colspan="3">TOTAL</td>`+sel.map(w=>`<td class="r bl">${T.wk[w.n].proyek}</td><td class="r">${scwRp(T.wk[w.n].real)}</td>`).join('')+(multi?`<td class="r bl">${scwRp(T.total)}</td>`:'')+`<td class="r bl">${scwRp(T.cumul)}</td></tr>`;
+  const foot=`<tr class="tot"><td colspan="3">TOTAL</td>`+(tf?`<td class="r bl">${scwRp(T.total)}</td>`:'')+sel.map(w=>`<td class="r bl">${T.wk[w.n].proyek}</td><td class="r">${scwRp(T.wk[w.n].real)}</td>`).join('')+(multi&&!tf?`<td class="r bl">${scwRp(T.total)}</td>`:'')+(M.single?`<td class="r bl">${scwRp(T.cumul)}</td>`:'')+`</tr>`;
   $('scw-scroll').innerHTML=M.rows.length
     ?`<table class="scw-table"><thead>${h1}${h2}</thead><tbody>${body}</tbody><tfoot>${foot}</tfoot></table>`
     :'<div class="scw-empty">Tidak ada data SC Teknik untuk periode ini.</div>';
-  $('scw-note').innerHTML=`Sumber realisasi: <b>${scwEsc(M.srcLabel)}</b>. Jumlah proyek dihitung per akhir tiap minggu: proyek yang mencapai 100% berkurang, proyek baru bertambah. Klik baris SC untuk rincian nota &amp; daftar proyek.`+
+  $('scw-note').innerHTML=`Sumber realisasi: <b>${scwEsc(M.srcLabel)}</b>. Jumlah proyek dihitung per akhir tiap '+(M.gran==='w'?'minggu':'bulan')+': proyek yang mencapai 100% berkurang, proyek baru bertambah. Klik baris SC untuk rincian nota &amp; daftar proyek.`+
     (M.unmapped?` · Realisasi tanpa PIC Teknik pada periode ini (tidak masuk tabel): <b>Rp ${scwRp(M.unmapped)}</b>.`:'');
 }
 
@@ -4986,20 +5062,21 @@ const xRp=v=>Math.round(v||0), xPct=v=>Math.round((v||0)*10000)/100;
 /* Realisasi SC Teknik per minggu → Excel: Ringkasan · Proyek per SC · Rincian Nota (sesuai minggu terpilih) */
 function scwExport(){
   const M=SCW_MODEL||scwBuildModel();
-  if(!M||!M.sel.length||!M.rows.length){toast('Pilih minggu dan pastikan ada data dulu','info');return;}
-  const sel=M.sel, multi=sel.length>1, wk=w=>'W'+w.n+' ('+w.label+')';
+  if(!M||M.err||!M.sel.length||!M.rows.length){toast('Pilih periode dan pastikan ada data dulu','info');return;}
+  const sel=M.sel, multi=sel.length>1, wk=w=>M.single?'W'+w.n+' ('+w.label+')':w.hdr;
+  const hdrOf=t=>{const w=sel.find(x=>t>=x.from&&t<=x.to); return w?(M.single?'W'+w.n:w.hdr):'';};
   const weekOf=t=>{const w=sel.find(x=>t>=x.from&&t<=x.to); return w?'W'+w.n:'';};
   const ring=M.rows.map((o,i)=>{
     const r={'No':i+1,'SC Teknik':o.sc,'Area':o.area};
     sel.forEach(w=>{const d=o.wk[w.n]||{proyek:0,real:0}; r['Proyek '+wk(w)]=d.proyek; r['Realisasi '+wk(w)+' (Rp)']=xRp(d.real);});
     if(multi) r['Total Pilihan (Rp)']=xRp(o.total);
-    r['Kumulatif s/d '+scwDayStr(sel[sel.length-1].to)+' (Rp)']=xRp(o.cumul);
+    if(M.single) r['Kumulatif s/d '+scwDayStr(sel[sel.length-1].to)+' (Rp)']=xRp(o.cumul);
     return r;
   });
   const T=M.totals, tr={'No':'','SC Teknik':'TOTAL','Area':''};
   sel.forEach(w=>{tr['Proyek '+wk(w)]=T.wk[w.n].proyek; tr['Realisasi '+wk(w)+' (Rp)']=xRp(T.wk[w.n].real);});
   if(multi) tr['Total Pilihan (Rp)']=xRp(T.total);
-  tr['Kumulatif s/d '+scwDayStr(sel[sel.length-1].to)+' (Rp)']=xRp(T.cumul);
+  if(M.single) tr['Kumulatif s/d '+scwDayStr(sel[sel.length-1].to)+' (Rp)']=xRp(T.cumul);
   ring.push(tr);
 
   const pr=[], nt=[];
@@ -5009,7 +5086,7 @@ function scwExport(){
     o.entries.forEach(e=>{
       const b=byK[e.k]||(byK[e.k]={k:e.k,nama:e.nama,area:'',done:null,inW:[],real:{},cum:0});
       const wn=weekOf(e.t); if(wn) b.real[wn]=(b.real[wn]||0)+e.v; b.cum+=e.v;
-      nt.push({'SC Teknik':o.sc,'Tanggal':scwDayStr(e.t),'Minggu':wn,'Kode':e.k,'Proyek':e.nama||b.nama,'Realisasi (Rp)':xRp(e.v),'Keterangan':e.ref});
+      nt.push({'SC Teknik':o.sc,'Tanggal':scwDayStr(e.t),'Minggu':hdrOf(e.t),'Kode':e.k,'Proyek':e.nama||b.nama,'Realisasi (Rp)':xRp(e.v),'Keterangan':e.ref});
     });
     Object.values(byK).sort((a,b)=>b.cum-a.cum||a.nama.localeCompare(b.nama)).forEach(b=>{
       const r={'SC Teknik':o.sc,'Kode':b.k,'Proyek':b.nama,'Area':b.area||''};
@@ -5021,7 +5098,7 @@ function scwExport(){
   });
   nt.sort((a,b)=>a['SC Teknik'].localeCompare(b['SC Teknik'])||String(a['Tanggal']).localeCompare(String(b['Tanggal'])));
   xlsxSave([{name:'Ringkasan SC',rows:ring},{name:'Proyek per SC',rows:pr},{name:'Rincian Nota',rows:nt}],
-    'Realisasi-SC-Teknik-'+SCW_MON_S[M.m]+'-'+M.y+'-'+sel.map(w=>'W'+w.n).join('')+'.xlsx');
+    M.single?'Realisasi-SC-Teknik-'+SCW_MON_S[M.m]+'-'+M.y+'-'+sel.map(w=>'W'+w.n).join('')+'.xlsx':'Realisasi-SC-Teknik-'+M.tag+'.xlsx');
   toast('Excel diunduh: '+M.rows.length+' SC · '+pr.length+' proyek · '+nt.length+' nota','ok');
 }
 
@@ -5044,7 +5121,7 @@ function scwToggleDet(i){
       Digambar langsung di canvas, tanpa library tambahan. ── */
 async function downloadScwImage(){
   const M=SCW_MODEL;
-  if(!M||!M.sel.length||!M.rows.length){toast('Tidak ada data untuk diunduh','err');return;}
+  if(!M||M.err||!M.sel.length||!M.rows.length){toast('Tidak ada data untuk diunduh','err');return;}
   try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
   const FONT='Calibri,Carlito,"Segoe UI",Arial,sans-serif';
   const num0=n=>n?Math.round(n).toLocaleString('en-US'):'-';           /* format gambar: 1,234,567 */
@@ -5052,9 +5129,10 @@ async function downloadScwImage(){
   const rng=(a,b)=>(a===b?a:a+'-'+b)+' '+mon+' '+M.y;
 
   /* definisi tabel: satu per minggu, ditambah kumulatif bila dicentang */
-  const tables=M.sel.map(w=>({kind:'wk',title:'MINGGU KE-'+w.n,date:rng(w.d1,w.d2),
-    get:o=>({p:(o.wk[w.n]||{}).proyek||0,r:(o.wk[w.n]||{}).real||0})}));
-  if($('scw-cum')&&$('scw-cum').checked)
+  const tables=M.single?M.sel.map(w=>({kind:'wk',title:'MINGGU KE-'+w.n,date:rng(w.d1,w.d2),
+    get:o=>({p:(o.wk[w.n]||{}).proyek||0,r:(o.wk[w.n]||{}).real||0})})):
+    [{kind:'cum',title:'TOTAL '+M.range.toUpperCase(),date:M.range.replace(/'/g,''),get:o=>({p:(o.wk[last.n]||{}).proyek||0,r:o.total})}];   /* rentang periode: satu tabel total */
+  if(M.single&&$('scw-cum')&&$('scw-cum').checked)
     tables.push({kind:'cum',title:'TOTAL '+SCW_MONTHS[M.m].toUpperCase()+' S/D W'+last.n,date:rng(1,last.d2),
       get:o=>({p:(o.wk[last.n]||{}).proyek||0,r:o.cumul})});
   tables.forEach(t=>{
@@ -5152,7 +5230,7 @@ async function downloadScwImage(){
   cv.toBlob(b=>{
     if(!b){toast('Gagal membuat gambar','err');return;}
     const a=document.createElement('a'), u=URL.createObjectURL(b);
-    a.href=u; a.download='Laporan_SC_Teknik_'+SCW_MON_S[M.m]+M.y+'_W'+M.sel.map(w=>w.n).join('-')+'.png';
+    a.href=u; a.download=M.single?'Laporan_SC_Teknik_'+SCW_MON_S[M.m]+M.y+'_W'+M.sel.map(w=>w.n).join('-')+'.png':'Laporan_SC_Teknik_'+M.tag+'.png';
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
     toast('Gambar diunduh','ok');
   },'image/png');
@@ -5315,6 +5393,7 @@ function msClear(id){MS_SEL[id]=new Set(); msFill(id,MS_VALS[id]||[]); msGo(id);
 function msToggle(id,e){
   e.stopPropagation(); const p=$(id).querySelector('.msel-p'), open=p.hidden;
   document.querySelectorAll('.msel-p').forEach(x=>x.hidden=true); p.hidden=!open;
+  p.style.left='0'; if(!p.hidden){ const r=p.getBoundingClientRect(), ov=r.right-(window.innerWidth-8); if(ov>0) p.style.left=Math.max(-(r.left-8),-ov)+'px'; }   /* jangan keluar layar (HP) */
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.msel')) document.querySelectorAll('.msel-p').forEach(x=>x.hidden=true);});
 
@@ -7254,6 +7333,7 @@ function rscPDF(){
   setTimeout(()=>window.print(),150);
 }
 
+Object.assign(MS_CB,{'scw-wil':()=>buildScWeek(),'scw-sc':()=>buildScWeek(),'scw-kor':()=>buildScWeek(),'scw-jenis':()=>buildScWeek(),'scw-stat':()=>buildScWeek()});
 Object.assign(MS_CB,{'sph-wk':()=>buildSph(),'rsp-wk':()=>buildRsp(),'rsp-wil':()=>buildRsp(),'rsp-area':()=>buildRsp(),'rsp-sc':()=>buildRsp(),'rsp-jenis':()=>buildRsp(),'rsc-jenis':()=>buildRspChart(),'rsc-wil':()=>buildRspChart(),'rsc-area':()=>buildRspChart(),'rsc-sc':()=>buildRspChart(),'sph-wil':()=>buildSph(),'sph-area':()=>buildSph(),'sph-sc':()=>buildSph(),'sph-jenis':()=>buildSph(),'spc-jenis':()=>buildSphChart(),'spc-wil':()=>buildSphChart(),'spc-area':()=>buildSphChart(),'spc-sc':()=>buildSphChart()});
 </script>
 <script>if('serviceWorker' in navigator&&location.protocol.startsWith('http')){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
