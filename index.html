@@ -4945,6 +4945,7 @@ function sclModel(){
   const kodeSC={}, kodeRow={}, ac={};
   ALL.forEach(r=>{const k=normKode(r[C.KODE]); if(!k) return; kodeRow[k]=r; const sc=normSC(r[C.PIC_TEK]); if(!sc) return; kodeSC[k]=sc;
     const a=cl(r[C.AREA]).toUpperCase(); if(a){(ac[sc]=ac[sc]||{})[a]=(ac[sc][a]||0)+1;} });
+  const fin100=new Set(); LOG_PROG.forEach(r=>{const k=normKode(r[LP.KODE]); if(k&&scwPct(r[LP.PCT_BARU])>=0.9999) fin100.add(k);});   /* sudah pernah tercatat 100% di log progres */
   const S={}, get=sc=>S[sc]||(S[sc]={sc,m:new Array(n).fill(0),total:0,seg:[0,0],as:{}}); let unmapped=0;
   LOG_PROG.forEach(r=>{
     const k=normKode(r[LP.KODE]); if(!k) return; const t=scwParseDay(r[LP.TGL]); if(t==null||t<lo||t>=hi) return;
@@ -4954,7 +4955,7 @@ function sclModel(){
     if(!sc){unmapped+=v;return;}
     let i=-1; for(let q=0;q<n;q++){ if(t>=months[q].from&&t<=months[q].to){i=q;break;} } if(i<0) return;
     const o=get(sc); o.m[i]+=v; o.total+=v;
-    const kr=kodeRow[k]||[], j=SCW_FIN.has(cl(kr[C.STATUS]).toUpperCase())?0:1, ar=cl(kr[C.AREA]).toUpperCase()||'—';   /* 0 = Selesai (FINISH/Retensi), 1 = Berjalan */
+    const kr=kodeRow[k]||[], j=(SCW_FIN.has(cl(kr[C.STATUS]).toUpperCase())||fin100.has(k)||scwPct(kr[C.PROGRESS])>=0.9999)?0:1, ar=cl(kr[C.AREA]).toUpperCase()||'—';   /* 0 = Selesai (FINISH/Retensi), 1 = Berjalan */
     o.seg[j]+=v; (o.as[ar]=o.as[ar]||[0,0])[j]+=v;
   });
   if(!areaSel.size) master.forEach(m=>{const o=get(m.name); o.fixedArea=m.area;});
@@ -5050,7 +5051,7 @@ function buildScLine(){
   const sig=M.allNames.join('|'); if(sig!==SCL_SIG){SCL_SIG=sig; msFill('scl-sc',M.allNames);}
   const sw=M.allWil.join('|'); if(sw!==SCL_SIGW){SCL_SIGW=sw; msFill('scl-wil',M.allWil);}
   const cum=$('scl-mode').value==='cum', same=$('scl-same').checked, P=SCL_WEB;
-  $('scl-note').innerHTML='Realisasi = Δ% progress × nilai kontrak (log progress), dijumlahkan per '+M.unit+'. Garis putus-putus = rata-rata per '+M.unit+' SC. Warna batang: hijau = Selesai (proyek berstatus FINISH / Retensi saat ini), oranye = Berjalan.'+(M.unmapped>0.5?` Realisasi proyek <b>tanpa PIC Teknik</b> di sheet list tidak masuk grafik per SC: <b>${scwEsc(fmt(M.unmapped,true))}</b> pada periode ini.`:'');
+  $('scl-note').innerHTML='Realisasi = Δ% progress × nilai kontrak (log progress), dijumlahkan per '+M.unit+'. Garis putus-putus = rata-rata per '+M.unit+' SC. Warna batang: hijau = Selesai (status FINISH / Retensi, atau progres proyek sudah 100%), oranye = Berjalan.'+(M.unmapped>0.5?` Realisasi proyek <b>tanpa PIC Teknik</b> di sheet list tidak masuk grafik per SC: <b>${scwEsc(fmt(M.unmapped,true))}</b> pada periode ini.`:'');
   $('scl-sub').textContent=M.range+' · '+(M.gran==='w'?'mingguan':'bulanan')+(M.wils.length?' · Wilayah: '+M.wils.join(', '):'')+(M.areas.length?' · Area: '+M.areas.join(', '):'')+' · '+M.rows.length+' SC';
   $('scl-kpi').innerHTML=sclKpiHTML(M);
   const tv=cum?sclCum(M.tot):M.tot;
