@@ -1281,7 +1281,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
         Unduh Excel
       </button>
-      <button type="button" class="scw-dl" onclick="downloadScwImage()">
+      <button type="button" class="scw-dl" onclick="downloadScwImage()" title="Satu gambar landscape per minggu + total (siap tempel ke PowerPoint)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Unduh Gambar
       </button>
@@ -1560,7 +1560,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
       <select id="sph-stat" onchange="buildSph()" aria-label="Status"><option value="">Semua Status</option><option value="0">Terproses</option><option value="1">Menunggu diproses</option><option value="2">Data awal (GSheet)</option></select>
       <span style="flex:1"></span>
       <button type="button" class="scw-dl" onclick="sphExport()" title="Ranking per sales dan rincian nomor penawaran">⬇ Unduh Excel</button>
-      <button type="button" class="scw-dl" onclick="sphImg()" title="Unduh ranking sebagai gambar PNG (siap kirim ke WhatsApp)">🖼 Unduh Gambar</button>
+      <button type="button" class="scw-dl" onclick="sphImg()" title="Unduh ranking sebagai gambar PNG. Kolom per minggu = satu gambar landscape per minggu + total (siap tempel ke PowerPoint)">🖼 Unduh Gambar</button>
       <button type="button" class="scw-dl" onclick="window.print()">🖨 Cetak / PDF</button>
     </div>
     <div class="scw-warn" id="sph-warn" role="status" hidden></div>
@@ -1634,7 +1634,7 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
       <label class="scw-chk" title="Kolom PIC SALES di list berisi nama panggilan/ejaan berbeda (ALDY, ALDY AKMAL, VERO, …). Dicocokkan ke nama lengkap sales di data SPH bila hanya satu kandidat yang cocok."><input type="checkbox" id="rsp-merge" checked onchange="buildRsp()"> Samakan nama dgn data SPH</label>
       <span style="flex:1"></span>
       <button type="button" class="scw-dl" onclick="rspExport()" title="Ranking per sales dan rincian proyek">⬇ Unduh Excel</button>
-      <button type="button" class="scw-dl" onclick="rspImg()" title="Unduh ranking sebagai gambar PNG (siap kirim ke WhatsApp)">🖼 Unduh Gambar</button>
+      <button type="button" class="scw-dl" onclick="rspImg()" title="Unduh ranking sebagai gambar PNG. Kolom per minggu = satu gambar landscape per minggu + total (siap tempel ke PowerPoint)">🖼 Unduh Gambar</button>
       <button type="button" class="scw-dl" onclick="window.print()">🖨 Cetak / PDF</button>
     </div>
     <div class="scw-warn" id="rsp-warn" role="status" hidden></div>
@@ -5119,6 +5119,99 @@ function scwToggleDet(i){
 
 /* ── Unduh gambar (PNG) — format laporan Excel: satu tabel per minggu + tabel kumulatif + kotak NB.
       Digambar langsung di canvas, tanpa library tambahan. ── */
+/* ══════════════════════════════════════════════════════════════
+   GAMBAR RANKING PER MINGGU — FORMAT LANDSCAPE (siap tempel ke PowerPoint)
+   Dipakai bersama oleh: Laporan SC Teknik, SPH Sales, Ranking SPI.
+   Satu gambar = satu tabel (satu minggu / total). Tabel yang panjang dibagi
+   menjadi 2–4 panel berdampingan supaya rasio gambar mendekati slide 16:9.
+══════════════════════════════════════════════════════════════ */
+const RK_FONT='Calibri,Carlito,"Segoe UI",Arial,sans-serif';
+const rkNum=n=>n?Math.round(n).toLocaleString('en-US'):'-';
+function rkPage(t,cfg){
+  const SC=2, CW=cfg.cw, TW=CW.reduce((a,b)=>a+b,0), GAP=24, MG=18, BAN=28, GRP=22, HDR=38, RH=21, FOOT=24, FONT=RK_FONT;
+  const n=t.items.length, nb=cfg.nb, mctx=document.createElement('canvas').getContext('2d'); mctx.font='bold 14px '+FONT;
+  let boxH=0, maxLine=0, lastW=0, tagW=0;
+  if(nb&&(nb.lines.length||nb.upd)){
+    boxH=16+(nb.lines.length+1)*21+14; maxLine=Math.max(mctx.measureText('NB :').width,...nb.lines.map(l=>mctx.measureText(l).width));
+    lastW=nb.lines.length?mctx.measureText(nb.lines[nb.lines.length-1]).width:0; tagW=nb.upd?mctx.measureText(nb.upd).width+24:0;
+  }
+  const dims=p=>{const rp=Math.max(1,Math.ceil(n/p)); return {p,rp,W:MG*2+p*TW+(p-1)*GAP,H:BAN+14+GRP+HDR+RH*rp+FOOT+(boxH?18+boxH:0)+18};};
+  let best=dims(1); best.e=Math.abs(Math.log(best.W/best.H/(16/9)));
+  for(let p=2;p<=4;p++){const d=dims(p); if(d.rp<8) break; d.e=Math.abs(Math.log(d.W/d.H/(16/9))); if(d.e<best.e) best=d;}
+  const P=best.p, RP=best.rp, W=best.W, H=best.H;
+  const cv=document.createElement('canvas'); cv.width=W*SC; cv.height=H*SC;
+  const x=cv.getContext('2d'); x.scale(SC,SC); x.textBaseline='middle';
+  const T=(s,px,py,al)=>{x.textAlign=al;x.fillText(String(s),px,py);};
+  x.fillStyle='#ffffff'; x.fillRect(0,0,W,H);
+  x.fillStyle='#9ddcf7'; x.fillRect(0,0,W,BAN); x.fillStyle='#000'; x.font='bold 17px '+FONT; T(cfg.banner,W/2,BAN/2+1,'center');
+  const fitT=(s,px,py,maxW)=>{let f=14; x.font=f+'px '+FONT; while(f>10&&x.measureText(s).width>maxW){f--; x.font=f+'px '+FONT;} T(s,px,py,'left');};
+  const BLUE='#1b5a86', ROW1='#c9e8f8', ROW2='#b1dbf2', PINK='#ffc7ce', WHITE='rgba(255,255,255,.7)';
+  for(let k=0;k<P;k++){
+    const items=t.items.slice(k*RP,(k+1)*RP), x0=MG+k*(TW+GAP), y0=BAN+14, isLast=k===P-1;
+    x.fillStyle=t.kind==='cum'?'#92e28f':'#ffff00'; x.fillRect(x0,y0,TW,GRP);
+    x.fillStyle='#000'; x.font='bold 14px '+FONT; T(t.title,x0+TW/2,y0+GRP/2+1,'center');
+    const hy=y0+GRP; x.fillStyle=BLUE; x.fillRect(x0,hy,TW,HDR); x.fillStyle='#fff'; x.font='bold 13px '+FONT;
+    let cx=x0; const cxs=CW.map(w=>{const q=cx; cx+=w; return q;});
+    T('NO',cxs[0]+CW[0]/2,hy+HDR/2,'center'); T(cfg.hsc,cxs[1]+CW[1]/2,hy+HDR/2,'center'); T('WILAYAH',cxs[2]+CW[2]/2,hy+HDR/2,'center');
+    T(cfg.hp1,cxs[3]+CW[3]/2,hy+HDR/2-8,'center'); T(cfg.hp2,cxs[3]+CW[3]/2,hy+HDR/2+8,'center');
+    T(cfg.hr1,cxs[4]+CW[4]/2,hy+HDR/2-8,'center'); T(t.date,cxs[4]+CW[4]/2,hy+HDR/2+8,'center');
+    const ry=hy+HDR;
+    items.forEach((it,i)=>{
+      const y1=ry+i*RH, cy=y1+RH/2+1;
+      x.fillStyle=i%2?ROW2:ROW1; x.fillRect(x0,y1,TW,RH);
+      if(!it.p){x.fillStyle=PINK; x.fillRect(cxs[3],y1,CW[3],RH);}
+      if(!it.r){x.fillStyle=PINK; x.fillRect(cxs[4],y1,CW[4],RH);}
+      x.fillStyle='#000'; x.font='14px '+FONT; T(k*RP+i+1,cxs[0]+CW[0]/2,cy,'center');
+      fitT(it.sc,cxs[1]+6,cy,CW[1]-10); fitT(it.area,cxs[2]+6,cy,CW[2]-10); x.font='14px '+FONT;
+      x.fillStyle=it.p?'#000':'#9c0006'; T(it.p,cxs[3]+CW[3]/2,cy,'center');
+      x.fillStyle='#000'; T(rkNum(it.r),cxs[4]+CW[4]-8,cy,'right');
+    });
+    x.strokeStyle=WHITE; x.lineWidth=1; x.beginPath();
+    for(let i=0;i<=items.length;i++){const yy=Math.round(ry+i*RH)+.5; x.moveTo(x0,yy); x.lineTo(x0+TW,yy);}
+    cxs.slice(1).forEach(c=>{const xx=Math.round(c)+.5; x.moveTo(xx,hy); x.lineTo(xx,ry+items.length*RH);});
+    x.stroke();
+    if(isLast){
+      const fy=ry+items.length*RH; x.fillStyle='#ffff00'; x.fillRect(x0,fy,TW,FOOT); x.fillStyle='#000'; x.font='bold 14px '+FONT;
+      T(n,cxs[1]+CW[1]/2,fy+FOOT/2+1,'center'); T(t.totP,cxs[3]+CW[3]/2,fy+FOOT/2+1,'center'); T(rkNum(t.totR),cxs[4]+CW[4]-8,fy+FOOT/2+1,'right');
+    }
+  }
+  if(boxH){
+    const boxW=Math.min(W-MG*2,Math.max(380,maxLine,lastW+tagW+24)+32), bx=MG, by=BAN+14+GRP+HDR+RH*RP+FOOT+18;
+    x.fillStyle='#fff'; x.fillRect(bx,by,boxW,boxH); x.strokeStyle='#111'; x.lineWidth=2.5; x.strokeRect(bx+1,by+1,boxW-2,boxH-2);
+    x.fillStyle='#000'; x.font='bold 14px '+FONT; const nbw=mctx.measureText('NB :').width; T('NB :',bx+14,by+26,'left'); x.fillRect(bx+14,by+35,nbw,1.5);
+    nb.lines.forEach((l,i)=>T(l,bx+14,by+16+(i+1)*21+10,'left'));
+    if(nb.upd){const ty=by+boxH-14-21, tx=bx+boxW-14-tagW; x.fillStyle='#ffff00'; x.fillRect(tx,ty,tagW,21); x.fillStyle='#000'; x.font='bold 14px '+FONT; T(nb.upd,tx+tagW/2,ty+11,'center');}
+  }
+  return cv;
+}
+/* satu file PNG per tabel; jeda antar unduhan supaya browser tidak memblokir */
+async function rkDownloadAll(pages){
+  for(let i=0;i<pages.length;i++){
+    await new Promise(res=>pages[i].cv.toBlob(b=>{
+      if(b){const u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=pages[i].name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),3000);}
+      setTimeout(res,380);
+    },'image/png'));
+  }
+  toast('✓ '+pages.length+' gambar landscape diunduh'+(pages.length>1?' — jika hanya 1 file masuk, izinkan "unduhan beberapa file" di browser':''),'ok');
+}
+function rkSort(items){return items.sort((a,b)=>b.r-a.r||b.p-a.p||a.sc.localeCompare(b.sc));}
+function rkTotals(t){t.totP=t.items.reduce((a,x)=>a+x.p,0); t.totR=t.items.reduce((a,x)=>a+x.r,0); return t;}
+/* SPH Sales & Ranking SPI, kolom mingguan: satu gambar per minggu + satu gambar total */
+async function rkWeeklyImg(M,rows,cfg){
+  try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
+  const dm=d=>{const t=new Date(d*864e5); return {d:t.getUTCDate(),m:SCW_MON_S[t.getUTCMonth()].toUpperCase(),mn:SCW_MONTHS[t.getUTCMonth()].toUpperCase(),y:t.getUTCFullYear(),k:t.getUTCFullYear()*12+t.getUTCMonth()};};
+  const dstr=(a,b)=>{const A=dm(a),B=dm(b); return A.k===B.k?(A.d===B.d?A.d:A.d+'-'+B.d)+' '+B.m+' '+B.y:A.d+' '+A.m+(A.y!==B.y?' '+A.y:'')+' - '+B.d+' '+B.m+' '+B.y;};
+  const bins=M.bins, oneMonth=new Set(bins.map(b=>dm(b.from).k)).size===1;
+  const wkn=(b,j)=>{const m=/W(\d+)/.exec(b.wk||b.lbl||''); return m?+m[1]:j+1;};
+  const mk=(title,kind,date,get)=>rkTotals({title,kind,date,items:rkSort(rows.map(r=>Object.assign({sc:r.sc.toUpperCase(),area:r.area},get(r))))});
+  const tables=bins.map((b,j)=>({t:mk('MINGGU KE-'+wkn(b,j)+(oneMonth?'':' · '+dm(b.from).mn),'wk',dstr(b.from,b.to),r=>({p:r.b?r.b[j].n:0,r:r.b?r.b[j].v:0})),name:cfg.file+'_W'+wkn(b,j)+(oneMonth?'':'-'+dm(b.from).m)+'.png'}));
+  if(bins.length>1){
+    const first=bins[0], last=bins[bins.length-1];
+    tables.push({t:mk(oneMonth?'TOTAL '+dm(first.from).mn+' S/D W'+wkn(last,bins.length-1):'TOTAL '+M.range.replace(/\'/g,'').toUpperCase(),'cum',dstr(first.from,last.to),r=>({p:r.n,r:r.v})),name:cfg.file+'_TOTAL.png'});
+  }
+  rkDownloadAll(tables.map(o=>({cv:rkPage(o.t,cfg),name:o.name})));
+}
+
 async function downloadScwImage(){
   const M=SCW_MODEL;
   if(!M||M.err||!M.sel.length||!M.rows.length){toast('Tidak ada data untuk diunduh','err');return;}
@@ -5141,99 +5234,12 @@ async function downloadScwImage(){
     t.totP=t.items.reduce((a,x)=>a+x.p,0); t.totR=t.items.reduce((a,x)=>a+x.r,0);
   });
 
-  /* ukuran (px desain; dikali SC saat dirender) */
-  const SC=2, CW=[38,196,160,62,114], TW=CW.reduce((a,b)=>a+b,0), GAP=24, MG=18;
-  const BAN=28, GRP=22, HDR=38, RH=21, FOOT=24, ROWGAP=20;
-  const n=tables.length, perRow=n<=3?n:(n===4?2:3), nRows=Math.ceil(n/perRow);
-  const W=MG*2+perRow*TW+(perRow-1)*GAP;
-  const blockH=GRP+HDR+RH*M.rows.length+FOOT;
-
-  /* kotak NB */
-  const nb=($('scw-nb').value||'').split('\n').map(x=>x.replace(/\s+$/,'')).filter(x=>x.trim());
+  /* format landscape: satu gambar per tabel (minggu / total), lihat rkPage */
+  const nbLines=($('scw-nb').value||'').split('\n').map(x=>x.replace(/\s+$/,'')).filter(x=>x.trim());
   const upd=($('scw-upd').value||'').trim();
-  const meas=document.createElement('canvas').getContext('2d');
-  meas.font='bold 14px '+FONT;
-  const maxLine=Math.max(meas.measureText('NB :').width,...nb.map(l=>meas.measureText(l).width));
-  const lastW=nb.length?meas.measureText(nb[nb.length-1]).width:0;
-  const tagW=upd?meas.measureText(upd).width+24:0;
-  const boxW=Math.min(W-MG*2,Math.max(380,maxLine,lastW+tagW+24)+32);
-  const boxH=nb.length||upd?16+(nb.length+1)*21+14:0;
-
-  const H=BAN+14+nRows*blockH+(nRows-1)*ROWGAP+(boxH?18+boxH:0)+18;
-  const cv=document.createElement('canvas'); cv.width=W*SC; cv.height=H*SC;
-  const x=cv.getContext('2d'); x.scale(SC,SC); x.textBaseline='middle';
-  const T=(t,px,py,al)=>{x.textAlign=al;x.fillText(String(t),px,py);};
-
-  x.fillStyle='#ffffff'; x.fillRect(0,0,W,H);
-  /* banner judul */
-  x.fillStyle='#9ddcf7'; x.fillRect(0,0,W,BAN);
-  x.fillStyle='#000'; x.font='bold 17px '+FONT; T('LAPORAN SC TEKNIK',W/2,BAN/2+1,'center');
-
-  /* teks rata kiri yang otomatis mengecil bila melebihi lebar kolom */
-  const fitT=(t,px,py,maxW)=>{let f=14;x.font=f+'px '+FONT;while(f>10&&x.measureText(t).width>maxW){f--;x.font=f+'px '+FONT;}T(t,px,py,'left');};
-  const BLUE='#1b5a86', ROW1='#c9e8f8', ROW2='#b1dbf2', PINK='#ffc7ce', WHITE='rgba(255,255,255,.7)';
-  function drawTable(t,x0,y0){
-    /* judul kelompok */
-    x.fillStyle=t.kind==='cum'?'#92e28f':'#ffff00'; x.fillRect(x0,y0,TW,GRP);
-    x.fillStyle='#000'; x.font='bold 14px '+FONT; T(t.title,x0+TW/2,y0+GRP/2+1,'center');
-    /* header kolom */
-    const hy=y0+GRP; x.fillStyle=BLUE; x.fillRect(x0,hy,TW,HDR);
-    x.fillStyle='#fff'; x.font='bold 13px '+FONT;
-    let cx=x0; const cxs=CW.map(w=>{const p=cx;cx+=w;return p;});
-    T('NO',cxs[0]+CW[0]/2,hy+HDR/2,'center'); T('SC TEKNIK',cxs[1]+CW[1]/2,hy+HDR/2,'center'); T('WILAYAH',cxs[2]+CW[2]/2,hy+HDR/2,'center');
-    T('JUMLAH',cxs[3]+CW[3]/2,hy+HDR/2-8,'center'); T('PROYEK',cxs[3]+CW[3]/2,hy+HDR/2+8,'center');
-    T('REALISASI',cxs[4]+CW[4]/2,hy+HDR/2-8,'center'); T(t.date,cxs[4]+CW[4]/2,hy+HDR/2+8,'center');
-    /* baris */
-    const ry=hy+HDR;
-    t.items.forEach((it,i)=>{
-      const y1=ry+i*RH, cy=y1+RH/2+1;
-      x.fillStyle=i%2?ROW2:ROW1; x.fillRect(x0,y1,TW,RH);
-      if(!it.p){x.fillStyle=PINK;x.fillRect(cxs[3],y1,CW[3],RH);}
-      if(!it.r){x.fillStyle=PINK;x.fillRect(cxs[4],y1,CW[4],RH);}
-      x.fillStyle='#000'; x.font='14px '+FONT;
-      T(i+1,cxs[0]+CW[0]/2,cy,'center');
-      fitT(it.sc,cxs[1]+6,cy,CW[1]-10); fitT(it.area,cxs[2]+6,cy,CW[2]-10); x.font='14px '+FONT;
-      x.fillStyle=it.p?'#000':'#9c0006'; T(it.p,cxs[3]+CW[3]/2,cy,'center');
-      x.fillStyle='#000'; T(num0(it.r),cxs[4]+CW[4]-8,cy,'right');
-    });
-    /* garis putih tipis */
-    x.strokeStyle=WHITE; x.lineWidth=1; x.beginPath();
-    for(let i=0;i<=t.items.length;i++){const yy=Math.round(ry+i*RH)+.5;x.moveTo(x0,yy);x.lineTo(x0+TW,yy);}
-    cxs.slice(1).forEach(c=>{const xx=Math.round(c)+.5;x.moveTo(xx,hy);x.lineTo(xx,ry+t.items.length*RH);});
-    x.stroke();
-    /* total */
-    const fy=ry+t.items.length*RH; x.fillStyle='#ffff00'; x.fillRect(x0,fy,TW,FOOT);
-    x.fillStyle='#000'; x.font='bold 14px '+FONT;
-    T(t.items.length,cxs[1]+CW[1]/2,fy+FOOT/2+1,'center'); T(t.totP,cxs[3]+CW[3]/2,fy+FOOT/2+1,'center'); T(num0(t.totR),cxs[4]+CW[4]-8,fy+FOOT/2+1,'right');
-  }
-  tables.forEach((t,i)=>{
-    const r=Math.floor(i/perRow), c=i%perRow;
-    drawTable(t,MG+c*(TW+GAP),BAN+14+r*(blockH+ROWGAP));
-  });
-
-  /* kotak NB */
-  if(boxH){
-    const bx=MG, by=BAN+14+nRows*blockH+(nRows-1)*ROWGAP+18;
-    x.fillStyle='#fff'; x.fillRect(bx,by,boxW,boxH);
-    x.strokeStyle='#111'; x.lineWidth=2.5; x.strokeRect(bx+1,by+1,boxW-2,boxH-2);
-    x.fillStyle='#000'; x.font='bold 14px '+FONT;
-    const nbw=meas.measureText('NB :').width; T('NB :',bx+14,by+16+10,'left');
-    x.fillRect(bx+14,by+16+19,nbw,1.5);                                   /* garis bawah "NB :" */
-    nb.forEach((l,i)=>T(l,bx+14,by+16+(i+1)*21+10,'left'));
-    if(upd){
-      const ty=by+boxH-14-21, tx=bx+boxW-14-tagW;
-      x.fillStyle='#ffff00'; x.fillRect(tx,ty,tagW,21);
-      x.fillStyle='#000'; x.font='bold 14px '+FONT; T(upd,tx+tagW/2,ty+11,'center');
-    }
-  }
-
-  cv.toBlob(b=>{
-    if(!b){toast('Gagal membuat gambar','err');return;}
-    const a=document.createElement('a'), u=URL.createObjectURL(b);
-    a.href=u; a.download=M.single?'Laporan_SC_Teknik_'+SCW_MON_S[M.m]+M.y+'_W'+M.sel.map(w=>w.n).join('-')+'.png':'Laporan_SC_Teknik_'+M.tag+'.png';
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000);
-    toast('Gambar diunduh','ok');
-  },'image/png');
+  const cfg={banner:'LAPORAN SC TEKNIK',hsc:'SC TEKNIK',hp1:'JUMLAH',hp2:'PROYEK',hr1:'REALISASI',cw:[38,196,160,62,114],nb:(nbLines.length||upd)?{lines:nbLines,upd}:null};
+  const base=M.single?'Laporan_SC_Teknik_'+SCW_MON_S[M.m]+M.y:'Laporan_SC_Teknik_'+M.tag;
+  rkDownloadAll(tables.map(t=>({cv:rkPage(t,cfg),name:M.single?(t.kind==='cum'?base+'_TOTAL.png':base+'_W'+t.title.replace(/\D/g,'')+'.png'):base+'.png'})));
 }
 
 /* ══════════ TARGET BULANAN ══════════
@@ -6807,13 +6813,14 @@ function sphImg(){
   const M=SPH_M; if(!M||M.err||!M.bins.length){toast('Atur periode dulu','info');return;}
   const wil=msGet('sph-wil'), area=msGet('sph-area'), hi=M.bins[M.bins.length-1].to, lo0=hi-90;
   const top1=ac=>(Object.entries(ac).sort((a,b)=>b[1]-a[1])[0]||['—'])[0];
-  const R=new Map(); M.rows.forEach(o=>R.set(o.sc,{sc:o.sc,area:top1(o.ac),v:o.v,n:o.n}));
+  const R=new Map(); M.rows.forEach(o=>R.set(o.sc,{sc:o.sc,area:top1(o.ac),v:o.v,n:o.n,b:o.b}));
   const A={}; SPH.forEach(r=>{ /* sales aktif 90 hari terakhir tanpa penawaran di periode → tampil merah (0) */
     if(!r.sc||r.day<lo0||r.day>hi||(wil.size&&!wil.has(r.wil))||(area.size&&!area.has(r.area))) return;
     const q=A[r.sc]||(A[r.sc]={}); q[r.area]=(q[r.area]||0)+1;});
   const scSel=msGet('sph-sc'); Object.keys(A).forEach(k=>{if(!R.has(k)&&(!scSel.size||scSel.has(k))) R.set(k,{sc:k,area:top1(A[k]),v:0,n:0});});
   const rows=[...R.values()].sort((a,b)=>b.v-a.v||b.n-a.n||a.sc.localeCompare(b.sc));
   if(!rows.length){toast('Tidak ada data','info');return;}
+  if(M.gran==='w'&&M.bins.length>0){rkWeeklyImg(M,rows,{banner:'SPH SALES',hsc:'SALES',hp1:'VOLUME',hp2:'SPH',hr1:'NOMINAL SPH',file:'SPH-Sales-'+M.tag,cw:[38,206,150,70,140],nb:null}); return;}   /* mingguan: satu gambar landscape per minggu + total */
   const tc=t=>t.toLowerCase().replace(/(^|[\s.\-'])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
   const dm=d=>{const t=new Date(d*864e5); return {d:t.getUTCDate(),m:SCW_MON_S[t.getUTCMonth()],y:t.getUTCFullYear()};};
   let per=M.range.replace(/'/g,'');
@@ -7145,13 +7152,14 @@ function rspImg(){
   const M=RSP_M; if(!M||M.err||!M.bins.length){toast('Atur periode dulu','info');return;}
   const wil=msGet('rsp-wil'), area=msGet('rsp-area'), hi=M.bins[M.bins.length-1].to, lo0=hi-90;
   const top1=ac=>(Object.entries(ac).sort((a,b)=>b[1]-a[1])[0]||['—'])[0];
-  const R=new Map(); M.rows.forEach(o=>R.set(o.sc,{sc:o.sc,area:top1(o.ac),v:o.v,n:o.n}));
+  const R=new Map(); M.rows.forEach(o=>R.set(o.sc,{sc:o.sc,area:top1(o.ac),v:o.v,n:o.n,b:o.b}));
   const A={}; RSP.forEach(r=>{ /* sales aktif 90 hari terakhir tanpa SPI di periode → tampil merah (0) */
     if(!r.sc||r.day<lo0||r.day>hi||(wil.size&&!wil.has(r.wil))||(area.size&&!area.has(r.area))) return;
     const q=A[r.sc]||(A[r.sc]={}); q[r.area]=(q[r.area]||0)+1;});
   const scSel=msGet('rsp-sc'); Object.keys(A).forEach(k=>{if(!R.has(k)&&(!scSel.size||scSel.has(k))) R.set(k,{sc:k,area:top1(A[k]),v:0,n:0});});
   const rows=[...R.values()].sort((a,b)=>b.v-a.v||b.n-a.n||a.sc.localeCompare(b.sc));
   if(!rows.length){toast('Tidak ada data','info');return;}
+  if(M.gran==='w'&&M.bins.length>0){rkWeeklyImg(M,rows,{banner:'RANKING SPI',hsc:'SALES',hp1:'JUMLAH',hp2:'SPI',hr1:'NILAI SPI',file:'Ranking-SPI-'+M.tag,cw:[38,206,150,70,140],nb:null}); return;}   /* mingguan: satu gambar landscape per minggu + total */
   const tc=t=>t.toLowerCase().replace(/(^|[\s.\-'])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
   const dm=d=>{const t=new Date(d*864e5); return {d:t.getUTCDate(),m:SCW_MON_S[t.getUTCMonth()],y:t.getUTCFullYear()};};
   let per=M.range.replace(/'/g,'');
