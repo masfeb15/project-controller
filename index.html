@@ -5002,28 +5002,30 @@ function sclCardHTML(o,i,M,P,ymax,cum){
     sclLine(vals,lbls,{P,W:300,H:112,ymax,avg:cum?null:o.avg,labelAll:false,bg:'var(--surf)',maxLbl:6})+
     `<div class="scl-f"><span>Rata-rata ${scwEsc(fmt(o.avg,true))}/${M.unitS}</span><span>Puncak ${scwEsc(M.months[o.peak].lbl)} · ${scwEsc(fmt(o.m[o.peak],true))}</span></div></div>`;
 }
-/* Bar bertingkat bergaya "Ranking Realisasi Korwil Teknik": sumbu + garis bantu (Juta Rp), nilai di dalam segmen,
-   persen Selesai di ujung bar, baris selang-seling. items: [{l, seg:[selesai,berjalan] (Rp), tot}] */
-function sclNiceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x||1))), f=x/p; return (f<=1?1:f<=2?2:f<=5?5:10)*p;}
+/* Bar bertingkat yang bersih (tanpa sumbu/garis bantu): label realisasi (Selesai) di dalam batang hijau,
+   label outstanding / sisa Berjalan di dalam batang oranye — bila tidak muat, ditulis oranye di ujung bar —
+   lalu % pencapaian (porsi Selesai) di ujung. Angka dalam Juta Rp. items: [{l, seg:[selesai,berjalan] (Rp), tot}] */
 function sclHBar(items,PP){
-  const P=PP||SCL_WEB, STC=PP?RSP_STC_P:RSP_STC, W=580, lw=170, rw=54, top=22, rh=PP?22:26, pw=W-lw-rw;
-  const jt=v=>Math.round(v/1e6), idn=n=>n.toLocaleString('id-ID');
-  const mxJ=Math.max(1,...items.map(i=>jt(i.tot))), step=Math.max(1,sclNiceStep(mxJ/4)), axMax=Math.ceil(mxJ/step)*step, X=j=>lw+j/axMax*pw, bot=top+items.length*rh; let s='';
-  items.forEach((it,q)=>{ if(q%2===0) s+=`<rect x="0" y="${top+q*rh}" width="${W}" height="${rh}" style="fill:${P.grid};opacity:.32"/>`; });
-  for(let t=0;t<=axMax+1e-9;t+=step){const x=X(t); s+=`<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${top}" y2="${bot}" style="stroke:${P.grid};stroke-width:.8"/>`+mgTx(x.toFixed(1),top-7,9.5,idn(t),P,{a:'middle',c:P.t3});}
+  const P=PP||SCL_WEB, STC=PP?RSP_STC_P:RSP_STC, W=580, lw=172, rw=104, rh=PP?22:24, pw=W-lw-rw, mx=Math.max(1,...items.map(i=>i.tot));
+  const jt=v=>Math.round(v/1e6), idn=n=>n.toLocaleString('id-ID'); let s='';
   items.forEach((it,q)=>{
-    const y=top+q*rh, by=y+4, bh=rh-8, cy=y+rh/2+3.8;
-    s+=mgTx(lw-8,cy+.2,11,it.l.length>22?it.l.slice(0,21)+'…':it.l,P,{a:'end',c:P.t1,b:1});
-    let x=lw;
+    const y=q*rh, cy=y+rh/2+4;
+    s+=mgTx(lw-6,cy,11,it.l.length>25?it.l.slice(0,24)+'…':it.l,P,{a:'end',c:P.t1});
+    let x=lw, out='';
     it.seg.forEach((v,j)=>{
-      const w=v/1e6/axMax*pw; if(w<=0.3) return; const lab=idn(jt(v));
-      s+=`<rect x="${x.toFixed(1)}" y="${by}" width="${w.toFixed(1)}" height="${bh}" style="fill:${STC[j]}"><title>${scwEsc(it.l)} · ${RSP_ST[j]}: ${scwEsc(fmt(v,true))}</title></rect>`;
-      if(w>=lab.length*6.4+8) s+=`<text x="${(x+w/2).toFixed(1)}" y="${cy.toFixed(1)}" text-anchor="middle" style="font-size:10px;font-weight:700;font-family:inherit;fill:#fff;stroke:rgba(0,0,0,.38);stroke-width:2.2px;paint-order:stroke">${lab}</text>`;
+      const w=v/mx*pw; if(w<=0.3) return; const lab=idn(jt(v));
+      s+=`<rect x="${x.toFixed(1)}" y="${y+4}" width="${w.toFixed(1)}" height="${rh-9}" rx="2" style="fill:${STC[j]}"><title>${scwEsc(it.l)} · ${j?'Berjalan (outstanding)':'Selesai (realisasi)'}: ${scwEsc(fmt(v,true))}</title></rect>`;
+      if(jt(v)>0){
+        if(w>=lab.length*6.4+8) s+=`<text x="${(x+w/2).toFixed(1)}" y="${cy.toFixed(1)}" text-anchor="middle" style="font-size:10px;font-weight:700;font-family:inherit;fill:#fff;stroke:rgba(0,0,0,.38);stroke-width:2.2px;paint-order:stroke">${lab}</text>`;
+        else if(j===1) out=lab;                         /* sisa berjalan tidak muat di dalam batang → di ujung bar */
+      }
       x+=w;
     });
-    s+=mgTx((x+6).toFixed(1),cy.toFixed(1),10,(it.tot?it.seg[0]/it.tot*100:0).toFixed(1)+'%',P,{c:P.t2,b:1});
+    const pc=(it.tot?it.seg[0]/it.tot*100:0).toFixed(1)+'%';
+    s+=`<text x="${(x+6).toFixed(1)}" y="${cy.toFixed(1)}" style="font-size:10.5px;font-weight:700;font-family:inherit">`+
+      (out?`<tspan style="fill:${STC[1]}">${out}</tspan><tspan dx="7" style="fill:${P.t2}">${pc}</tspan>`:`<tspan style="fill:${P.t2}">${pc}</tspan>`)+`</text>`;
   });
-  return `<div class="sclb-u">(dalam Jutaan Rupiah)</div>`+mgSvg(W,bot+4,s)+`<div class="mg-lg" style="margin-top:6px">`+RSP_ST.map((t,j)=>`<span><i style="background:${STC[j]}"></i>${t}</span>`).join('')+`<span>% di ujung bar = porsi Selesai</span></div>`;
+  return mgSvg(W,Math.max(rh,items.length*rh),s)+`<div class="mg-lg" style="margin-top:6px"><span><i style="background:${STC[0]}"></i>Selesai (realisasi)</span><span><i style="background:${STC[1]}"></i>Berjalan (outstanding / sisa)</span><span>Angka dalam Juta Rp · % = porsi Selesai</span></div>`;
 }
 function sclBarData(M){
   const pos=x=>Math.max(0,x), mk=(l,seg)=>{const sg=seg.map(pos); return {l,seg:sg,tot:sg[0]+sg[1]};};
