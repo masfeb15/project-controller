@@ -1330,6 +1330,10 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
       <div class="scw-warn" id="scl-warn" role="status" hidden></div>
       <div class="mg-kpi" id="scl-kpi"></div>
       <div class="mg-card"><div class="mg-h" id="scl-over-t"></div><div id="scl-over"></div></div>
+      <div class="mg-grid" style="margin-top:12px">
+        <div class="mg-card"><div class="mg-h" id="scl-rank-t"></div><div id="scl-rank"></div></div>
+        <div class="mg-card"><div class="mg-h" id="scl-area-t"></div><div id="scl-areas"></div></div>
+      </div>
       <div class="scw-note" id="scl-note" style="margin-top:8px"></div>
       <div class="scl-grid" id="scl-grid"></div>
     </div>
@@ -4939,7 +4943,7 @@ function sclModel(){
   const kodeSC={}, kodeRow={}, ac={};
   ALL.forEach(r=>{const k=normKode(r[C.KODE]); if(!k) return; kodeRow[k]=r; const sc=normSC(r[C.PIC_TEK]); if(!sc) return; kodeSC[k]=sc;
     const a=cl(r[C.AREA]).toUpperCase(); if(a){(ac[sc]=ac[sc]||{})[a]=(ac[sc][a]||0)+1;} });
-  const S={}, get=sc=>S[sc]||(S[sc]={sc,m:new Array(n).fill(0),total:0}); let unmapped=0;
+  const S={}, get=sc=>S[sc]||(S[sc]={sc,m:new Array(n).fill(0),total:0,seg:[0,0],as:{}}); let unmapped=0;
   LOG_PROG.forEach(r=>{
     const k=normKode(r[LP.KODE]); if(!k) return; const t=scwParseDay(r[LP.TGL]); if(t==null||t<lo||t>=hi) return;
     const sc=kodeSC[k]; if(areaSel.size&&!(kodeRow[k]&&inArea(kodeRow[k][C.AREA]))) return;
@@ -4948,6 +4952,8 @@ function sclModel(){
     if(!sc){unmapped+=v;return;}
     let i=-1; for(let q=0;q<n;q++){ if(t>=months[q].from&&t<=months[q].to){i=q;break;} } if(i<0) return;
     const o=get(sc); o.m[i]+=v; o.total+=v;
+    const kr=kodeRow[k]||[], j=SCW_FIN.has(cl(kr[C.STATUS]).toUpperCase())?0:1, ar=cl(kr[C.AREA]).toUpperCase()||'—';   /* 0 = Selesai (FINISH/Retensi), 1 = Berjalan */
+    o.seg[j]+=v; (o.as[ar]=o.as[ar]||[0,0])[j]+=v;
   });
   if(!areaSel.size) master.forEach(m=>{const o=get(m.name); o.fixedArea=m.area;});
   let rows=Object.values(S);
@@ -4964,7 +4970,8 @@ function sclModel(){
   if(!$('scl-zero').checked) rows=rows.filter(o=>Math.abs(o.total)>0.5);
   rows.sort((a,b)=>b.total-a.total||a.sc.localeCompare(b.sc));
   const tot=new Array(n).fill(0); rows.forEach(o=>o.m.forEach((v,i)=>tot[i]+=v));
-  return {unmapped,months,rows,tot,total:tot.reduce((a,x)=>a+x,0),n,unit,unitS,range,gran,allNames,allWil,fy,fm,ty,tm,areas:[...areaSel],wils:[...wSel]};
+  const AR={}; rows.forEach(o=>Object.entries(o.as).forEach(([a,sg])=>{const q=AR[a]||(AR[a]={l:a,seg:[0,0]}); q.seg[0]+=sg[0]; q.seg[1]+=sg[1];}));
+  return {unmapped,AR,months,rows,tot,total:tot.reduce((a,x)=>a+x,0),n,unit,unitS,range,gran,allNames,allWil,fy,fm,ty,tm,areas:[...areaSel],wils:[...wSel]};
 }
 /* garis: vals[] per titik, labels[] sumbu x */
 function sclLine(vals,labels,o){
@@ -5006,17 +5013,25 @@ function buildScLine(){
   if(!$('scl-sec')||!ALL.length) return;
   sclInit();
   const M=SCL_M=sclModel();
-  if(M.err){ $('scl-warn').textContent='⚠️ '+M.err; $('scl-warn').hidden=false; $('scl-kpi').innerHTML=''; $('scl-over').innerHTML=''; $('scl-grid').innerHTML=''; return; }
+  if(M.err){ $('scl-warn').textContent='⚠️ '+M.err; $('scl-warn').hidden=false; $('scl-kpi').innerHTML=''; $('scl-over').innerHTML=''; $('scl-grid').innerHTML=''; $('scl-rank').innerHTML=''; $('scl-areas').innerHTML=''; return; }
   $('scl-warn').hidden=true;
   const sig=M.allNames.join('|'); if(sig!==SCL_SIG){SCL_SIG=sig; msFill('scl-sc',M.allNames);}
   const sw=M.allWil.join('|'); if(sw!==SCL_SIGW){SCL_SIGW=sw; msFill('scl-wil',M.allWil);}
   const cum=$('scl-mode').value==='cum', same=$('scl-same').checked, P=SCL_WEB;
-  $('scl-note').innerHTML='Realisasi = Δ% progress × nilai kontrak (log progress), dijumlahkan per '+M.unit+'. Garis putus-putus = rata-rata per '+M.unit+' SC.'+(M.unmapped>0.5?` Realisasi proyek <b>tanpa PIC Teknik</b> di sheet list tidak masuk grafik per SC: <b>${scwEsc(fmt(M.unmapped,true))}</b> pada periode ini.`:'');
+  $('scl-note').innerHTML='Realisasi = Δ% progress × nilai kontrak (log progress), dijumlahkan per '+M.unit+'. Garis putus-putus = rata-rata per '+M.unit+' SC. Warna batang: hijau = Selesai (proyek berstatus FINISH / Retensi saat ini), oranye = Berjalan.'+(M.unmapped>0.5?` Realisasi proyek <b>tanpa PIC Teknik</b> di sheet list tidak masuk grafik per SC: <b>${scwEsc(fmt(M.unmapped,true))}</b> pada periode ini.`:'');
   $('scl-sub').textContent=M.range+' · '+(M.gran==='w'?'mingguan':'bulanan')+(M.wils.length?' · Wilayah: '+M.wils.join(', '):'')+(M.areas.length?' · Area: '+M.areas.join(', '):'')+' · '+M.rows.length+' SC';
   $('scl-kpi').innerHTML=sclKpiHTML(M);
   const tv=cum?sclCum(M.tot):M.tot;
   $('scl-over').innerHTML=sclLine(tv,M.months.map(m=>m.lbl),{P,W:900,H:210,l:44,t:22,b:22,yl:true,fs:10,labelAll:M.n<=14,maxLbl:20,avg:cum?null:M.total/M.n,bg:'var(--surf)'});
   $('scl-over-t').textContent=(cum?'Total realisasi kumulatif':'Total realisasi per '+M.unit)+' — semua SC terpilih';
+  /* ranking SC & realisasi per area, dipecah menurut status proyek (hijau = Selesai, oranye = Berjalan) */
+  const pos=x=>Math.max(0,x), mkSeg=(l,seg)=>{const sg=seg.map(pos); return {l,seg:sg,tot:sg[0]+sg[1]};};
+  const rk=M.rows.filter(o=>o.total>0.5).slice(0,15).map(o=>mkSeg(o.sc.length>23?o.sc.slice(0,22)+'…':o.sc,o.seg));
+  const ar=Object.values(M.AR).map(a=>mkSeg(a.l,a.seg)).filter(a=>a.tot>0.5).sort((a,b)=>b.tot-a.tot).slice(0,18);
+  $('scl-rank-t').textContent='🏆 Ranking SC — realisasi (maks. 15) per status';
+  $('scl-rank').innerHTML=rk.length?rspHBar(rk,null,'v'):'<div class="scw-empty">Tidak ada realisasi.</div>';
+  $('scl-area-t').textContent='🗺️ Realisasi per area';
+  $('scl-areas').innerHTML=ar.length?rspHBar(ar,null,'v'):'<div class="scw-empty">Tidak ada realisasi.</div>';
   const ymax=same?Math.max(1,...M.rows.map(o=>Math.max(...(cum?sclCum(o.m):o.m)))):0;
   $('scl-grid').innerHTML=M.rows.length?M.rows.map((o,i)=>sclCardHTML(o,i,M,P,ymax,cum)).join(''):'<div class="scw-empty">Tidak ada SC untuk filter ini.</div>';
 }
