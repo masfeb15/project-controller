@@ -4946,7 +4946,7 @@ function sclModel(){
   ALL.forEach(r=>{const k=normKode(r[C.KODE]); if(!k) return; kodeRow[k]=r; const sc=normSC(r[C.PIC_TEK]); if(!sc) return; kodeSC[k]=sc;
     const a=cl(r[C.AREA]).toUpperCase(); if(a){(ac[sc]=ac[sc]||{})[a]=(ac[sc][a]||0)+1;} });
   const fin100=new Set(); LOG_PROG.forEach(r=>{const k=normKode(r[LP.KODE]); if(k&&scwPct(r[LP.PCT_BARU])>=0.9999) fin100.add(k);});   /* sudah pernah tercatat 100% di log progres */
-  const S={}, get=sc=>S[sc]||(S[sc]={sc,m:new Array(n).fill(0),total:0,seg:[0,0],as:{}}); let unmapped=0;
+  const S={}, get=sc=>S[sc]||(S[sc]={sc,m:new Array(n).fill(0),total:0,seg:[0,0],as:{},pk:{}}); let unmapped=0;
   LOG_PROG.forEach(r=>{
     const k=normKode(r[LP.KODE]); if(!k) return; const t=scwParseDay(r[LP.TGL]); if(t==null||t<lo||t>=hi) return;
     const sc=kodeSC[k]; if(areaSel.size&&!(kodeRow[k]&&inArea(kodeRow[k][C.AREA]))) return;
@@ -4956,7 +4956,7 @@ function sclModel(){
     let i=-1; for(let q=0;q<n;q++){ if(t>=months[q].from&&t<=months[q].to){i=q;break;} } if(i<0) return;
     const o=get(sc); o.m[i]+=v; o.total+=v;
     const kr=kodeRow[k]||[], j=(SCW_FIN.has(cl(kr[C.STATUS]).toUpperCase())||fin100.has(k)||scwPct(kr[C.PROGRESS])>=0.9999)?0:1, ar=cl(kr[C.AREA]).toUpperCase()||'—';   /* 0 = Selesai (FINISH/Retensi), 1 = Berjalan */
-    o.seg[j]+=v; (o.as[ar]=o.as[ar]||[0,0])[j]+=v;
+    o.seg[j]+=v; (o.as[ar]=o.as[ar]||[0,0])[j]+=v; o.pk[k]={nk,ar};   /* nilai kontrak proyek (1x per proyek) untuk % pencapaian */
   });
   if(!areaSel.size) master.forEach(m=>{const o=get(m.name); o.fixedArea=m.area;});
   let rows=Object.values(S);
@@ -4973,7 +4973,10 @@ function sclModel(){
   if(!$('scl-zero').checked) rows=rows.filter(o=>Math.abs(o.total)>0.5);
   rows.sort((a,b)=>b.total-a.total||a.sc.localeCompare(b.sc));
   const tot=new Array(n).fill(0); rows.forEach(o=>o.m.forEach((v,i)=>tot[i]+=v));
-  const AR={}; rows.forEach(o=>Object.entries(o.as).forEach(([a,sg])=>{const q=AR[a]||(AR[a]={l:a,seg:[0,0]}); q.seg[0]+=sg[0]; q.seg[1]+=sg[1];}));
+  const AR={}, arq=a=>AR[a]||(AR[a]={l:a,seg:[0,0],nk:0,np:0});
+  rows.forEach(o=>{ o.nk=Object.values(o.pk).reduce((a,p)=>a+p.nk,0); o.np=Object.keys(o.pk).length;
+    Object.entries(o.as).forEach(([a,sg])=>{const q=arq(a); q.seg[0]+=sg[0]; q.seg[1]+=sg[1];});
+    Object.values(o.pk).forEach(p=>{const q=arq(p.ar); q.nk+=p.nk; q.np++;}); });
   return {unmapped,AR,months,rows,tot,total:tot.reduce((a,x)=>a+x,0),n,unit,unitS,range,gran,allNames,allWil,fy,fm,ty,tm,areas:[...areaSel],wils:[...wSel]};
 }
 /* garis: vals[] per titik, labels[] sumbu x */
@@ -5005,7 +5008,7 @@ function sclCardHTML(o,i,M,P,ymax,cum){
 }
 /* Bar bertingkat yang bersih (tanpa sumbu/garis bantu): label realisasi (Selesai) di dalam batang hijau,
    label outstanding / sisa Berjalan di dalam batang oranye — bila tidak muat, ditulis oranye di ujung bar —
-   lalu % pencapaian (porsi Selesai) di ujung. Angka dalam Juta Rp. items: [{l, seg:[selesai,berjalan] (Rp), tot}] */
+   lalu % pencapaian (realisasi ÷ nilai kontrak proyek yang direalisasikan) di ujung. Angka dalam Juta Rp. items: [{l, seg:[selesai,berjalan] (Rp), tot}] */
 function sclHBar(items,PP){
   const P=PP||SCL_WEB, STC=PP?RSP_STC_P:RSP_STC, W=580, lw=172, rw=104, rh=PP?22:24, pw=W-lw-rw, mx=Math.max(1,...items.map(i=>i.tot));
   const jt=v=>Math.round(v/1e6), idn=n=>n.toLocaleString('id-ID'); let s='';
@@ -5022,16 +5025,16 @@ function sclHBar(items,PP){
       }
       x+=w;
     });
-    const pc=(it.tot?it.seg[0]/it.tot*100:0).toFixed(1)+'%';
+    const pc=it.nk>0?(it.tot/it.nk*100).toFixed(1)+'%':'-';
     s+=`<text x="${(x+6).toFixed(1)}" y="${cy.toFixed(1)}" style="font-size:10.5px;font-weight:700;font-family:inherit">`+
-      (out?`<tspan style="fill:${STC[1]}">${out}</tspan><tspan dx="7" style="fill:${P.t2}">${pc}</tspan>`:`<tspan style="fill:${P.t2}">${pc}</tspan>`)+`</text>`;
+      (out?`<tspan style="fill:${STC[1]}">${out}</tspan><tspan dx="7" style="fill:${P.t2}">${pc}</tspan>`:`<tspan style="fill:${P.t2}">${pc}</tspan>`)+`<title>${scwEsc(it.l)} · realisasi ${scwEsc(fmt(it.tot,true))} ÷ nilai kontrak ${scwEsc(fmt(it.nk||0,true))} (${it.np||0} proyek)</title></text>`;
   });
-  return mgSvg(W,Math.max(rh,items.length*rh),s)+`<div class="mg-lg" style="margin-top:6px"><span><i style="background:${STC[0]}"></i>Selesai (realisasi)</span><span><i style="background:${STC[1]}"></i>Berjalan (outstanding / sisa)</span><span>Angka dalam Juta Rp · % = porsi Selesai</span></div>`;
+  return mgSvg(W,Math.max(rh,items.length*rh),s)+`<div class="mg-lg" style="margin-top:6px"><span><i style="background:${STC[0]}"></i>Selesai (realisasi)</span><span><i style="background:${STC[1]}"></i>Berjalan (outstanding / sisa)</span><span>Angka dalam Juta Rp · % = realisasi ÷ nilai kontrak proyek</span></div>`;
 }
 function sclBarData(M){
-  const pos=x=>Math.max(0,x), mk=(l,seg)=>{const sg=seg.map(pos); return {l,seg:sg,tot:sg[0]+sg[1]};};
-  return {rk:M.rows.filter(o=>o.total>0.5).slice(0,15).map(o=>mk(o.sc,o.seg)),
-          ar:Object.values(M.AR).map(a=>mk(a.l,a.seg)).filter(a=>a.tot>0.5).sort((a,b)=>b.tot-a.tot).slice(0,18)};
+  const pos=x=>Math.max(0,x), mk=(l,seg,nk,np)=>{const sg=seg.map(pos); return {l,seg:sg,tot:sg[0]+sg[1],nk,np};};
+  return {rk:M.rows.filter(o=>o.total>0.5).slice(0,15).map(o=>mk(o.sc,o.seg,o.nk,o.np)),
+          ar:Object.values(M.AR).map(a=>mk(a.l,a.seg,a.nk,a.np)).filter(a=>a.tot>0.5).sort((a,b)=>b.tot-a.tot).slice(0,18)};
 }
 function sclKpiHTML(M){
   const act=M.rows.filter(o=>o.total>0.5).length, pk=M.tot.indexOf(Math.max(...M.tot)), top=M.rows[0];
@@ -5051,7 +5054,7 @@ function buildScLine(){
   const sig=M.allNames.join('|'); if(sig!==SCL_SIG){SCL_SIG=sig; msFill('scl-sc',M.allNames);}
   const sw=M.allWil.join('|'); if(sw!==SCL_SIGW){SCL_SIGW=sw; msFill('scl-wil',M.allWil);}
   const cum=$('scl-mode').value==='cum', same=$('scl-same').checked, P=SCL_WEB;
-  $('scl-note').innerHTML='Realisasi = Δ% progress × nilai kontrak (log progress), dijumlahkan per '+M.unit+'. Garis putus-putus = rata-rata per '+M.unit+' SC. Warna batang: hijau = Selesai (status FINISH / Retensi, atau progres proyek sudah 100%), oranye = Berjalan.'+(M.unmapped>0.5?` Realisasi proyek <b>tanpa PIC Teknik</b> di sheet list tidak masuk grafik per SC: <b>${scwEsc(fmt(M.unmapped,true))}</b> pada periode ini.`:'');
+  $('scl-note').innerHTML='Realisasi = Δ% progress × nilai kontrak (log progress), dijumlahkan per '+M.unit+'. Garis putus-putus = rata-rata per '+M.unit+' SC. Warna batang: % di ujung bar = realisasi ÷ nilai kontrak proyek yang punya realisasi di periode (tiap proyek dihitung sekali). Warna batang: hijau = Selesai (status FINISH / Retensi, atau progres proyek sudah 100%), oranye = Berjalan.'+(M.unmapped>0.5?` Realisasi proyek <b>tanpa PIC Teknik</b> di sheet list tidak masuk grafik per SC: <b>${scwEsc(fmt(M.unmapped,true))}</b> pada periode ini.`:'');
   $('scl-sub').textContent=M.range+' · '+(M.gran==='w'?'mingguan':'bulanan')+(M.wils.length?' · Wilayah: '+M.wils.join(', '):'')+(M.areas.length?' · Area: '+M.areas.join(', '):'')+' · '+M.rows.length+' SC';
   $('scl-kpi').innerHTML=sclKpiHTML(M);
   const tv=cum?sclCum(M.tot):M.tot;
