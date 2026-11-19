@@ -5127,10 +5127,10 @@ function dbjPDF(){
   #dbj-pdf-overlay table{width:100%;border-collapse:collapse;font-size:7.5px;margin-bottom:6px}
   #dbj-pdf-overlay thead{display:table-header-group}#dbj-pdf-overlay tr{break-inside:avoid;page-break-inside:avoid}
   #dbj-pdf-overlay th{background:#1f3b73;color:#fff;padding:3px 4px;text-align:right;font-size:7px;border:1px solid #fff}#dbj-pdf-overlay th.l{text-align:left}
-  #dbj-pdf-overlay td{padding:2.5px 4px;text-align:right;border-bottom:1px solid #ccc;color:#111;opacity:1}#dbj-pdf-overlay td.l{text-align:left;font-weight:700}
+  #dbj-pdf-overlay td{padding:2.5px 4px;text-align:right;border-bottom:1px solid #ccc;color:#111;opacity:1;white-space:nowrap}#dbj-pdf-overlay td.l{text-align:left;font-weight:700}
   #dbj-pdf-overlay tbody tr:nth-child(even) td{background:#f3f6fb}#dbj-pdf-overlay tr.tot td{background:#dbe6fb!important;font-weight:800;border-top:1.5px solid #1f3b73}
   #dbj-pdf-overlay .pg{break-before:page;page-break-before:always}#dbj-pdf-overlay .n{font-size:7px;color:#555;margin-top:4px;line-height:1.4}}`;
-  const idn=n=>Math.round(n).toLocaleString('id-ID'), mil=v=>v?(v/1e9).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2}):'-', pct=(a,b)=>b>0?(a/b*100).toFixed(1).replace('.',',')+'%':'-';
+  const idn=n=>Math.round(n).toLocaleString('id-ID'), mil=v=>v?Math.round(v).toLocaleString('id-ID'):'-', pct=(a,b)=>b>0?(a/b*100).toFixed(1).replace('.',',')+'%':'-';
   const rec=R.map(r=>{const d=scwParseDay(r[C.BULAN]), k=d==null?'':baKey(d); return {j:dbJenisOf(r),nk:num(r[C.NK]),hpp:num(r[C.HPP]),tag:num(r[C.TERTAGIH]),sisa:num(r[C.SISA]),area:cl(r[C.AREA]).toUpperCase()||'(TANPA AREA)',yr:cl(r[C.TAHUN])||(k?k.slice(0,4):'(TANPA TAHUN)'),mo:k};});
   /* 1. total keseluruhan per jenis */
   const A={}; rec.forEach(x=>{const o=A[x.j]||(A[x.j]={n:0,nk:0,hpp:0,tag:0,sisa:0}); o.n++; o.nk+=x.nk; o.hpp+=x.hpp; o.tag+=x.tag; o.sisa+=x.sisa;});
@@ -5146,7 +5146,7 @@ function dbjPDF(){
     const cell=(c)=>c?`<td>${c.n}</td><td>${mil(c.v)}</td>`:'<td>-</td><td>-</td>';
     const body=keys.map(k=>{let n=0,v=0; const tds=cols.map(j=>{const c=M[k][j]; if(c){n+=c.n; v+=c.v; const t=tot[j]||(tot[j]={n:0,v:0}); t.n+=c.n; t.v+=c.v;} return cell(c);}).join(''); return `<tr><td class="l">${scwEsc(lblOf(k))}</td>${tds}<td><b>${n}</b></td><td><b>${mil(v)}</b></td></tr>`;}).join('');
     const gn=Object.values(tot).reduce((a,c)=>a+c.n,0), gv=Object.values(tot).reduce((a,c)=>a+c.v,0);
-    return `<h3>${title}</h3><table><thead><tr><th class="l" rowspan="2">${lblHead}</th>${cols.map(j=>`<th colspan="2" style="text-align:center">${j}</th>`).join('')}<th colspan="2" style="text-align:center">TOTAL</th></tr><tr>${cols.concat(['TOTAL']).map(()=>'<th>Proyek</th><th>Nilai (Rp M)</th>').join('')}</tr></thead><tbody>${body}<tr class="tot"><td class="l">TOTAL</td>${cols.map(j=>cell(tot[j])).join('')}<td>${gn}</td><td>${mil(gv)}</td></tr></tbody></table>`;
+    return `<h3>${title}</h3><table><thead><tr><th class="l" rowspan="2">${lblHead}</th>${cols.map(j=>`<th colspan="2" style="text-align:center">${j}</th>`).join('')}<th colspan="2" style="text-align:center">TOTAL</th></tr><tr>${cols.concat(['TOTAL']).map(()=>'<th>Proyek</th><th>Nilai (Rp)</th>').join('')}</tr></thead><tbody>${body}<tr class="tot"><td class="l">TOTAL</td>${cols.map(j=>cell(tot[j])).join('')}<td>${gn}</td><td>${mil(gv)}</td></tr></tbody></table>`;
   };
   const nat=(a,b)=>a.localeCompare(b,'id',{numeric:true});
   const secB=matrix('2. Per area',x=>x.area,k=>k.sort(nat),k=>k,'Area');
@@ -5154,7 +5154,7 @@ function dbjPDF(){
   const secD=matrix('4. Per bulan (bulan SPI)',x=>x.mo,k=>k.sort((a,b)=>a===''?1:b===''?-1:a.localeCompare(b)),k=>k===''?'Tanpa tanggal':SCW_MON_S[+k.slice(5)-1]+' '+k.slice(0,4),'Bulan');
   ov.innerHTML=`<div class="h"><div><div class="t">REKAP PROYEK PER JENIS</div><div class="s">${R.length.toLocaleString('id-ID')} proyek · mengikuti filter aktif pada tabel Database · Dicetak ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div></div><div class="co">PT SANDANA</div></div>
    ${secA}${secB}<div class="pg">${secC}${secD}</div>
-   <div class="n">Jenis dibaca dari kolom JENIS pada sheet (IGM, PTS, Nurse Call, MOT, Alkes, Retail); jenis lain dikelompokkan sebagai LAINNYA pada tabel 2–4 dan ditampilkan satu per satu pada tabel 1; "(KOSONG)" = jenis belum diisi. Nilai = Nilai Kontrak dalam Rp Miliar (tabel 2–4) atau Rupiah penuh (tabel 1). Per bulan memakai bulan SPI (kolom Bulan); per tahun memakai kolom Tahun. Untuk melihat satu tahun/area saja, pilih filter di tabel Database lalu cetak ulang.</div>`;
+   <div class="n">Jenis dibaca dari kolom JENIS pada sheet (IGM, PTS, Nurse Call, MOT, Alkes, Retail); jenis lain dikelompokkan sebagai LAINNYA pada tabel 2–4 dan ditampilkan satu per satu pada tabel 1; "(KOSONG)" = jenis belum diisi. Nilai = Nilai Kontrak dalam Rupiah penuh. Per bulan memakai bulan SPI (kolom Bulan); per tahun memakai kolom Tahun. Untuk melihat satu tahun/area saja, pilih filter di tabel Database lalu cetak ulang.</div>`;
   const clean=()=>{document.body.classList.remove('print-dbj'); ov.style.display='none'; window.removeEventListener('afterprint',clean);};
   window.addEventListener('afterprint',clean);
   document.body.classList.add('print-dbj'); ov.style.display='block';
