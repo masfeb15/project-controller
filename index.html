@@ -5586,6 +5586,59 @@ function buildLg(){
   $('lg-body').innerHTML=sh.map(x=>`<tr><td>${lgIso(x.d)}</td><td style="font-family:var(--mono)">${x.k}</td><td>${scwEsc(x.nama)}</td><td>${scwEsc(g(x.p,C.AREA))}</td><td>${scwEsc(g(x.p,C.PIC_TEK))}</td><td>${xPct(num(x.r[LP.PCT_SBLM]))}%</td><td>${xPct(num(x.r[LP.PCT_BARU]))}%</td><td>${xPct(x.dl)}%</td><td>${fmt(x.nk,true)}</td><td>${fmt(x.dl*x.nk,true)}</td><td>${fmt(num(x.r[LP.TAGIHAN]),true)}</td><td>${scwEsc(cl(x.r[LP.NO_INV]))}</td><td>${scwEsc(cl(x.r[LP.KET]))}</td></tr>`).join('')||'<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--text3)">Tidak ada data</td></tr>';
   $('lg-note').textContent=rows.length>300?'Menampilkan 300 baris pertama; file unduhan memuat seluruh '+rows.length.toLocaleString('id')+' baris.':'';
 }
+
+/* ══ Penulis XLSX mandiri (tabel Excel bergaya + format angka asli) — tanpa pustaka luar ══
+   types: 'd' tanggal (hari sejak 1970) · 'p' persen (pecahan, tampil 0,00%) · 'n' angka desimal (#,##0.00) · 's' teks */
+const _crcT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function _crc(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=_crcT[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function zipStore(files){
+  const enc=new TextEncoder(), parts=[], cen=[]; let off=0;
+  files.forEach(f=>{
+    const nm=enc.encode(f.name), d=enc.encode(f.data), crc=_crc(d);
+    const h=new DataView(new ArrayBuffer(30)); h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,0,true);h.setUint16(12,0x21,true);
+    h.setUint32(14,crc,true);h.setUint32(18,d.length,true);h.setUint32(22,d.length,true);h.setUint16(26,nm.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),nm,d);
+    const c=new DataView(new ArrayBuffer(46)); c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,0,true);c.setUint16(14,0x21,true);
+    c.setUint32(16,crc,true);c.setUint32(20,d.length,true);c.setUint32(24,d.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+    cen.push(new Uint8Array(c.buffer),nm); off+=30+nm.length+d.length;
+  });
+  const cl=cen.reduce((a,x)=>a+x.length,0), e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cl,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cen,new Uint8Array(e.buffer)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function xlsxTable(headers,types,rows,fname,sheetName){
+  const X=v=>String(v).replace(/[<>&"\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]||'')), nC=headers.length, nR=rows.length;
+  const col=i=>{let s='',n=i+1;while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;};
+  const sst=[],sm=new Map(); const si=v=>{v=String(v); if(!sm.has(v)){sm.set(v,sst.length);sst.push(v);} return sm.get(v);};
+  const sty={d:1,p:2,n:3,s:0}, wid=headers.map(h=>Math.max(h.length+4,10));
+  let sd='<row r="1">'+headers.map((h,i)=>`<c r="${col(i)}1" t="s"><v>${si(h)}</v></c>`).join('')+'</row>';
+  rows.forEach((r,ri)=>{
+    sd+=`<row r="${ri+2}">`;
+    r.forEach((v,i)=>{
+      const ref=col(i)+(ri+2), t=types[i];
+      if(v===''||v==null) return;
+      if(t==='s'){const q=String(v); if(ri<300) wid[i]=Math.max(wid[i],Math.min(50,q.length+2)); sd+=`<c r="${ref}" t="s"><v>${si(q)}</v></c>`;}
+      else if(t==='d'){sd+=`<c r="${ref}" s="1"><v>${v+25569}</v></c>`;}
+      else{ if(!isFinite(v)) return; sd+=`<c r="${ref}" s="${sty[t]}"><v>${v}</v></c>`; if(t==='n') wid[i]=Math.max(wid[i],Math.min(22,String(Math.round(Math.abs(v))).length+7)); }
+    });
+    sd+='</row>';
+  });
+  const ref=`A1:${col(nC-1)}${nR+1}`, NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main', RS='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const hd='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+  const sheet=hd+`<worksheet xmlns="${NS}" xmlns:r="${RS}"><dimension ref="${ref}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${wid.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${sd}</sheetData><tableParts count="1"><tablePart r:id="rId1"/></tableParts></worksheet>`;
+  const table=hd+`<table xmlns="${NS}" id="1" name="TabelLog" displayName="TabelLog" ref="${ref}" totalsRowShown="0"><autoFilter ref="${ref}"/><tableColumns count="${nC}">${headers.map((h,i)=>`<tableColumn id="${i+1}" name="${X(h)}"/>`).join('')}</tableColumns><tableStyleInfo name="TableStyleMedium2" showFirstColumn="0" showLastColumn="0" showRowStripes="1" showColumnStripes="0"/></table>`;
+  const styles=hd+`<styleSheet xmlns="${NS}"><numFmts count="2"><numFmt numFmtId="164" formatCode="yyyy\\-mm\\-dd"/><numFmt numFmtId="165" formatCode="#,##0.00"/></numFmts><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="10" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const sstx=hd+`<sst xmlns="${NS}" count="${sst.length}" uniqueCount="${sst.length}">${sst.map(v=>`<si><t xml:space="preserve">${X(v)}</t></si>`).join('')}</sst>`;
+  const files=[
+    {name:'[Content_Types].xml',data:hd+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/tables/table1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/></Types>'},
+    {name:'_rels/.rels',data:hd+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {name:'xl/workbook.xml',data:hd+`<workbook xmlns="${NS}" xmlns:r="${RS}"><sheets><sheet name="${X(sheetName.slice(0,31))}" sheetId="1" r:id="rId1"/></sheets></workbook>`},
+    {name:'xl/_rels/workbook.xml.rels',data:hd+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>'},
+    {name:'xl/worksheets/sheet1.xml',data:sheet},
+    {name:'xl/worksheets/_rels/sheet1.xml.rels',data:hd+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/table" Target="../tables/table1.xml"/></Relationships>'},
+    {name:'xl/tables/table1.xml',data:table},{name:'xl/styles.xml',data:styles},{name:'xl/sharedStrings.xml',data:sstx}];
+  const a=document.createElement('a'); a.href=URL.createObjectURL(zipStore(files)); a.download=fname; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1000);
+}
 function lgExport(fmtType){
   if(!LG_ROWS.length){toast('Tidak ada data log untuk diunduh','info');return;}
   const g=(r,c)=>r?cl(r[c]):'';
@@ -5596,7 +5649,14 @@ function lgExport(fmtType){
     const keys=Object.keys(out[0]), q=v=>{v=String(v==null?'':v); return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
     const csv='﻿'+[keys.map(q).join(',')].concat(out.map(o=>keys.map(k=>q(o[k])).join(','))).join('\r\n');
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='Log-Progress-'+tag+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);
-  } else xlsxSave([{name:'Log Progress',rows:out}],'Log-Progress-'+tag+'.xlsx');
+  } else {
+    /* Excel: tabel bergaya; tanggal asli; % sebagai pecahan berformat 0,00%; nominal desimal #,##0.00 */
+    const H=['Tanggal','Kode','Proyek','No. SPI','Jenis','Wilayah','Area','Status Proyek','PIC Teknik','Korwil Teknik','PIC Sales','% Sebelum','% Baru','Δ %','Nilai Kontrak','Realisasi (Δ×NK)','Tagihan','Retensi','No. Invoice','Keterangan'];
+    const T=['d','s','s','s','s','s','s','s','s','s','s','p','p','p','n','n','n','n','s','s'];
+    const R=LG_ROWS.map(x=>[x.d==null?'':x.d,x.k,x.nama,g(x.p,C.SPI),g(x.p,C.JENIS2)||g(x.p,C.JENIS),g(x.p,C.WILAYAH),g(x.p,C.AREA),g(x.p,C.STATUS),g(x.p,C.PIC_TEK),g(x.p,C.KORWIL_TEK),g(x.p,C.PIC_SALES),
+      num(x.r[LP.PCT_SBLM]),num(x.r[LP.PCT_BARU]),x.dl,x.nk,x.dl*x.nk,num(x.r[LP.TAGIHAN]),num(x.r[LP.RETENSI]),cl(x.r[LP.NO_INV]),cl(x.r[LP.KET])]);
+    xlsxTable(H,T,R,'Log-Progress-'+tag+'.xlsx','Log Progress');
+  }
 }
 
 /* ══ Filter Tgl BA / BAST bertingkat Tahun → Bulan (seperti filter tanggal Excel) ══
