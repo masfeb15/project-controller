@@ -5574,8 +5574,8 @@ function buildLg(){
     if(!pass('lg-wil',g(p,C.WILAYAH))||!pass('lg-area',g(p,C.AREA))||!pass('lg-jenis',g(p,C.JENIS2)||g(p,C.JENIS))||!pass('lg-tek',g(p,C.PIC_TEK))||!pass('lg-kor',g(p,C.KORWIL_TEK))||!pass('lg-stat',g(p,C.STATUS))) return;
     const nama=cl(r[LP.NAMA])||g(p,C.PROYEK);
     if(q&&!(nama+' '+k+' '+cl(r[LP.NO_INV])+' '+cl(r[LP.KET])).toLowerCase().includes(q)) return;
-    const nk=num(r[LP.NK])||num(p&&p[C.NK]), dl=num(r[LP.DELTA]);
-    rows.push({d,k,nama,p,r,nk,dl});
+    const nk=num(r[LP.NK])||num(p&&p[C.NK]), pb=scwPct(r[LP.PCT_BARU]), ps=scwPct(r[LP.PCT_SBLM]), dl=pb-ps;   /* sheet menyimpan % sebagai angka bulat (61.04) → dinormalkan ke pecahan seperti halaman lain */
+    rows.push({d,k,nama,p,r,nk,dl,pb,ps});
   });
   rows.sort((a,b)=>(a.d||0)-(b.d||0)||a.k.localeCompare(b.k));
   LG_ROWS=rows;
@@ -5583,7 +5583,7 @@ function buildLg(){
   $('lg-kpi').innerHTML=[['Baris log',rows.length.toLocaleString('id')],['Proyek',prj.toLocaleString('id')],['Total Realisasi (Δ×NK)',fmt(tot,true)]].map(([l,v],i)=>{const c=['var(--cyan)','var(--blue)','var(--green)'][i];return `<div class="mkor-kpi-card" style="border-top:3px solid ${kcB(c)}"><div class="mkor-kpi-l">${l}</div><div class="mkor-kpi-v" style="color:${kcT(c)};font-size:15px">${scwEsc(v)}</div></div>`;}).join('');
   $('lg-sub').textContent='Sumber: sheet log_progress ('+LOG_PROG.length.toLocaleString('id')+' baris) · '+rows.length.toLocaleString('id')+' baris sesuai filter';
   const sh=rows.slice(0,300);
-  $('lg-body').innerHTML=sh.map(x=>`<tr><td>${lgIso(x.d)}</td><td style="font-family:var(--mono)">${x.k}</td><td>${scwEsc(x.nama)}</td><td>${scwEsc(g(x.p,C.AREA))}</td><td>${scwEsc(g(x.p,C.PIC_TEK))}</td><td>${xPct(num(x.r[LP.PCT_SBLM]))}%</td><td>${xPct(num(x.r[LP.PCT_BARU]))}%</td><td>${xPct(x.dl)}%</td><td>${fmt(x.nk,true)}</td><td>${fmt(x.dl*x.nk,true)}</td><td>${fmt(num(x.r[LP.TAGIHAN]),true)}</td><td>${scwEsc(cl(x.r[LP.NO_INV]))}</td><td>${scwEsc(cl(x.r[LP.KET]))}</td></tr>`).join('')||'<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--text3)">Tidak ada data</td></tr>';
+  $('lg-body').innerHTML=sh.map(x=>`<tr><td>${lgIso(x.d)}</td><td style="font-family:var(--mono)">${x.k}</td><td>${scwEsc(x.nama)}</td><td>${scwEsc(g(x.p,C.AREA))}</td><td>${scwEsc(g(x.p,C.PIC_TEK))}</td><td>${xPct(x.ps)}%</td><td>${xPct(x.pb)}%</td><td>${xPct(x.dl)}%</td><td>${fmt(x.nk,true)}</td><td>${fmt(x.dl*x.nk,true)}</td><td>${fmt(num(x.r[LP.TAGIHAN]),true)}</td><td>${scwEsc(cl(x.r[LP.NO_INV]))}</td><td>${scwEsc(cl(x.r[LP.KET]))}</td></tr>`).join('')||'<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--text3)">Tidak ada data</td></tr>';
   $('lg-note').textContent=rows.length>300?'Menampilkan 300 baris pertama; file unduhan memuat seluruh '+rows.length.toLocaleString('id')+' baris.':'';
 }
 
@@ -5643,7 +5643,7 @@ function lgExport(fmtType){
   if(!LG_ROWS.length){toast('Tidak ada data log untuk diunduh','info');return;}
   const g=(r,c)=>r?cl(r[c]):'';
   const out=LG_ROWS.map(x=>({'Tanggal':lgIso(x.d),'Kode':x.k,'Proyek':x.nama,'No. SPI':g(x.p,C.SPI),'Jenis':g(x.p,C.JENIS2)||g(x.p,C.JENIS),'Wilayah':g(x.p,C.WILAYAH),'Area':g(x.p,C.AREA),'Status Proyek':g(x.p,C.STATUS),'PIC Teknik':g(x.p,C.PIC_TEK),'Korwil Teknik':g(x.p,C.KORWIL_TEK),'PIC Sales':g(x.p,C.PIC_SALES),
-    '% Sebelum':xPct(num(x.r[LP.PCT_SBLM])),'% Baru':xPct(num(x.r[LP.PCT_BARU])),'Δ %':xPct(x.dl),'Nilai Kontrak':xRp(x.nk),'Realisasi (Δ×NK)':xRp(x.dl*x.nk),'Tagihan':xRp(num(x.r[LP.TAGIHAN])),'Retensi':xRp(num(x.r[LP.RETENSI])),'No. Invoice':cl(x.r[LP.NO_INV]),'Keterangan':cl(x.r[LP.KET])}));
+    '% Sebelum':xPct(x.ps),'% Baru':xPct(x.pb),'Δ %':xPct(x.dl),'Nilai Kontrak':xRp(x.nk),'Realisasi (Δ×NK)':xRp(x.dl*x.nk),'Tagihan':xRp(num(x.r[LP.TAGIHAN])),'Retensi':xRp(num(x.r[LP.RETENSI])),'No. Invoice':cl(x.r[LP.NO_INV]),'Keterangan':cl(x.r[LP.KET])}));
   const tag=new Date().toISOString().slice(0,10);
   if(fmtType==='csv'){
     const keys=Object.keys(out[0]), q=v=>{v=String(v==null?'':v); return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
@@ -5654,7 +5654,7 @@ function lgExport(fmtType){
     const H=['Tanggal','Kode','Proyek','No. SPI','Jenis','Wilayah','Area','Status Proyek','PIC Teknik','Korwil Teknik','PIC Sales','% Sebelum','% Baru','Δ %','Nilai Kontrak','Realisasi (Δ×NK)','Tagihan','Retensi','No. Invoice','Keterangan'];
     const T=['d','s','s','s','s','s','s','s','s','s','s','p','p','p','n','n','n','n','s','s'];
     const R=LG_ROWS.map(x=>[x.d==null?'':x.d,x.k,x.nama,g(x.p,C.SPI),g(x.p,C.JENIS2)||g(x.p,C.JENIS),g(x.p,C.WILAYAH),g(x.p,C.AREA),g(x.p,C.STATUS),g(x.p,C.PIC_TEK),g(x.p,C.KORWIL_TEK),g(x.p,C.PIC_SALES),
-      num(x.r[LP.PCT_SBLM]),num(x.r[LP.PCT_BARU]),x.dl,x.nk,x.dl*x.nk,num(x.r[LP.TAGIHAN]),num(x.r[LP.RETENSI]),cl(x.r[LP.NO_INV]),cl(x.r[LP.KET])]);
+      x.ps,x.pb,x.dl,x.nk,x.dl*x.nk,num(x.r[LP.TAGIHAN]),num(x.r[LP.RETENSI]),cl(x.r[LP.NO_INV]),cl(x.r[LP.KET])]);
     xlsxTable(H,T,R,'Log-Progress-'+tag+'.xlsx','Log Progress');
   }
 }
