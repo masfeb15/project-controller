@@ -1051,6 +1051,8 @@ td.t-dok{max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:11px;c
             <th onclick="sortDB('STATUS')" data-os="Status">Status</th>
             <th onclick="sortDB('PROGRESS')" id="th-prog">Progress</th>
             <th onclick="sortDB('DELAY')" data-os="Delay">Delay</th>
+            <th onclick="sortDB('START')">Tgl Mulai</th>
+            <th onclick="sortDB('END')">Target Selesai</th>
             <th onclick="sortDB('TGL_BA')">Tgl BA / BAST</th>
             <th>DOK SPK / Term Payment</th>
             <th onclick="sortDB('NK')">Nilai Kontrak</th>
@@ -2854,7 +2856,7 @@ function filterDB(){
 function clearDB(){document.querySelectorAll('#db-table th[data-os]').forEach(t=>t.textContent=t.dataset.os);if($('th-prog'))$('th-prog').textContent='Progress';if($('df-os-hide'))$('df-os-hide').checked=false;window.OS_INFO=null;if($('db-table'))$('db-table').classList.remove('os-on');if($('os-hint'))$('os-hint').textContent='';['df-q','df-status','df-tahun','df-wil','df-os-bln','df-os-thn'].forEach(id=>{const e=$(id);if(e)e.value='';});['df-area','df-jenis','df-jns','df-korwil'].forEach(id=>{MS_SEL[id]=new Set();msFill(id,MS_VALS[id]||[]);});BA_SEL=new Set();BA_Q='';baFill();DB_F=[...ALL];DB_PAGE=1;renderDB();}
 function sortDB(col){document.querySelectorAll('thead th').forEach(t=>t.classList.remove('s-asc','s-desc'));if(DB_SORT.col===col)DB_SORT.dir*=-1;else{DB_SORT.col=col;DB_SORT.dir=1;}sortDBArr();DB_PAGE=1;renderDB();}
 function sortDBArr(){const nums=['NK','TERTAGIH','SISA','PCT_TAGIH','PCT_ANGGARAN','PCT_DP','PROGRESS','DELAY'];DB_F.sort((a,b)=>{const ci=C[DB_SORT.col];if(ci===undefined)return 0;
-    if(DB_SORT.col==='TGL_BA'){const x=scwParseDay(a[ci]),y=scwParseDay(b[ci]);return ((x==null?-1e9:x)-(y==null?-1e9:y))*DB_SORT.dir;}const av=nums.includes(DB_SORT.col)?num(a[ci]):cl(a[ci]);const bv=nums.includes(DB_SORT.col)?num(b[ci]):cl(b[ci]);return typeof av==='number'?(av-bv)*DB_SORT.dir:av.localeCompare(bv)*DB_SORT.dir;});}
+    if(DB_SORT.col==='TGL_BA'||DB_SORT.col==='START'||DB_SORT.col==='END'){const x=scwParseDay(a[ci]),y=scwParseDay(b[ci]);return ((x==null?-1e9:x)-(y==null?-1e9:y))*DB_SORT.dir;}const av=nums.includes(DB_SORT.col)?num(a[ci]):cl(a[ci]);const bv=nums.includes(DB_SORT.col)?num(b[ci]):cl(b[ci]);return typeof av==='number'?(av-bv)*DB_SORT.dir:av.localeCompare(bv)*DB_SORT.dir;});}
 function renderDB(){
   const osBln2=parseInt($('df-os-bln')?.value)||0,osThn2=parseInt($('df-os-thn')?.value)||0;
   const blnNames=['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
@@ -2885,6 +2887,8 @@ function renderDB(){
       <td>${badge(osO?osO.status:cl(r[C.STATUS]))}${osO&&osO.unknown?'<span class="os-flag" title="Berstatus selesai, tetapi tidak ada tanggal BAST maupun 100% di log progress — tanggal selesai tidak diketahui">tgl selesai ?</span>':''}</td>
       <td>${osO?(osO.pct==null?'<span style="color:var(--text3)" title="Tidak ada log progress untuk proyek ini">—</span>':pbx(osO.pct)):pb(r[C.PROGRESS])}</td>
       <td>${osO?(osO.delay==null?'<span style="color:var(--text3)">—</span>':delayTag(osO.delay)):delayTag(r[C.DELAY])}</td>
+      <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">${excelDate(cl(r[C.START]))||'—'}</td>
+      <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">${excelDate(cl(r[C.END]))||'—'}</td>
       <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">${excelDate(cl(r[C.TGL_BA]))}</td>
       <td class="t-dok" title="${cl(r[C.DOK])}">${cl(r[C.DOK])||'—'}</td>
       <td class="money">${fmt(num(r[C.NK]),true)}</td>
@@ -2895,7 +2899,7 @@ function renderDB(){
       <td class="os-col money">${osO?fmt(osO.real,true):''}</td>
       <td class="os-col money">${osO?fmt(osO.tag,true):''}</td>
       <td class="os-col money" style="color:${osO&&osO.sel>0?'var(--amber)':osO&&osO.sel<0?'var(--red)':'var(--text3)'}">${osO?fmt(osO.sel,true):''}</td>
-    </tr>`;}).join('')||'<tr><td colspan="25" style="text-align:center;padding:32px;color:var(--text3)">Tidak ada data</td></tr>';
+    </tr>`;}).join('')||'<tr><td colspan="27" style="text-align:center;padding:32px;color:var(--text3)">Tidak ada data</td></tr>';
   renderPag('db-pag',DB_PAGE,Math.ceil(DB_F.length/PER.db),p=>{DB_PAGE=p;renderDB();});
 }
 
@@ -3624,8 +3628,8 @@ function exportXLS(src,plain){
   let headers=[], data=[], sheetName='Data';
   if(src==='db'){
     sheetName='Database Proyek';
-    headers=['Proyek','Pekerjaan','Kode','SPI','Tahun','Area','Wilayah','Jenis','Kategori','Status','Progress (%)','Delay (hari)','TGL BA / BAST','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','Nilai Retensi','PIC Teknik','PIC Sales','Korwil Teknik'];
-    data=DB_F.map(r=>{const ba=scwParseDay(r[C.TGL_BA]); return [cl(r[C.PROYEK]),cl(r[C.PEKERJAAN]),cl(r[C.KODE]),cl(r[C.SPI]),cl(r[C.TAHUN]),cl(r[C.AREA]),cl(r[C.WILAYAH]),dbJenisOf(r),cl(r[C.JENIS2]),cl(r[C.STATUS]),xP2(r[C.PROGRESS]),parseInt(r[C.DELAY])||0,ba==null?'':ba+25569,cl(r[C.DOK]),xN2(num(r[C.NK])),xN2(num(r[C.HPP])),xN2(num(r[C.TERTAGIH])),xN2(num(r[C.SISA])),xP2(r[C.PCT_TAGIH]),xN2(num(r[C.RETENSI])),cl(r[C.PIC_TEK]),cl(r[C.PIC_SALES]),cl(r[C.KORWIL_TEK])];});
+    headers=['Proyek','Pekerjaan','Kode','SPI','Tahun','Area','Wilayah','Jenis','Kategori','Status','Progress (%)','Delay (hari)','TGL BA / BAST','DOK SPK / Term Payment','Nilai Kontrak','HPP','Tertagih','Sisa Tagihan','% Tertagih','Nilai Retensi','PIC Teknik','PIC Sales','Korwil Teknik','Tgl Mulai','Tgl Target Selesai'];
+    data=DB_F.map(r=>{const ba=scwParseDay(r[C.TGL_BA]); return [cl(r[C.PROYEK]),cl(r[C.PEKERJAAN]),cl(r[C.KODE]),cl(r[C.SPI]),cl(r[C.TAHUN]),cl(r[C.AREA]),cl(r[C.WILAYAH]),dbJenisOf(r),cl(r[C.JENIS2]),cl(r[C.STATUS]),xP2(r[C.PROGRESS]),parseInt(r[C.DELAY])||0,ba==null?'':ba+25569,cl(r[C.DOK]),xN2(num(r[C.NK])),xN2(num(r[C.HPP])),xN2(num(r[C.TERTAGIH])),xN2(num(r[C.SISA])),xP2(r[C.PCT_TAGIH]),xN2(num(r[C.RETENSI])),cl(r[C.PIC_TEK]),cl(r[C.PIC_SALES]),cl(r[C.KORWIL_TEK]),(v=>v==null?'':v+25569)(scwParseDay(r[C.START])),(v=>v==null?'':v+25569)(scwParseDay(r[C.END]))];});
     if(window.OS_INFO){headers=headers.concat(['Realisasi Teknik s/d tgl','Tertagih Invoice s/d tgl','Selisih (belum ditagih)','Tgl selesai tidak diketahui']);headers[9]='Status per tgl';headers[10]='Progress per tgl (%)';headers[11]='Delay per tgl (hari)';headers[16]='Tertagih per tgl';headers[17]='Sisa Tagihan per tgl';headers[18]='% Tertagih per tgl';data=data.map((row,i)=>{const o=window.OS_INFO[normKode(DB_F[i][C.KODE])];if(o){row[9]=o.status;row[10]=o.pct==null?'':parseFloat((o.pct*100).toFixed(2));row[11]=o.delay==null?'':o.delay;row[16]=xN2(o.tag);row[17]=xN2(Math.max(0,row[14]-o.tag));row[18]=o.pctTag==null?'':parseFloat((o.pctTag*100).toFixed(2));}return row;}).map((row,i)=>row.concat(osCells(DB_F[i]).map(v=>v===''?v:xN2(v)),[(window.OS_INFO[normKode(DB_F[i][C.KODE])]||{}).unknown?'YA':'']));}
   }else if(src==='prog'){
     sheetName='Proyek Berjalan';
